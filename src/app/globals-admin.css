@@ -52,9 +52,61 @@
 
 .adm-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 2rem; }
 @media (max-width: 860px) { .adm-stats { grid-template-columns: repeat(2, 1fr); } }
-.adm-stat { background: var(--white); border-radius: var(--r-md); box-shadow: var(--shadow); padding: 1.2rem 1.4rem; }
-.adm-stat b { display: block; font-size: 1.7rem; font-weight: 800; letter-spacing: -.02em; }
+.adm-stat { background: var(--white); border-radius: var(--r-md); box-shadow: var(--shadow); padding: 1.2rem 1.4rem; position: relative; }
+.adm-stat b, .adm-stat-val { display: block; font-size: 1.7rem; font-weight: 800; letter-spacing: -.02em; }
 .adm-stat span { font-size: .7rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-faint); }
+
+.adm-stat-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  min-height: 2.3rem;
+  margin-bottom: 0.2rem;
+}
+.adm-stat-val {
+  min-height: 2.1rem;
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.adm-stat-val.masked {
+  letter-spacing: 0.18em;
+  color: var(--ink-soft);
+  font-family: inherit;
+  user-select: none;
+  font-size: 1.5rem;
+}
+.adm-stat-eye-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.9rem;
+  height: 1.9rem;
+  border-radius: 8px;
+  border: 1px solid var(--chip, #f1eff4);
+  background: var(--bg-panel, #faf9fc);
+  color: var(--ink-soft);
+  cursor: pointer;
+  padding: 0;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+}
+.adm-stat-eye-btn:hover {
+  background: var(--purple-soft, #f5f3ff);
+  color: var(--purple, #232176);
+  border-color: rgba(98, 51, 238, 0.2);
+  transform: translateY(-1px);
+}
+.adm-stat-eye-btn:active {
+  transform: translateY(0);
+}
+.adm-stat-eye-btn svg {
+  width: 1.1rem;
+  height: 1.1rem;
+}
 
 .tbl-wrap { overflow-x: auto; background: var(--white); border-radius: var(--r-md); box-shadow: var(--shadow); }
 .tbl { width: 100%; border-collapse: collapse; font-size: .88rem; }

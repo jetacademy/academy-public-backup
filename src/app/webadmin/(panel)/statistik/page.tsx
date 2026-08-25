@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { rupiah, formatHariTanggal } from "@/lib/format";
 import { TYPE_LABEL, type ProgramType } from "@/lib/fallback";
+import AdminStats from "@/components/AdminStats";
 
 export const dynamic = "force-dynamic";
 
@@ -161,29 +162,22 @@ export default async function AdminStatistik() {
       </div>
 
       {/* ═══════ Ringkasan (big numbers) ═══════ */}
-      <div className="adm-stats">
-        <div className="adm-stat">
-          <b>{rupiah(revenueTotal)}</b>
-          <span>💰 Total Penghasilan</span>
-        </div>
-        <div className="adm-stat">
-          <b>
-            {rupiah(discountTotal)}
-            <span style={{ fontSize: "0.65rem", fontWeight: 700, color: "var(--ink-faint)", marginLeft: "0.4rem" }}>
-              ({discountPct}%)
-            </span>
-          </b>
-          <span>🏷️ Diskon Voucher</span>
-        </div>
-        <div className="adm-stat">
-          <b>{rupiah(nonVoucherTotal)}</b>
-          <span>📦 Non-Voucher</span>
-        </div>
-        <div className="adm-stat">
-          <b>{paidRegCount.toLocaleString("id-ID")}</b>
-          <span>👥 Pendaftar Lunas</span>
-        </div>
-      </div>
+      <AdminStats
+        stats={[
+          { label: "💰 Total Penghasilan", value: rupiah(revenueTotal) },
+          {
+            label: "🏷️ Diskon Voucher",
+            value: rupiah(discountTotal),
+            sublabel: (
+              <span style={{ fontSize: "0.65rem", fontWeight: 700, color: "var(--ink-faint)", marginLeft: "0.4rem" }}>
+                ({discountPct}%)
+              </span>
+            ),
+          },
+          { label: "📦 Non-Voucher", value: rupiah(nonVoucherTotal) },
+          { label: "👥 Pendaftar Lunas", value: paidRegCount.toLocaleString("id-ID") },
+        ]}
+      />
 
       {/* ═══════ Grafik Bar (CSS) — perbandingan penghasilan ═══════ */}
       <div className="adm-head" style={{ marginTop: "2.4rem" }}>

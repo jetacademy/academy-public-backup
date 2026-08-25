@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { rupiah } from "@/lib/format";
 import { TYPE_LABEL, type ProgramType } from "@/lib/fallback";
 import DailyRevenueChart from "@/components/DailyRevenueChart";
+import AdminStats from "@/components/AdminStats";
 
 export const dynamic = "force-dynamic";
 
@@ -131,12 +132,14 @@ export default async function AdminDashboard({
         <Link href="/webadmin/program/new" className="btn btn-yellow btn-sm">+ Program Baru</Link>
       </div>
 
-      <div className="adm-stats">
-        <div className="adm-stat"><b>{regCount}</b><span>Total Pendaftar</span></div>
-        <div className="adm-stat"><b>{rupiah(revenue._sum.amount ?? 0)}</b><span>Pendapatan Lunas</span></div>
-        <div className="adm-stat"><b>{rupiah(todayRevenue)}</b><span>Pendapatan Hari Ini</span></div>
-        <div className="adm-stat"><b>{programs.filter((p) => p.isActive).length}</b><span>Program Aktif</span></div>
-      </div>
+      <AdminStats
+        stats={[
+          { label: "Total Pendaftar", value: regCount.toLocaleString("id-ID") },
+          { label: "Pendapatan Lunas", value: rupiah(revenue._sum.amount ?? 0) },
+          { label: "Pendapatan Hari Ini", value: rupiah(todayRevenue) },
+          { label: "Program Aktif", value: programs.filter((p) => p.isActive).length },
+        ]}
+      />
 
       <div className="adm-head" style={{ marginTop: "2.4rem" }}>
         <h2 style={{ fontSize: "1.25rem" }}>Pendapatan Harian</h2>
