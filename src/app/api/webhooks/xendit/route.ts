@@ -90,18 +90,18 @@ export async function POST(req: Request) {
     const isCurrentInvoice = !event.id || payment.xenditInvoiceId === event.id;
 
     if (event.status === "PAID" && isCurrentInvoice) {
-      // idempoten: webhook bisa dikirim lebih dari sekali
-      if (payment.status !== "PAID") {
-        await prisma.$transaction([
-          prisma.payment.update({
-            where: { id: payment.id },
-            data: { status: "PAID", paidAt: event.paid_at ? new Date(event.paid_at) : new Date() },
-          }),
-          prisma.registration.update({
-            where: { id: payment.registrationId },
-            data: { status: "PAID" },
-          }),
-        ]);
+      // Gerbang idempoten atomik: hanya webhook yang berhasil mentransisi status
+      // non-PAID → PAID yang boleh mengirim notifikasi/CAPI — mencegah dobel kirim
+      // saat dua callback PAID hampir bersimultan.
+      const claimed = await prisma.payment.updateMany({
+        where: { id: payment.id, status: { not: "PAID" } },
+        data: { status: "PAID", paidAt: event.paid_at ? new Date(event.paid_at) : new Date() },
+      });
+      if (claimed.count > 0) {
+        await prisma.registration.update({
+          where: { id: payment.registrationId },
+          data: { status: "PAID" },
+        });
 
         await recordAffiliateConversion(payment.id);
 

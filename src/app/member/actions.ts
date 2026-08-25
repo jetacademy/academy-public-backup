@@ -36,7 +36,8 @@ async function loginByIdentifier(cleanVal: string): Promise<{ ok?: boolean; erro
   const whatsapp = user?.whatsapp ?? registrations[0]?.whatsapp ?? "";
   const name = user?.name ?? registrations[0]?.name ?? "";
 
-  const isAdminEmail = email === "jetschool.id@gmail.com" || email === "admin@jetschool.id";
+  // Role HANYA dari DB — tidak ada auto-promote ADMIN berbasis hardcode email.
+  const isAdminEmail = false;
 
   // 3. Jika login via registrasi (belum punya User) — buat User & backfill
   if (!userId && registrations.length > 0) {
@@ -47,7 +48,7 @@ async function loginByIdentifier(cleanVal: string): Promise<{ ok?: boolean; erro
 
     if (!newUser) {
       newUser = await prisma.user.create({
-        data: { name, email, whatsapp, role: isAdminEmail ? "ADMIN" : "STUDENT" },
+        data: { name, email, whatsapp, role: "STUDENT" },
         select: { id: true },
       });
     }
@@ -62,11 +63,6 @@ async function loginByIdentifier(cleanVal: string): Promise<{ ok?: boolean; erro
       },
       data: { userId },
     });
-  } else if (user && isAdminEmail && user.role !== "ADMIN") {
-    await prisma.user.update({
-      where: { id: user.id },
-      data: { role: "ADMIN" }
-    });
   }
 
   await createMemberSession(cleanVal);
@@ -74,7 +70,7 @@ async function loginByIdentifier(cleanVal: string): Promise<{ ok?: boolean; erro
     where: { OR: [{ email }, { whatsapp }] },
     select: { role: true },
   });
-  const isAdminRole = updatedUser?.role === "ADMIN" || updatedUser?.role === "TEACHER" || isAdminEmail;
+  const isAdminRole = updatedUser?.role === "ADMIN" || updatedUser?.role === "TEACHER";
   return { ok: true, isAdmin: isAdminRole };
 }
 
@@ -207,8 +203,7 @@ export async function memberLoginWithGoogle(credential: string) {
       where: { OR: [{ email }, { whatsapp: email }] }
     });
 
-    const isAdminEmail = email === "jetschool.id@gmail.com" || email === "admin@jetschool.id";
-
+    // Role HANYA dari DB — tidak ada auto-promote ADMIN berbasis hardcode email.
     if (!user) {
       // Cari apakah ada registrasi dengan email ini (misal pendaftaran offline)
       const existingReg = await prisma.registration.findFirst({
@@ -219,7 +214,7 @@ export async function memberLoginWithGoogle(credential: string) {
           name: existingReg?.name ?? name,
           email,
           whatsapp: existingReg?.whatsapp ?? "",
-          role: isAdminEmail ? "ADMIN" : "STUDENT"
+          role: "STUDENT"
         }
       });
       
@@ -228,15 +223,10 @@ export async function memberLoginWithGoogle(credential: string) {
         where: { email, userId: null },
         data: { userId: user.id }
       });
-    } else if (isAdminEmail && user.role !== "ADMIN") {
-      user = await prisma.user.update({
-        where: { id: user.id },
-        data: { role: "ADMIN" }
-      });
     }
 
     await createMemberSession(email);
-    const isAdminRole = user.role === "ADMIN" || user.role === "TEACHER" || isAdminEmail;
+    const isAdminRole = user.role === "ADMIN" || user.role === "TEACHER";
     return { ok: true, isAdmin: isAdminRole };
   } catch (err) {
     console.error("[memberLoginWithGoogle] Unexpected error:", err);

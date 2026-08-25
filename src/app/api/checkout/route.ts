@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { createInvoice, isXenditConfigured } from "@/lib/xendit";
 import { normalizeWa } from "@/lib/wa";
 import { checkRateLimit } from "@/lib/rate-limit";
-import { validateVoucher } from "@/lib/voucher";
+import { validateVoucher, consumeVoucher } from "@/lib/voucher";
 import { resolveAffiliateForCheckout, applyAffiliateDiscount, recordAffiliateConversion, getAffiliateRefCookie } from "@/lib/affiliate";
 
 /**
@@ -105,6 +105,10 @@ export async function POST(req: Request) {
       }
     }
     if (!isXenditConfigured() || chargeAmount === 0) {
+      // Guard kuota voucher atomik — gagalkan jika kuota habis (anti double-spend)
+      if (voucherId && !(await consumeVoucher(voucherId, voucherResult!.voucher.maxUses))) {
+        return NextResponse.json({ error: "Kuota pemakaian voucher ini sudah habis." }, { status: 400 });
+      }
       const [payment] = await prisma.$transaction([
         prisma.payment.upsert({
           where: { registrationId: reg.id },
@@ -112,7 +116,6 @@ export async function POST(req: Request) {
           update: { amount: chargeAmount, originalAmount, discountAmount, voucherId, affiliateId, status: "PAID", paidAt: new Date() },
         }),
         prisma.registration.update({ where: { id: reg.id }, data: { status: "PAID" } }),
-        ...(voucherId ? [prisma.voucher.update({ where: { id: voucherId }, data: { usedCount: { increment: 1 } } })] : []),
       ]);
       if (affiliateId) await recordAffiliateConversion(payment.id);
       return NextResponse.json({ ok: true, postTestUrl: `${baseUrl}/member` });
@@ -130,6 +133,11 @@ export async function POST(req: Request) {
       successRedirectUrl: `${baseUrl}/member`,
     });
 
+    // Guard kuota voucher atomik — gagalkan sebelum buat invoice jika kuota habis (anti double-spend)
+    if (voucherId && !(await consumeVoucher(voucherId, voucherResult!.voucher.maxUses))) {
+      return NextResponse.json({ error: "Kuota pemakaian voucher ini sudah habis." }, { status: 400 });
+    }
+
     await prisma.$transaction([
       prisma.payment.upsert({
         where: { registrationId: reg.id },
@@ -145,7 +153,6 @@ export async function POST(req: Request) {
         },
         update: { amount: chargeAmount, originalAmount, discountAmount, voucherId, affiliateId, xenditInvoiceId: invoice.id, invoiceUrl: invoice.invoice_url, status: "PENDING" },
       }),
-      ...(voucherId ? [prisma.voucher.update({ where: { id: voucherId }, data: { usedCount: { increment: 1 } } })] : []),
     ]);
 
     return NextResponse.json({ ok: true, invoiceUrl: invoice.invoice_url });

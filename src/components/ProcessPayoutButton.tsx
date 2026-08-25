@@ -98,7 +98,7 @@ export default function ProcessPayoutButton({
               Tindakan ini akan mentransfer <strong>{amountLabel}</strong> ke <strong>{destinationLabel}</strong> lewat Xendit Payout — dana benar-benar keluar dan tidak bisa dibatalkan setelah diproses.
             </p>
 
-            {error && <div className="form-error" style={{ marginBottom: "0.8rem" }}>{error}</div>}
+            {error && <div className="form-error" role="alert" style={{ marginBottom: "0.8rem" }}>{error}</div>}
 
             <label style={{ display: "flex", alignItems: "flex-start", gap: "0.5rem", textAlign: "left", fontSize: "0.85rem", margin: "0.8rem 0" }}>
               <input type="checkbox" checked={confirmed} onChange={(ev) => setConfirmed(ev.target.checked)} style={{ marginTop: "0.2rem" }} />

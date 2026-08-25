@@ -29,7 +29,7 @@ export default function TicketReplyForm({ ticketId }: { ticketId: string }) {
 
   return (
     <form onSubmit={onSubmit} style={{ marginTop: "1rem" }}>
-      {error && <div className="form-error" style={{ marginBottom: "0.6rem" }}>{error}</div>}
+      {error && <div className="form-error" role="alert" style={{ marginBottom: "0.6rem" }}>{error}</div>}
       <div className="field">
         <label>Balasan Anda</label>
         <textarea rows={3} value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Tulis balasan..." required />

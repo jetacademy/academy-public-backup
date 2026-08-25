@@ -3,6 +3,7 @@ import { mkdir, writeFile } from "fs/promises";
 import { join } from "path";
 import { compressToWebP, CompressImageOptions } from "@/lib/image-compress";
 import { randomBytes } from "crypto";
+import { requireTeacherOrAdmin, getAdminSession, verifyAdminCookieValue } from "@/lib/admin-auth";
 
 const UPLOADS_DIR = process.env.UPLOADS_DIR ?? join(process.env.HOME || "/tmp", "jetschool-uploads");
 
@@ -14,7 +15,7 @@ const ALLOWED_IMAGE_MIMES = [
   "image/gif",
   "image/tiff",
   "image/bmp",
-  "image/svg+xml",
+  // image/svg+xml sengaja dihapus — parsing SVG berisiko XXE/SSRF & tidak perlu (output selalu WebP)
 ];
 
 const MAX_FILE_SIZE_BYTES = 20 * 1024 * 1024; // 20 MB
@@ -25,6 +26,20 @@ const MAX_FILE_SIZE_BYTES = 20 * 1024 * 1024; // 20 MB
  */
 export async function POST(req: NextRequest) {
   try {
+    // Wajib login admin/teacher — endpoint ini menulis file ke disk, tidak boleh publik.
+    // Coba cookie dari request langsung (bekerja di API route & unit test),
+    // fallback ke getAdminSession() (konteks server component/action).
+    const rawCookie = req.cookies.get("jsa_admin")?.value;
+    const session = rawCookie
+      ? await verifyAdminCookieValue(rawCookie)
+      : await getAdminSession().catch(() => null);
+    if (!session) {
+      return NextResponse.json(
+        { success: false, error: "Tidak diizinkan. Login admin diperlukan." },
+        { status: 401 }
+      );
+    }
+
     const contentType = req.headers.get("content-type") || "";
 
     if (!contentType.includes("multipart/form-data")) {

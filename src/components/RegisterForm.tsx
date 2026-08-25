@@ -346,7 +346,7 @@ export default function RegisterForm({ programId, programSlug, programTitle, jad
                   Satu langkah lagi untuk mendaftar menggunakan profil Anda:
                 </p>
 
-                {error && <div className="form-error" style={{ marginBottom: "1rem" }}>{error}</div>}
+                {error && <div className="form-error" role="alert" style={{ marginBottom: "1rem" }}>{error}</div>}
 
                 <div style={{
                   background: "var(--chip)",
@@ -463,7 +463,7 @@ export default function RegisterForm({ programId, programSlug, programTitle, jad
                 <h3 style={{ marginBottom: "0.2rem" }}>Lengkapi Data Profil</h3>
                 <p className="sub" style={{ marginBottom: "1.2rem" }}>Silakan masukkan WhatsApp & Instansi untuk menyelesaikan pendaftaran.</p>
 
-                {error && <div className="form-error" style={{ marginBottom: "1rem" }}>{error}</div>}
+                {error && <div className="form-error" role="alert" style={{ marginBottom: "1rem" }}>{error}</div>}
 
                 {/* Tampilkan field Nama hanya jika user menekan tombol Edit Data Profil */}
                 {isEditing && (

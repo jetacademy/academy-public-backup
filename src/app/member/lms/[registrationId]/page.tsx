@@ -13,8 +13,19 @@ import MemberPayCertButton from "@/components/MemberPayCertButton";
 import LessonVideoPlayer from "@/components/LessonVideoPlayer";
 import LmsSidebar from "@/components/LmsSidebar";
 import LmsMobileNav from "@/components/LmsMobileNav";
-import LmsPdfViewer from "@/components/LmsPdfViewer";
 import LmsViewContainer from "@/components/LmsViewContainer";
+import dynamicImport from "next/dynamic";
+
+// PDF viewer (~1.5 MB react-pdf/pdfjs) di-lazy-load — hanya dimuat saat lesson bertipe PDF,
+// peserta yang menonton video tidak lagi mendownload bundle-nya.
+const LmsPdfViewer = dynamicImport(() => import("@/components/LmsPdfViewer"), {
+  loading: () => (
+    <div className="lms-pdf-loading">
+      <div className="lms-pdf-spinner" />
+      <span>Menyiapkan pembaca PDF…</span>
+    </div>
+  ),
+});
 import { getEmbedUrl } from "@/lib/video";
 
 export const dynamic = "force-dynamic";

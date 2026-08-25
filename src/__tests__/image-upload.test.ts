@@ -27,7 +27,29 @@ describe("Image Compression & WebP API", () => {
     expect(result.height).toBeLessThanOrEqual(675);
   });
 
-  it("handles POST /api/upload with multipart form data", async () => {
+  it("rejects unauthenticated POST /api/upload with 401", async () => {
+    const svgBuffer = Buffer.from(
+      `<svg width="800" height="800" xmlns="http://www.w3.org/2000/svg"><circle cx="400" cy="400" r="300" fill="#059669"/></svg>`
+    );
+    const pngBuffer = await sharp(svgBuffer).png().toBuffer();
+
+    const formData = new FormData();
+    formData.append("file", new File([pngBuffer], "avatar.png", { type: "image/png" }));
+
+    const req = new NextRequest("http://localhost:3000/api/upload", {
+      method: "POST",
+      body: formData,
+    });
+
+    const res = await POST(req);
+    const json = await res.json();
+
+    expect(res.status).toBe(401);
+    expect(json.success).toBe(false);
+    expect(json.error).toContain("Tidak diizinkan");
+  });
+
+  it("handles POST /api/upload with multipart form data (admin cookie)", async () => {
     // Buat gambar 800x800 lalu resize avatar ke 400x400
     const svgBuffer = Buffer.from(`
       <svg width="800" height="800" xmlns="http://www.w3.org/2000/svg">
@@ -36,9 +58,13 @@ describe("Image Compression & WebP API", () => {
     `);
     const pngBuffer = await sharp(svgBuffer).png().toBuffer();
 
+    // Cookie admin valid (env-admin) — sign() memakai ADMIN_SESSION_SECRET dari vitest env
+    const { createHmac } = await import("crypto");
+    const value = "env-admin:ADMIN";
+    const signature = createHmac("sha256", process.env.ADMIN_SESSION_SECRET!).update(value).digest("hex");
+
     const formData = new FormData();
-    const file = new File([pngBuffer], "avatar.png", { type: "image/png" });
-    formData.append("file", file);
+    formData.append("file", new File([pngBuffer], "avatar.png", { type: "image/png" }));
     formData.append("preset", "avatar");
     formData.append("quality", "85");
 
@@ -46,6 +72,7 @@ describe("Image Compression & WebP API", () => {
       method: "POST",
       body: formData,
     });
+    req.cookies.set("jsa_admin", `${value}::${signature}`);
 
     const res = await POST(req);
     const json = await res.json();
@@ -63,10 +90,16 @@ describe("Image Compression & WebP API", () => {
     const file = new File(["console.log('malicious')"], "script.js", { type: "text/javascript" });
     formData.append("file", file);
 
+    // Auth dicek lebih dulu, jadi test ini butuh cookie admin valid
+    const { createHmac } = await import("crypto");
+    const value = "env-admin:ADMIN";
+    const signature = createHmac("sha256", process.env.ADMIN_SESSION_SECRET!).update(value).digest("hex");
+
     const req = new NextRequest("http://localhost:3000/api/upload", {
       method: "POST",
       body: formData,
     });
+    req.cookies.set("jsa_admin", `${value}::${signature}`);
 
     const res = await POST(req);
     const json = await res.json();

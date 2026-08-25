@@ -171,7 +171,7 @@ export default function MemberLoginPage() {
             <p className="sub" style={{ textAlign: "center", marginBottom: "2rem" }}>Masuk untuk mengakses materi kelas, link Zoom, tes, dan mengunduh e-sertifikat Anda.</p>
 
             {error && (
-              <div className="form-error" style={{ fontSize: "0.82rem", marginBottom: "1.5rem", display: "flex", flexDirection: "column", gap: "0.6rem" }}>
+              <div className="form-error" role="alert" style={{ fontSize: "0.82rem", marginBottom: "1.5rem", display: "flex", flexDirection: "column", gap: "0.6rem" }}>
                 <span>{error}</span>
                 {error.includes("belum terdaftar") && (
                   <div>

@@ -108,7 +108,7 @@ export default function RefundButton({
               Refund dicatat manual — pastikan dana sudah dikembalikan ke peserta secara terpisah (transfer/dashboard Xendit). Akses peserta akan otomatis dicabut.
             </p>
 
-            {error && <div className="form-error" style={{ marginBottom: "0.8rem" }}>{error}</div>}
+            {error && <div className="form-error" role="alert" style={{ marginBottom: "0.8rem" }}>{error}</div>}
 
             <div className="field" style={{ textAlign: "left" }}>
               <label>Jumlah Refund (Rp)</label>

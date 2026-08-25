@@ -1130,13 +1130,16 @@ export async function refundPayment(
   const trimmedReason = reason.trim();
   if (!trimmedReason) return { error: "Alasan refund wajib diisi." };
 
-  await prisma.$transaction([
-    prisma.payment.update({
-      where: { id: reg.payment.id },
-      data: { status: "REFUNDED", refundedAt: new Date(), refundAmount: amount, refundReason: trimmedReason },
-    }),
-    prisma.registration.update({ where: { id: reg.id }, data: { status: "REFUNDED" } }),
-  ]);
+  // Conditional update atomik (PAID → REFUNDED) sebagai gerbang idempoten:
+  // klik ganda / dua admin bersamaan — hanya satu yang berhasil melewati gerbang ini.
+  const claimed = await prisma.payment.updateMany({
+    where: { id: reg.payment.id, status: "PAID" },
+    data: { status: "REFUNDED", refundedAt: new Date(), refundAmount: amount, refundReason: trimmedReason },
+  });
+  if (claimed.count === 0) {
+    return { error: "Pembayaran ini sudah direfund sebelumnya." };
+  }
+  await prisma.registration.update({ where: { id: reg.id }, data: { status: "REFUNDED" } });
 
   const voidResult = await voidAffiliateConversion(reg.payment.id, `Refund: ${trimmedReason}`);
 
@@ -1265,19 +1268,26 @@ export async function toggleBatchCertPublish(formData: FormData) {
   await prisma.programBatch.update({ where: { id }, data: { certPublished: next } });
 
   // Saat publish: issue sertifikat untuk semua peserta LUNAS batch ini yang belum punya.
+  // Diproses paralel per chunk agar batch besar tidak menembus timeout server action.
   let issued = 0;
   if (next && batch.program.certPublished) {
     const regs = await prisma.registration.findMany({
       where: { batchId: id, status: "PAID", certificate: { is: null } },
       select: { id: true },
     });
-    for (const r of regs) {
-      try {
-        await issueCertificate(r.id);
-        issued++;
-      } catch (err) {
-        console.error(`[toggleBatchCertPublish] Gagal issue ${r.id}:`, err);
-      }
+    const CHUNK = 10;
+    for (let i = 0; i < regs.length; i += CHUNK) {
+      const results = await Promise.all(
+        regs.slice(i, i + CHUNK).map((r) =>
+          issueCertificate(r.id)
+            .then(() => 1)
+            .catch((err) => {
+              console.error(`[toggleBatchCertPublish] Gagal issue ${r.id}:`, err);
+              return 0;
+            })
+        )
+      );
+      issued += results.reduce((a, b) => a + b, 0);
     }
   }
 

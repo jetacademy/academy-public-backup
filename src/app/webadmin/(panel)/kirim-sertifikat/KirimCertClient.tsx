@@ -62,7 +62,7 @@ export default function KirimCertClient({
         const sheet = workbook.Sheets[workbook.SheetNames[0]];
         const json = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, { defval: "" });
 
-        const parsed: Row[] = json.map((raw) => {
+        const parsed: Row[] = json.map((raw: Record<string, unknown>) => {
           const keys = Object.keys(raw);
           const nameKey = keys.find((k) => /nama|name/i.test(k)) ?? keys[0];
           const waKey = keys.find((k) => /wa|whatsapp|phone|no.?hp|telp/i.test(k)) ?? keys[1] ?? "";

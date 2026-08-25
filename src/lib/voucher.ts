@@ -51,3 +51,22 @@ export async function validateVoucher(
 
   return { voucher, discountAmount, finalAmount };
 }
+
+/**
+ * Increment `usedCount` secara ATOMIK dengan guard kuota — mencegah double-spend
+ * saat dua request konkuren memakai voucher yang sama (TOCTOU).
+ * @param voucherId id voucher
+ * @param maxUses batas pemakaian dari objek voucher yang sudah divalidasi (null = unlimited)
+ * @returns true jika increment berhasil, false jika kuota sudah habis
+ */
+export async function consumeVoucher(voucherId: string, maxUses: number | null): Promise<boolean> {
+  const result = await prisma.voucher.updateMany({
+    where: {
+      id: voucherId,
+      isActive: true,
+      ...(maxUses !== null ? { usedCount: { lt: maxUses } } : {}),
+    },
+    data: { usedCount: { increment: 1 } },
+  });
+  return result.count > 0;
+}

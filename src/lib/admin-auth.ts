@@ -8,7 +8,8 @@ import { getMemberSession } from "@/lib/member-auth";
 const COOKIE = "jsa_admin";
 
 function sign(value: string): string {
-  const secret = process.env.ADMIN_SESSION_SECRET || (process.env.NODE_ENV !== "production" ? "default-admin-session-secret-key" : "");
+  // Fail-hard: tanpa env var, jangan pernah jatuh ke secret default yang dikenal publik.
+  const secret = process.env.ADMIN_SESSION_SECRET;
   if (!secret) throw new Error("ADMIN_SESSION_SECRET wajib diisi di .env!");
   return createHmac("sha256", secret).update(value).digest("hex");
 }
@@ -19,6 +20,58 @@ export type AdminSession = {
   name: string;
   email: string;
 };
+
+/**
+ * Verifikasi nilai mentah cookie jsa_admin (value::signature) dan kembalikan sesi
+ * admin jika valid. Dipisah agar bisa dipakai dari API route lewat req.cookies.
+ */
+export async function verifyAdminCookieValue(rawValue: string): Promise<AdminSession | null> {
+  try {
+    const [sessionVal, signature] = rawValue.split("::");
+    if (!sessionVal || !signature) return null;
+    if (!timingSafeEqualHex(sign(sessionVal), signature)) return null;
+    const [userId, role] = sessionVal.split(":");
+    if (!userId || !role) return null;
+
+    if (userId === "env-admin") {
+      return {
+        userId: "env-admin",
+        role: "ADMIN",
+        name: "Root Admin",
+        email: "admin@jetschool.id",
+      };
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, name: true, email: true, role: true },
+    });
+
+    // Role HANYA dari DB — tidak ada auto-promote berbasis hardcode email.
+    if (user && (user.role === "ADMIN" || user.role === "TEACHER")) {
+      return {
+        userId: user.id,
+        role: user.role,
+        name: user.name,
+        email: user.email,
+      };
+    }
+    return null;
+  } catch (err) {
+    console.error("Gagal verifikasi cookie jsa_admin (corrupt):", err);
+    return null;
+  }
+}
+
+/** Perbandingan hex signature tahan timing-attack. */
+function timingSafeEqualHex(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  try {
+    return timingSafeEqual(Buffer.from(a, "hex"), Buffer.from(b, "hex"));
+  } catch {
+    return false;
+  }
+}
 
 export async function getAdminSession(): Promise<AdminSession | null> {
   try {
@@ -47,22 +100,14 @@ export async function getAdminSession(): Promise<AdminSession | null> {
               select: { id: true, name: true, email: true, role: true },
             });
 
-            if (user) {
-              const isAdminEmail = user.email === "jetschool.id@gmail.com" || user.email === "admin@jetschool.id";
-              if (user.role === "ADMIN" || user.role === "TEACHER" || isAdminEmail) {
-                if (isAdminEmail && user.role !== "ADMIN") {
-                  prisma.user.update({
-                    where: { id: user.id },
-                    data: { role: "ADMIN" }
-                  }).catch(err => console.error("Gagal sinkronisasi role admin:", err));
-                }
-                return {
-                  userId: user.id,
-                  role: (isAdminEmail ? "ADMIN" : user.role) as "ADMIN" | "TEACHER",
-                  name: user.name,
-                  email: user.email,
-                };
-              }
+            // Role HANYA dari DB — tidak ada auto-promote berbasis hardcode email.
+            if (user && (user.role === "ADMIN" || user.role === "TEACHER")) {
+              return {
+                userId: user.id,
+                role: user.role,
+                name: user.name,
+                email: user.email,
+              };
             }
           }
         }
@@ -86,17 +131,11 @@ export async function getAdminSession(): Promise<AdminSession | null> {
       });
 
       if (user) {
-        const isAdminEmail = user.email === "jetschool.id@gmail.com" || user.email === "admin@jetschool.id";
-        if (user.role === "ADMIN" || user.role === "TEACHER" || isAdminEmail) {
-          if (isAdminEmail && user.role !== "ADMIN") {
-            prisma.user.update({
-              where: { id: user.id },
-              data: { role: "ADMIN" }
-            }).catch(err => console.error("Gagal sinkronisasi role admin:", err));
-          }
+        // Role HANYA dari DB — tidak ada auto-promote berbasis hardcode email.
+        if (user.role === "ADMIN" || user.role === "TEACHER") {
           return {
             userId: user.id,
-            role: (isAdminEmail ? "ADMIN" : user.role) as "ADMIN" | "TEACHER",
+            role: user.role,
             name: user.name,
             email: user.email,
           };

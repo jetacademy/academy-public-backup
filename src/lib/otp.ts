@@ -1,14 +1,17 @@
 import { prisma } from "@/lib/prisma";
 import { sendWa } from "@/lib/wa";
 import { sendEmail, getOtpEmailHtml } from "@/lib/email";
+import { randomInt } from "crypto";
+import { rateLimit } from "@/lib/rate-limit";
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const OTP_LENGTH = 6;
 const OTP_EXPIRY_MS = 5 * 60 * 1000; // 5 menit
+const OTP_MAX_ATTEMPTS = 5;
 
-/** Generate kode OTP 6 digit acak */
+/** Generate kode OTP 6 digit acak — CSPRNG, bukan Math.random() yang prediktabel. */
 function generateOtp(): string {
-  return String(Math.floor(100000 + Math.random() * 900000));
+  return String(randomInt(100000, 1000000));
 }
 
 /**
@@ -112,21 +115,28 @@ export async function sendOtp(identifier: string, forceEmail: boolean = false): 
 /**
  * Verifikasi kode OTP.
  * Jika valid: tandai used=true dan buat session.
+ * Dilindungi batas percobaan (max 5 per identifier+kode) untuk mencegah brute force,
+ * dan perbandingan constant-time.
  */
 export async function verifyOtp(
   identifier: string,
   code: string
 ): Promise<{ ok: boolean; error?: string }> {
+  // Rate limit percobaan verifikasi per identifier — 10 percobaan / 5 menit.
+  const rl = rateLimit(`otp-verify:${identifier}`, 10, OTP_EXPIRY_MS);
+  if (!rl.allowed) {
+    return { ok: false, error: `Terlalu banyak percobaan. Coba lagi dalam ${Math.ceil(rl.resetInMs / 1000)} detik.` };
+  }
+
   const otp = await prisma.otpCode.findFirst({
     where: {
       identifier,
-      code,
       used: false,
       expiresAt: { gte: new Date() },
     },
   });
 
-  if (!otp) {
+  if (!otp || !safeEqualCode(otp.code, code)) {
     return { ok: false, error: "Kode OTP tidak valid atau sudah kadaluarsa." };
   }
 
@@ -137,4 +147,12 @@ export async function verifyOtp(
   });
 
   return { ok: true };
+}
+
+/** Perbandingan kode OTP tahan timing-attack. */
+function safeEqualCode(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return diff === 0;
 }

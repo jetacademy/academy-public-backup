@@ -568,6 +568,25 @@
 }
 @keyframes lms-spin { to { transform: rotate(360deg); } }
 
+/* Facade video — tombol play sebelum iframe pihak ketiga dimuat */
+.lms-video-facade {
+  position: absolute; inset: 0;
+}
+.lms-video-play-btn {
+  display: flex; align-items: center; justify-content: center;
+  width: 4.5rem; height: 3.2rem;
+  background: rgba(255,255,255,.14);
+  border: 2px solid rgba(255,255,255,.7);
+  border-radius: .8rem;
+  font-size: 1.5rem;
+  color: #fff;
+  transition: background .15s ease, transform .15s ease;
+}
+.lms-video-facade:hover .lms-video-play-btn {
+  background: rgba(255,255,255,.28);
+  transform: scale(1.06);
+}
+
 /* ═══════════════════════════════════════════════════
    PDF VIEWER — Anti-download canvas viewer dengan Mode Fullscreen & Zoom
    ═══════════════════════════════════════════════════ */

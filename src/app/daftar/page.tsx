@@ -182,7 +182,7 @@ export default function DaftarPage() {
               Daftar gratis — dapatkan akses ke semua program Jetschool Academy.
             </p>
 
-            {error && <div className="form-error" style={{ marginBottom: "1rem", fontSize: "0.82rem" }}>{error}</div>}
+            {error && <div className="form-error" role="alert" style={{ marginBottom: "1rem", fontSize: "0.82rem" }}>{error}</div>}
 
             {step === "pilih" && (
               <>

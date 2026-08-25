@@ -157,6 +157,17 @@ export async function processWithdrawalPayout(withdrawalId: string): Promise<{ o
   if (!withdrawal) return { error: "Pengajuan penarikan tidak ditemukan." };
   if (withdrawal.status !== "REQUESTED") return { error: "Pengajuan ini sudah diproses sebelumnya." };
 
+  // Kunci status lebih dulu secara atomik (REQUESTED → PROCESSING) SEBELUM memanggil API
+  // Xendit — mencegah klik ganda admin memicu dua payout & status DB menggantung
+  // jika proses mati di antara API call dan update.
+  const locked = await prisma.affiliateWithdrawal.updateMany({
+    where: { id: withdrawal.id, status: "REQUESTED" },
+    data: { status: "PROCESSING", processedBy: (await getAdminSession())?.email ?? "admin" },
+  });
+  if (locked.count === 0) {
+    return { error: "Pengajuan ini sudah diproses sebelumnya." };
+  }
+
   try {
     const payout = await createPayout({
       referenceId: withdrawal.id,
@@ -175,7 +186,6 @@ export async function processWithdrawalPayout(withdrawalId: string): Promise<{ o
         xenditPayoutId: payout.id,
         xenditReferenceId: payout.reference_id,
         processedAt: isImmediatelyDone ? new Date() : null,
-        processedBy: (await getAdminSession())?.email ?? "admin",
       },
     });
 

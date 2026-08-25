@@ -222,26 +222,32 @@ export async function getAffiliateBalance(affiliateId: string): Promise<Affiliat
 }
 
 /** Tandai sejumlah komisi AVAILABLE (FIFO, dari yang terlama) sebagai WITHDRAWN — dipanggil
- *  saat sebuah AffiliateWithdrawal selesai (COMPLETED). */
+ *  saat sebuah AffiliateWithdrawal selesai (COMPLETED). Transaksional + hanya menyentuh
+ *  konversi yang masih AVAILABLE (guard status) agar idempoten & aman dari race
+ *  antara webhook payout dan penandaan manual oleh admin. */
 export async function settleWithdrawalConversions(affiliateId: string, amount: number): Promise<void> {
-  const conversions = await prisma.affiliateConversion.findMany({
-    where: { affiliateId, status: "AVAILABLE" },
-    orderBy: { createdAt: "asc" },
-  });
-
-  let remaining = amount;
-  const ids: string[] = [];
-  for (const c of conversions) {
-    if (remaining <= 0) break;
-    ids.push(c.id);
-    remaining -= c.commissionAmount;
-  }
-  if (ids.length > 0) {
-    await prisma.affiliateConversion.updateMany({
-      where: { id: { in: ids } },
-      data: { status: "WITHDRAWN" },
+  await prisma.$transaction(async (tx) => {
+    const conversions = await tx.affiliateConversion.findMany({
+      where: { affiliateId, status: "AVAILABLE" },
+      orderBy: { createdAt: "asc" },
     });
-  }
+
+    let remaining = amount;
+    const ids: string[] = [];
+    for (const c of conversions) {
+      if (remaining <= 0) break;
+      ids.push(c.id);
+      remaining -= c.commissionAmount;
+    }
+    if (ids.length > 0) {
+      // Guard status: hanya update yang masih AVAILABLE — konversi yang sudah
+      // disettle oleh proses lain tidak akan tersentuh dua kali.
+      await tx.affiliateConversion.updateMany({
+        where: { id: { in: ids }, status: "AVAILABLE" },
+        data: { status: "WITHDRAWN" },
+      });
+    }
+  });
 }
 
 /** Kirim notifikasi WA + email ke affiliate soal hasil pengajuan penarikannya (selesai/ditolak). */

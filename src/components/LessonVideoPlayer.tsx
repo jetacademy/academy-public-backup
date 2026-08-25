@@ -2,9 +2,34 @@
 
 import { useState } from "react";
 
-/** Iframe player (Bunny Stream / YouTube / Vimeo) dengan skeleton loading — hindari kotak hitam kosong sebelum player siap. */
+/**
+ * Iframe player (Bunny Stream / YouTube / Vimeo) dengan facade pattern:
+ * iframe pihak ketiga (~ratusan KB script player) TIDAK dimuat sampai peserta
+ * mengklik tombol play. Mengurangi beban jaringan & Time-to-Interactive di mobile.
+ * Skeleton loading tetap tampil setelah klik, sebelum player siap.
+ */
 export default function LessonVideoPlayer({ src, title }: { src: string; title: string }) {
+  const [activated, setActivated] = useState(false);
   const [loaded, setLoaded] = useState(false);
+
+  if (!activated) {
+    return (
+      <div className="lms-video-frame">
+        <button
+          type="button"
+          className="lms-video-skeleton lms-video-facade"
+          onClick={() => setActivated(true)}
+          aria-label={`Putar video: ${title}`}
+          style={{ cursor: "pointer", border: "none", width: "100%" }}
+        >
+          <span className="lms-video-play-btn" aria-hidden="true">
+            ▶
+          </span>
+          <span>Klik untuk memutar video</span>
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="lms-video-frame">

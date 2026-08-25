@@ -51,7 +51,7 @@ export default function CheckoutForm({ programs }: { programs: ProgramOption[] }
       <h3>Klaim Sertifikat Anda</h3>
       <p className="sub">Gunakan nomor WhatsApp yang sama dengan saat Anda mendaftar.</p>
 
-      {error && <div className="form-error">{error}</div>}
+      {error && <div className="form-error" role="alert">{error}</div>}
 
       <div className="field">
         <label htmlFor="cProgram">Program yang Anda Ikuti</label>

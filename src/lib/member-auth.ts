@@ -9,7 +9,8 @@ const UI_COOKIE = "jsa_member_ui";
 // Gunakan secret TERPISAH dari ADMIN_PASSWORD
 
 function sign(value: string): string {
-  const secret = process.env.MEMBER_SESSION_SECRET || (process.env.NODE_ENV !== "production" ? "default-member-session-secret-key" : "");
+  // Fail-hard: tanpa env var, jangan pernah jatuh ke secret default yang dikenal publik.
+  const secret = process.env.MEMBER_SESSION_SECRET;
   if (!secret) throw new Error("MEMBER_SESSION_SECRET wajib diisi di .env!");
   return createHmac("sha256", secret).update(value).digest("hex");
 }

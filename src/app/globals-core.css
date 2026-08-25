@@ -9,7 +9,7 @@
   --chip: #F7F6F8;           /* chip abu muda di dalam kartu */
   --ink: #17161A;            /* teks utama */
   --ink-soft: #56545C;       /* teks sekunder */
-  --ink-faint: #9C99A3;      /* teks tersier */
+  --ink-faint: #767380;      /* teks tersier — dinaikkan dari #9C99A3 agar lolos WCAG AA (4.5:1) */
   --line: #ECEAEE;
 
   /* palet mengikuti logo: navy roket + kuning-oranye api */
@@ -66,6 +66,13 @@ ul { list-style: none; }
 button { font-family: inherit; cursor: pointer; border: none; background: none; }
 input, select { font-family: inherit; }
 ::selection { background: var(--purple-soft); color: var(--ink); }
+
+/* ---------- Aksesibilitas: focus keyboard terlihat jelas ---------- */
+:focus-visible {
+  outline: 2px solid var(--purple);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
 
 /* blob pink dekoratif di sudut halaman (khas referensi) */
 body::before, body::after {

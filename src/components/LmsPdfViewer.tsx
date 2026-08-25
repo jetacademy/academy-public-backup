@@ -5,8 +5,11 @@ import { Document, Page, pdfjs } from "react-pdf";
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
 
-// Worker CDN pdf.worker.min.mjs
-pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
+// Worker pdf.js di-self-host dari /public (bukan CDN unpkg) — lebih cepat, tanpa
+// dependensi pihak ketiga, dan tidak akan diblokir CSP. Sinkronkan versi dengan
+// react-pdf saat upgrade: salin node_modules/pdfjs-dist/build/pdf.worker.min.mjs
+// ke public/pdfjs/.
+pdfjs.GlobalWorkerOptions.workerSrc = `/pdfjs/pdf.worker.min.mjs?v=${pdfjs.version}`;
 
 interface LmsPdfViewerProps {
   fileUrl: string;

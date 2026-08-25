@@ -34,7 +34,7 @@ export default function TicketCreateForm() {
       <h3>Buat Tiket Baru</h3>
       <p className="sub">Punya pertanyaan soal komisi, penarikan, akun, atau kendala teknis? Kirim tiket dan tim kami akan membalas.</p>
 
-      {error && <div className="form-error">{error}</div>}
+      {error && <div className="form-error" role="alert">{error}</div>}
 
       <div className="field">
         <label>Kategori</label>
