@@ -35,6 +35,15 @@ function repairUiCookie(request: NextRequest, response: NextResponse): NextRespo
 export async function proxy(request: NextRequest) {
   const { pathname, searchParams } = request.nextUrl;
 
+  // ── Canonical host: www → non-www ─────────────────────────
+  // Mencegah duplikasi host di mata search engine (www.academy.jetschool.id vs academy.jetschool.id).
+  const hostname = request.nextUrl.hostname;
+  if (hostname === "www.academy.jetschool.id") {
+    const canonical = new URL(request.nextUrl);
+    canonical.hostname = "academy.jetschool.id";
+    return NextResponse.redirect(canonical, 301);
+  }
+
   // ── Panel Admin ──────────────────────────────────────────
   // Terima jsa_admin ATAU jsa_member di sini — verifikasi role ADMIN/TEACHER
   // yang sebenarnya (termasuk fallback dari sesi member) terjadi di

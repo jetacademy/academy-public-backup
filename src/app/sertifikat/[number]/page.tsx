@@ -6,12 +6,32 @@ import CertificateSheet from "@/components/CertificateSheet";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
+import type { Metadata } from "next";
 import QRCode from "qrcode";
 import type { CertConfig, CertMateriJp } from "@/lib/types";
 
 export const revalidate = 86400; // ISR: re-generate every 24 hours
 
-export const metadata = { title: "e-Sertifikat — Jetschool Academy" };
+// Nomor sertifikat tak valid → 404 sungguhan (bukan soft-404) agar tidak
+// memakan crawl budget & tidak berisiko terindeks sebagai halaman kosong.
+export async function generateMetadata({ params }: { params: Promise<{ number: string }> }): Promise<Metadata> {
+  const { number } = await params;
+  try {
+    const cert = await prisma.certificate.findUnique({
+      where: { number: decodeURIComponent(number) },
+      select: { number: true, registration: { select: { name: true }, include: { program: { select: { title: true } } } } },
+    });
+    if (!cert) return { title: "Sertifikat Tidak Ditemukan", robots: { index: false } };
+    const name = cert.registration.name;
+    const programTitle = cert.registration.program.title;
+    return {
+      title: `e-Sertifikat ${name} — ${programTitle}`,
+      description: `Verifikasi resmi e-sertifikat ${name} untuk pelatihan "${programTitle}" dari Jetschool Academy. Nomor: ${cert.number}.`,
+    };
+  } catch {
+    return { title: "e-Sertifikat — Jetschool Academy" };
+  }
+}
 
 function toRoman(num: number): string {
   const roman = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII"];
