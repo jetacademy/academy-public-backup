@@ -46,7 +46,8 @@ describe("Image Compression & WebP API", () => {
 
     expect(res.status).toBe(401);
     expect(json.success).toBe(false);
-    expect(json.error).toContain("Tidak diizinkan");
+    // Pesan sekarang mengarah ke jalur alternatif X-API-Key (cron artikel)
+    expect(json.error).toContain("X-API-Key");
   });
 
   it("handles POST /api/upload with multipart form data (admin cookie)", async () => {

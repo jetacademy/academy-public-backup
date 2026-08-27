@@ -3,7 +3,8 @@ import { mkdir, writeFile } from "fs/promises";
 import { join } from "path";
 import { compressToWebP, CompressImageOptions } from "@/lib/image-compress";
 import { randomBytes } from "crypto";
-import { requireTeacherOrAdmin, getAdminSession, verifyAdminCookieValue } from "@/lib/admin-auth";
+import { getAdminSession, verifyAdminCookieValue } from "@/lib/admin-auth";
+import { authorizeApiRequest } from "@/lib/api-auth";
 
 const UPLOADS_DIR = process.env.UPLOADS_DIR ?? join(process.env.HOME || "/tmp", "jetschool-uploads");
 
@@ -21,24 +22,42 @@ const ALLOWED_IMAGE_MIMES = [
 const MAX_FILE_SIZE_BYTES = 20 * 1024 * 1024; // 20 MB
 
 /**
+ * Autentikasi upload: sesi admin/teacher (cookie webadmin) ATAU
+ * API key machine-to-machine via header X-API-Key (mis. cron artikel harian).
+ * Return null jika diizinkan, atau response penolakan.
+ */
+async function authorizeUpload(req: NextRequest): Promise<NextResponse | null> {
+  const rawCookie = req.cookies.get("jsa_admin")?.value;
+  const session = rawCookie
+    ? await verifyAdminCookieValue(rawCookie)
+    : await getAdminSession().catch(() => null);
+  if (session) return null;
+
+  const apiAuth = await authorizeApiRequest(req, {
+    rateLimitKey: "api-upload-key",
+    max: 20,
+    windowMs: 60_000,
+  });
+  if (!apiAuth.ok) {
+    // Pertahankan bentuk respons lama endpoint ini ({success:false,...}).
+    const body = (await apiAuth.response.json().catch(() => ({}))) as { error?: string };
+    return NextResponse.json(
+      { success: false, error: body.error ?? "Tidak diizinkan." },
+      { status: apiAuth.response.status }
+    );
+  }
+  return null;
+}
+
+/**
  * POST /api/upload
  * Endpoint untuk upload gambar, otomatis dikompres ke WebP dengan fitur resize & crop proporsional.
  */
 export async function POST(req: NextRequest) {
   try {
-    // Wajib login admin/teacher — endpoint ini menulis file ke disk, tidak boleh publik.
-    // Coba cookie dari request langsung (bekerja di API route & unit test),
-    // fallback ke getAdminSession() (konteks server component/action).
-    const rawCookie = req.cookies.get("jsa_admin")?.value;
-    const session = rawCookie
-      ? await verifyAdminCookieValue(rawCookie)
-      : await getAdminSession().catch(() => null);
-    if (!session) {
-      return NextResponse.json(
-        { success: false, error: "Tidak diizinkan. Login admin diperlukan." },
-        { status: 401 }
-      );
-    }
+    // Wajib sesi admin/teacher ATAU X-API-Key — endpoint ini menulis file ke disk, tidak boleh publik.
+    const denied = await authorizeUpload(req);
+    if (denied) return denied;
 
     const contentType = req.headers.get("content-type") || "";
 
