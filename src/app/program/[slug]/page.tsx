@@ -530,6 +530,34 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
       {/* ===== ZERO HUMAN COMPANY: 6 AI AGENT ===== */}
       {isZeroHuman && (
         <>
+          {/* Section 0: VIDEO — Lihat langsung Karyawan AI bekerja */}
+          <section className="section" style={{ paddingTop: "3rem", paddingBottom: "2rem" }}>
+            <div className="container">
+              <div className="section-head center" style={{ marginBottom: "1.5rem" }}>
+                <h2 style={{ fontSize: "clamp(1.6rem, 4vw, 2.4rem)" }}>Lihat Karyawan AI Bekerja Tanpa Henti</h2>
+                <p style={{ maxWidth: "32rem", marginInline: "auto", color: "var(--ink-soft)" }}>
+                  Owner tidur — bisnis tetap jalan. Ini yang kamu dapatkan dengan 6 Karyawan AI.
+                </p>
+              </div>
+              <div
+                style={{
+                  position: "relative", width: "100%", maxWidth: "56rem", marginInline: "auto",
+                  aspectRatio: "16 / 9", borderRadius: "var(--r-lg)", overflow: "hidden",
+                  background: "#0a1226", boxShadow: "0 24px 60px rgba(25,25,25,.35)",
+                }}
+              >
+                <iframe
+                  src="https://iframe.mediadelivery.net/embed/707807/2c44752e-c7cd-4620-9431-88eb6dfc060c?autoplay=true&loop=true&muted=true&preload=true&responsive=true"
+                  title="Zero Human Company — Karyawan AI bekerja tanpa henti"
+                  loading="lazy"
+                  allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  allowFullScreen
+                  style={{ position: "absolute", inset: 0, width: "100%", height: "100%", border: "none" }}
+                />
+              </div>
+            </div>
+          </section>
+
           {/* Section 0: PAIN — Adegan Sehari-hari */}
           <section className="section" style={{ background: "var(--chip)", paddingBottom: "3.5rem" }}>
             <div className="container">
