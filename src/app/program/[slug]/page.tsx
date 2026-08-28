@@ -343,7 +343,7 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
                 </div>
                 <div className="cta-meta-item">
                   <Icon name="award" size={14} />
-                  <span>{isAiForTeachers ? "Live Zoom 2 jam · 6 Demo Langsung" : isZeroHuman ? "Live Zoom 3 jam · 6 AI Agent" : isVibesCoding ? "Live Zoom 2,5 jam · 4 Produk Jadi" : "Komunitas + Rekaman + Sertifikat"}</span>
+                  <span>{isAiForTeachers ? "Live Zoom 2 jam · 6 Demo Langsung" : isZeroHuman ? "Live Zoom 3 jam · 6 Karyawan AI" : isVibesCoding ? "Live Zoom 2,5 jam · 4 Produk Jadi" : "Komunitas + Rekaman + Sertifikat"}</span>
                 </div>
               </div>
               <OfferTimer target={displayScheduleAt.toISOString()} note="Sesi dimulai dalam" />
@@ -619,10 +619,10 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
           <section className="section" style={{ paddingBottom: "3.5rem" }}>
             <div className="container">
               <div className="section-head center">
-                <span className="type-tag type-workshop" style={{ marginBottom: "1.2rem", display: "inline-block" }}>6 AI Agent Siap Pakai</span>
-                <h2 style={{ fontSize: "clamp(1.8rem, 4vw, 2.6rem)" }}>Dalam 3 Jam, Praktekkan Langsung 6 AI Agent untuk Bisnis Anda</h2>
+                <span className="type-tag type-workshop" style={{ marginBottom: "1.2rem", display: "inline-block" }}>6 Karyawan AI Siap Kerja</span>
+                <h2 style={{ fontSize: "clamp(1.8rem, 4vw, 2.6rem)" }}>Dalam 3 Jam, Rekrut 6 Karyawan AI untuk Bisnis Anda</h2>
                 <p style={{ maxWidth: "36rem", marginInline: "auto", color: "var(--ink-soft)" }}>
-                  Bukan teori — Anda yang membangun sendiri, dipandu langkah demi langkah. Agent Anda terhubung ke WhatsApp sebelum workshop selesai.
+                  Bukan teori — Anda merekrut &amp; merakit 6 karyawan AI (6 AI Agent) sendiri, dipandu langkah demi langkah. Semuanya terhubung ke WhatsApp sebelum workshop selesai.
                 </p>
               </div>
               
@@ -871,7 +871,7 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
             <div className="container">
               <div className="section-head center">
                 <span className="type-tag type-workshop" style={{ marginBottom: "1.2rem", display: "inline-block", background: "rgba(108, 92, 231, 0.08)", color: "var(--purple)" }}>Bayangkan Jika</span>
-                <h2 style={{ fontSize: "clamp(1.8rem, 4vw, 2.6rem)" }}>Bisnis Anda Tanpa vs Dengan 6 AI Agent</h2>
+                <h2 style={{ fontSize: "clamp(1.8rem, 4vw, 2.6rem)" }}>Bisnis Anda Tanpa vs Dengan 6 Karyawan AI</h2>
                 <p style={{ maxWidth: "36rem", marginInline: "auto", color: "var(--ink-soft)" }}>
                   Perubahan kecil — dampak besar. Lihat sendiri perbedaan sebelum dan sesudah.
                 </p>

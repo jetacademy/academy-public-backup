@@ -42,9 +42,9 @@ async function main() {
       slug: "zero-human-company",
       type: "WORKSHOP",
       title: "Zero Human Company: Membangun Perusahaan Tanpa Karyawan dengan Agent AI",
-      tagline: "Bangun 6 AI Agent untuk Bisnis Anda dalam 3 Jam — Tanpa Coding, Siap Jalan.",
+      tagline: "Rekrut 6 Karyawan AI untuk Bisnis Anda dalam 3 Jam — Kerja 24 Jam, Tanpa Digaji Bulanan.",
       description:
-        "Workshop intensif 3 jam: pelajari cara membangun dan mengoperasikan 6 AI Agent untuk mengotomatisasi customer service, konten, marketing, sales, developer, dan laporan bisnis Anda. Pulang-pulang, Agent Anda sudah terhubung ke WhatsApp dan siap bekerja.",
+        "Workshop intensif 3 jam: pelajari cara merekrut & mengoperasikan 6 Karyawan AI (AI Agent) untuk mengotomatisasi customer service, konten, marketing, sales, developer, dan laporan bisnis Anda — berjalan 24 jam tanpa gaji bulanan. Pulang-pulang, Karyawan AI Anda sudah terhubung ke WhatsApp dan siap bekerja.",
       emoji: "🤖",
       mentorName: "Tim Jetschool Academy",
       mentorBio:
@@ -58,7 +58,7 @@ async function main() {
         "Report Agent — laporan bisnis harian otomatis via WA",
       ],
       deliverables: [
-        { label: "Praktik langsung membangun 6 AI Agent (CS, Content, Marketing, Sales, Developer, Report)", value: 299000 },
+        { label: "Praktik langsung merekrut & merakit 6 Karyawan AI (CS, Content, Marketing, Sales, Developer, Report)", value: 299000 },
         { label: "Hubungkan Agent dengan WhatsApp — langsung praktek", value: 199000 },
         { label: "Rekaman Workshop (akses seumur hidup)", value: 149000 },
         { label: "e-Sertifikat Resmi + Grup WA Alumni", value: 0 },
