@@ -329,7 +329,7 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
             )}
             <div className="prg-cta-col">
               <a href="#daftar" className="btn btn-purple btn-lg btn-block" style={{ width: "100%", textAlign: "center" }}>
-                {isZeroHuman ? `Rp 225.000 — Sekali` : (isFree ? "Daftar Gratis Sekarang" : `Daftar — ${priceLabel}`)}
+                {isZeroHuman ? `Amankan Kursi — Pulang Bawa 6 Karyawan AI` : (isFree ? "Daftar Gratis Sekarang" : `Daftar — ${priceLabel}`)}
               </a>
               {!isFree && program.priceOld && (
                 <span className="prg-hero-strike" style={{ color: "var(--ink-soft)", textDecoration: "line-through", display: "block", textAlign: "center", marginTop: "0.2rem" }}>
@@ -620,9 +620,9 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
             <div className="container">
               <div className="section-head center">
                 <span className="type-tag type-workshop" style={{ marginBottom: "1.2rem", display: "inline-block" }}>6 Karyawan AI Siap Kerja</span>
-                <h2 style={{ fontSize: "clamp(1.8rem, 4vw, 2.6rem)" }}>Dalam 3 Jam, Rekrut 6 Karyawan AI untuk Bisnis Anda</h2>
+                <h2 style={{ fontSize: "clamp(1.8rem, 4vw, 2.6rem)" }}>6 Karyawan AI, Biar Bisnis Jalan 24 Jam</h2>
                 <p style={{ maxWidth: "36rem", marginInline: "auto", color: "var(--ink-soft)" }}>
-                  Bukan teori — Anda merekrut &amp; merakit 6 karyawan AI (6 AI Agent) sendiri, dipandu langkah demi langkah. Semuanya terhubung ke WhatsApp sebelum workshop selesai.
+                  Bayar 225rb sekali, pulang bawa 6 Karyawan AI yang kerja 24 jam — tanpa coding, tanpa gaji bulanan. Tinggal set, langsung jalan di WhatsApp.
                 </p>
               </div>
               
@@ -911,43 +911,6 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
                     ))}
                   </div>
                 </div>
-              </div>
-            </div>
-          </section>
-
-          {/* Section 5: Gelombang AI Agent Global */}
-          <section className="section" style={{ paddingTop: "3rem", paddingBottom: "3rem" }}>
-            <div className="container">
-              <div className="bento" style={{ padding: "2.5rem", border: "1px solid var(--border)", background: "var(--white)", borderRadius: "var(--r-md)" }}>
-                <div className="section-head center" style={{ marginBottom: "2rem" }}>
-                  <span className="type-tag type-kelas" style={{ marginBottom: "1.2rem", display: "inline-block", background: "rgba(35, 33, 118, 0.08)", color: "var(--purple)" }}>Gelombang Global</span>
-                  <h2 style={{ fontSize: "clamp(1.5rem, 3vw, 2.2rem)" }}>China Menargetkan 70% Perusahaan Gunakan AI Agent pada 2027</h2>
-                </div>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "1rem", marginBottom: "2rem" }}>
-                  <div style={{ textAlign: "center", padding: "1.5rem", background: "var(--chip)", borderRadius: "var(--r-md)" }}>
-                    <span style={{ fontSize: "2.5rem", fontWeight: 900, color: "var(--purple)", display: "block" }}>¥890</span>
-                    <span style={{ fontSize: "0.72rem", color: "var(--ink-faint)" }}>MILIYAR</span>
-                    <p style={{ fontSize: "0.82rem", color: "var(--ink-soft)", marginTop: "0.5rem" }}>Investasi AI China 2026<br/>(~$125 Miliar — 38% global)</p>
-                  </div>
-                  <div style={{ textAlign: "center", padding: "1.5rem", background: "var(--chip)", borderRadius: "var(--r-md)" }}>
-                    <span style={{ fontSize: "2.5rem", fontWeight: 900, color: "var(--orange)", display: "block" }}>70%</span>
-                    <span style={{ fontSize: "0.72rem", color: "var(--ink-faint)" }}>TARGET 2027</span>
-                    <p style={{ fontSize: "0.82rem", color: "var(--ink-soft)", marginTop: "0.5rem" }}>Adopsi AI Agent di sektor<br/>kunci — target negara</p>
-                  </div>
-                  <div style={{ textAlign: "center", padding: "1.5rem", background: "var(--chip)", borderRadius: "var(--r-md)" }}>
-                    <span style={{ fontSize: "2.5rem", fontWeight: 900, color: "#2ecc71", display: "block" }}>250<span style={{ fontSize: "1.2rem" }}> Juta</span></span>
-                    <span style={{ fontSize: "0.72rem", color: "var(--ink-faint)" }}>PENGGUNA AI</span>
-                    <p style={{ fontSize: "0.82rem", color: "var(--ink-soft)", marginTop: "0.5rem" }}>Pengguna AI generatif<br/>di China (Feb 2025)</p>
-                  </div>
-                  <div style={{ textAlign: "center", padding: "1.5rem", background: "var(--chip)", borderRadius: "var(--r-md)" }}>
-                    <span style={{ fontSize: "2.5rem", fontWeight: 900, color: "#e67e22", display: "block" }}>90%</span>
-                    <span style={{ fontSize: "0.72rem", color: "var(--ink-faint)" }}>TARGET 2030</span>
-                    <p style={{ fontSize: "0.82rem", color: "var(--ink-soft)", marginTop: "0.5rem" }}>Target adopsi AI penuh<br/>di seluruh sektor</p>
-                  </div>
-                </div>
-                <p style={{ fontSize: "0.72rem", color: "var(--ink-faint)", textAlign: "center", marginTop: "1rem", lineHeight: 1.5 }}>
-                  Sumber: State Council China — &ldquo;AI+&rdquo; Initiative (Agustus 2025) · Second Talent (2026) · Fortune Business Insights / Roland Berger (2025)
-                </p>
               </div>
             </div>
           </section>
