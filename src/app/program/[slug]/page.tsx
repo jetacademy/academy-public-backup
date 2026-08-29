@@ -633,7 +633,7 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
                 }}
               >
                 <iframe
-                  src="https://iframe.mediadelivery.net/embed/707807/2c44752e-c7cd-4620-9431-88eb6dfc060c?autoplay=true&loop=true&muted=true&preload=true&responsive=true"
+                  src="https://iframe.mediadelivery.net/embed/707807/cce98f15-2759-416f-b495-ae04a6d65c12?autoplay=true&loop=true&muted=true&volume=0&preload=true&responsive=true"
                   title="Zero Human Company — Karyawan AI bekerja tanpa henti"
                   loading="lazy"
                   allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture; web-share"
@@ -1421,28 +1421,135 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
             </div>
           </section>
 
-          {/* Section 7: Anda Pulang Membawa Karyawan AI */}
+          {/* Section 7: Anda Pulang Membawa Karyawan AI (Redesigned with Contextual Icons) */}
           <section className="section" style={{ background: "var(--chip)", paddingBottom: "3.5rem" }}>
             <div className="container">
               <div className="section-head center">
-                <h2 style={{ fontSize: "clamp(1.6rem, 4vw, 2.4rem)" }}>Anda Tidak Pulang Membawa Slide.<br />Anda Pulang Membawa Karyawan AI.</h2>
+                <span style={{ display: "inline-flex", alignItems: "center", gap: "0.4rem", background: "var(--purple-soft)", color: "var(--purple)", fontWeight: 800, fontSize: "0.75rem", letterSpacing: "0.04em", padding: "0.4rem 1rem", borderRadius: "999px", marginBottom: "1.2rem" }}>
+                  🎁 FASILITAS LENGKAP WORKSHOP
+                </span>
+                <h2 style={{ fontSize: "clamp(1.6rem, 4vw, 2.4rem)" }}>
+                  Anda Tidak Pulang Membawa Slide.<br />
+                  <span className="hero-h1-accent">Anda Pulang Membawa Karyawan AI.</span>
+                </h2>
+                <p style={{ maxWidth: "32rem", marginInline: "auto", color: "var(--ink-soft)" }}>
+                  Semua aset, tools, dan akses langsung siap pakai dan menjadi milik Anda seumur hidup.
+                </p>
               </div>
-              <div style={{ marginTop: "2.2rem", display: "flex", flexWrap: "wrap", justifyContent: "center", gap: "0.9rem" }}>
+
+              <div
+                style={{
+                  marginTop: "2.5rem",
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+                  gap: "1rem",
+                  maxWidth: "68rem",
+                  marginInline: "auto",
+                }}
+              >
                 {[
-                  { title: "6 AI Agent", desc: "Siap pakai untuk bisnis Anda" },
-                  { title: "Rekaman Workshop", desc: "Akses ulang kapan saja" },
-                  { title: "Buku Manual", desc: "Panduan langkah demi langkah" },
-                  { title: "Komunitas Alumni", desc: "Diskusi & sharing" },
-                  { title: "e-Sertifikat", desc: "Bukti kelulusan resmi" },
+                  {
+                    title: "6 AI Agent Siap Pakai",
+                    desc: "Langsung aktif & siap bekerja untuk operasional bisnis Anda.",
+                    color: "var(--purple)",
+                    soft: "var(--purple-soft)",
+                    icon: (
+                      <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="3" y="11" width="18" height="10" rx="2"/>
+                        <circle cx="12" cy="5" r="2"/>
+                        <path d="M12 7v4"/>
+                        <line x1="8" y1="16" x2="8.01" y2="16"/>
+                        <line x1="16" y1="16" x2="16.01" y2="16"/>
+                      </svg>
+                    ),
+                  },
+                  {
+                    title: "Rekaman Workshop",
+                    desc: "Akses seumur hidup untuk dipelajari & dipraktikkan ulang kapan saja.",
+                    color: "var(--orange)",
+                    soft: "var(--orange-soft)",
+                    icon: (
+                      <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <polygon points="23 7 16 12 23 17 23 7"/>
+                        <rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
+                      </svg>
+                    ),
+                  },
+                  {
+                    title: "Buku Manual & Panduan",
+                    desc: "Dokumentasi SOP lengkap langkah demi langkah untuk setiap agent.",
+                    color: "var(--green)",
+                    soft: "rgba(23, 160, 94, 0.1)",
+                    icon: (
+                      <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+                        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+                        <line x1="8" y1="7" x2="16" y2="7"/>
+                        <line x1="8" y1="11" x2="14" y2="11"/>
+                      </svg>
+                    ),
+                  },
+                  {
+                    title: "Komunitas Alumni Eksklusif",
+                    desc: "Wadah diskusi, sharing update tools AI terbaru, & networking bisnis.",
+                    color: "var(--purple)",
+                    soft: "var(--purple-soft)",
+                    icon: (
+                      <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                        <circle cx="9" cy="7" r="4"/>
+                        <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                      </svg>
+                    ),
+                  },
+                  {
+                    title: "e-Sertifikat Resmi",
+                    desc: "Bukti kelulusan dan penguasaan AI Agent bersertifikasi resmi.",
+                    color: "var(--orange)",
+                    soft: "var(--orange-soft)",
+                    icon: (
+                      <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <circle cx="12" cy="8" r="6"/>
+                        <path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11"/>
+                      </svg>
+                    ),
+                  },
                 ].map((item, i) => (
-                  <div key={i} style={{ display: "flex", gap: "0.7rem", alignItems: "center", background: "var(--white)", border: "1px solid var(--border)", borderRadius: "var(--r-md)", padding: "1rem 1.1rem", flex: "0 1 240px" }}>
-                    <span style={{ width: "26px", height: "26px", borderRadius: "50%", background: "rgba(23,160,94,0.12)", color: "var(--green)", display: "grid", placeItems: "center", flexShrink: 0 }}>
-                      <Icon name="check" size={14} />
-                    </span>
-                    <div>
-                      <b style={{ fontSize: "0.9rem", display: "block" }}>{item.title}</b>
-                      <span style={{ fontSize: "0.78rem", color: "var(--ink-soft)" }}>{item.desc}</span>
+                  <div
+                    key={i}
+                    className="bento"
+                    style={{
+                      background: "var(--white)",
+                      border: "1px solid var(--border)",
+                      borderRadius: "18px",
+                      padding: "1.4rem 1.2rem",
+                      display: "flex",
+                      flexDirection: "column",
+                      boxShadow: "0 6px 20px rgba(35,33,118,0.03)",
+                      transition: "transform 0.2s ease, box-shadow 0.2s ease",
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: "46px",
+                        height: "46px",
+                        borderRadius: "12px",
+                        background: item.soft,
+                        color: item.color,
+                        display: "grid",
+                        placeItems: "center",
+                        marginBottom: "1rem",
+                      }}
+                    >
+                      {item.icon}
                     </div>
+                    <h3 style={{ fontSize: "0.98rem", fontWeight: 800, margin: "0 0 0.35rem", color: "var(--ink)" }}>
+                      {item.title}
+                    </h3>
+                    <p style={{ fontSize: "0.8rem", color: "var(--ink-soft)", lineHeight: 1.5, margin: 0 }}>
+                      {item.desc}
+                    </p>
                   </div>
                 ))}
               </div>
@@ -1535,34 +1642,201 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
             </div>
           </section>
 
-          {/* Section 9: Apakah Zero Human Company Untuk Anda */}
+          {/* Section 9: Apakah Zero Human Company Untuk Anda (Redesigned) */}
           <section className="section" style={{ background: "var(--chip)", paddingBottom: "3.5rem" }}>
             <div className="container">
               <div className="section-head center">
-                <h2 style={{ fontSize: "clamp(1.6rem, 4vw, 2.4rem)" }}>Apakah Zero Human Company untuk Anda?</h2>
-                <p style={{ color: "var(--ink-soft)" }}>Cocok untuk:</p>
+                <span style={{ display: "inline-flex", alignItems: "center", gap: "0.4rem", background: "var(--purple-soft)", color: "var(--purple)", fontWeight: 800, fontSize: "0.75rem", letterSpacing: "0.04em", padding: "0.4rem 1rem", borderRadius: "999px", marginBottom: "1.2rem" }}>
+                  🎯 TARGET AUDIENCE
+                </span>
+                <h2 style={{ fontSize: "clamp(1.6rem, 4vw, 2.4rem)" }}>
+                  Apakah Zero Human Company <span className="hero-h1-accent">Cocok untuk Anda?</span>
+                </h2>
+                <p style={{ maxWidth: "34rem", marginInline: "auto", color: "var(--ink-soft)" }}>
+                  Dirancang untuk siapapun yang ingin mengotomatiskan rutinitas dan melipatgandakan hasil bisnis tanpa beban operasional tim yang besar.
+                </p>
               </div>
-              <div className="mobile-grid-2col" style={{ marginTop: "1.8rem", display: "flex", flexWrap: "wrap", justifyContent: "center", gap: "0.9rem" }}>
+
+              <div
+                style={{
+                  marginTop: "2.5rem",
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+                  gap: "1.2rem",
+                  maxWidth: "68rem",
+                  marginInline: "auto",
+                }}
+              >
                 {[
-                  { title: "Owner Bisnis", icon: "👔", cls: "solution-card", desc: "Dapat 6 karyawan tambahan — tanpa nambah gaji bulanan." },
-                  { title: "UMKM", icon: "🏪", cls: "accent-card-orange", desc: "Kerja setara tim besar, tanpa nambah orang & biaya operasional." },
-                  { title: "Startup", icon: "🚀", cls: "accent-card-green", desc: "Operasional lean — fokus growth, bukan urus administrasi." },
-                  { title: "Profesional & Freelancer", icon: "💼", cls: "solution-card", desc: "Kerja solo terasa ringan — ada digital workforce yang bantu." },
-                  { title: "Marketer & Sales", icon: "📈", cls: "accent-card-orange", desc: "Follow-up & tugas rutin jalan otomatis, Anda fokus strategi." },
-                  { title: "Pelajar & Tech Enthusiast", icon: "🎓", cls: "accent-card-green", desc: "Belajar bangun AI Agent langsung praktik, bukan cuma teori." },
+                  {
+                    title: "Owner Bisnis & Founder",
+                    desc: "Miliki 6 karyawan digital otonom yang bekerja 24/7 tanpa menambah beban gaji bulanan, tunjangan & BPJS.",
+                    tag: "⚡ Efisiensi Biaya Operasional",
+                    color: "var(--purple)",
+                    soft: "var(--purple-soft)",
+                    icon: (
+                      <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                        <circle cx="12" cy="7" r="4"/>
+                        <polyline points="16 11 18 13 22 9"/>
+                      </svg>
+                    ),
+                  },
+                  {
+                    title: "Pelaku UMKM",
+                    desc: "Kapasitas kerja setara tim korporasi besar tanpa perlu rekrut banyak staf dan bayar sewa kantor mahal.",
+                    tag: "🏪 Skala Bisnis Instan",
+                    color: "var(--orange)",
+                    soft: "var(--orange-soft)",
+                    icon: (
+                      <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                        <polyline points="9 22 9 12 15 12 15 22"/>
+                      </svg>
+                    ),
+                  },
+                  {
+                    title: "Startup & Tech Business",
+                    desc: "Operasional super lean — tim inti bisa 100% fokus ke inovasi produk & pertumbuhan market, bukan urus administrasi.",
+                    tag: "🚀 Lean & Fast Execution",
+                    color: "var(--green)",
+                    soft: "rgba(23, 160, 94, 0.1)",
+                    icon: (
+                      <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/>
+                        <path d="M12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/>
+                        <path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/>
+                        <path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/>
+                      </svg>
+                    ),
+                  },
+                  {
+                    title: "Profesional & Freelancer",
+                    desc: "Kerja solo terasa ringan karena ada asisten digital yang mengurus chat klien, riset, proposal, dan follow-up.",
+                    tag: "💼 Hemat 15+ Jam/Minggu",
+                    color: "var(--purple)",
+                    soft: "var(--purple-soft)",
+                    icon: (
+                      <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
+                        <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+                      </svg>
+                    ),
+                  },
+                  {
+                    title: "Marketer & Tim Sales",
+                    desc: "Riset tren pasar, pembuatan copywriting promosi, hingga follow-up prospek berjalan otomatis tanpa jeda.",
+                    tag: "📈 Otomasi Funnel & Closing",
+                    color: "var(--orange)",
+                    soft: "var(--orange-soft)",
+                    icon: (
+                      <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/>
+                        <polyline points="16 7 22 7 22 13"/>
+                      </svg>
+                    ),
+                  },
+                  {
+                    title: "Pelajar & Tech Enthusiast",
+                    desc: "Belajar langsung cara membangun arsitektur AI Agent masa depan secara hands-on dan aplikatif, bukan cuma teori.",
+                    tag: "🎓 Skill Masa Depan",
+                    color: "var(--green)",
+                    soft: "rgba(23, 160, 94, 0.1)",
+                    icon: (
+                      <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M22 10v6M2 10l10-5 10 5-10 5z"/>
+                        <path d="M6 12v5c3 3 9 3 12 0v-5"/>
+                      </svg>
+                    ),
+                  },
                 ].map((item, i) => (
-                  <div key={i} className={`pain-card ${item.cls}`} style={{ padding: "1.2rem 1.3rem", flex: "0 1 260px", maxWidth: "300px" }}>
-                    <div className="pain-icon-wrapper" style={{ width: "38px", height: "38px", fontSize: "1.1rem" }}>{item.icon}</div>
-                    <div>
-                      <b style={{ fontSize: "0.92rem" }}>{item.title}</b>
-                      <p style={{ fontSize: "0.8rem", color: "var(--ink-soft)", margin: "0.2rem 0 0" }}>{item.desc}</p>
+                  <div
+                    key={i}
+                    className="bento"
+                    style={{
+                      background: "var(--white)",
+                      border: "1px solid var(--border)",
+                      borderRadius: "20px",
+                      padding: "1.6rem 1.4rem",
+                      display: "flex",
+                      flexDirection: "column",
+                      boxShadow: "0 8px 24px rgba(35,33,118,0.04)",
+                      transition: "transform 0.2s ease, box-shadow 0.2s ease",
+                    }}
+                  >
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1rem" }}>
+                      <div
+                        style={{
+                          width: "46px",
+                          height: "46px",
+                          borderRadius: "14px",
+                          background: item.soft,
+                          color: item.color,
+                          display: "grid",
+                          placeItems: "center",
+                        }}
+                      >
+                        {item.icon}
+                      </div>
+                      <span
+                        style={{
+                          fontSize: "0.72rem",
+                          fontWeight: 700,
+                          color: item.color,
+                          background: item.soft,
+                          padding: "0.28rem 0.65rem",
+                          borderRadius: "999px",
+                        }}
+                      >
+                        {item.tag}
+                      </span>
                     </div>
+
+                    <h3 style={{ fontSize: "1.08rem", fontWeight: 800, margin: "0 0 0.45rem", color: "var(--ink)" }}>
+                      {item.title}
+                    </h3>
+                    <p style={{ fontSize: "0.84rem", color: "var(--ink-soft)", lineHeight: 1.55, margin: 0 }}>
+                      {item.desc}
+                    </p>
                   </div>
                 ))}
               </div>
-              <p style={{ textAlign: "center", marginTop: "1.6rem", fontWeight: 700, color: "var(--ink)" }}>
-                Tidak perlu jadi ahli AI. Yang penting kemauan untuk mencoba dan membangun.
-              </p>
+
+              {/* Bottom Reassurance Banner */}
+              <div
+                style={{
+                  marginTop: "2.2rem",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "1rem",
+                  maxWidth: "42rem",
+                  marginInline: "auto",
+                  padding: "0.9rem 1.4rem",
+                  background: "var(--white)",
+                  border: "1px solid var(--border)",
+                  borderRadius: "999px",
+                  boxShadow: "0 12px 30px rgba(35,33,118,0.08)",
+                }}
+              >
+                <span
+                  style={{
+                    width: "42px",
+                    height: "42px",
+                    borderRadius: "50%",
+                    background: "linear-gradient(135deg, var(--orange), var(--purple))",
+                    color: "#fff",
+                    display: "grid",
+                    placeItems: "center",
+                    fontSize: "1.2rem",
+                    flexShrink: 0,
+                  }}
+                >
+                  💡
+                </span>
+                <p style={{ margin: 0, fontWeight: 700, color: "var(--ink)", fontSize: "0.92rem", lineHeight: 1.45 }}>
+                  Tidak perlu latar belakang coding. <span className="hero-h1-accent">Yang penting kemauan untuk membangun dan bertumbuh.</span>
+                </p>
+              </div>
             </div>
           </section>
 
