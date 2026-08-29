@@ -750,6 +750,7 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
               </div>
               <RevealStagger
                 hover
+                className="mobile-grid-2col"
                 itemFlex={Array(6).fill("0 1 230px")}
                 style={{ marginTop: "2.2rem", display: "flex", flexWrap: "wrap", justifyContent: "center", gap: "1rem", maxWidth: "58rem", marginInline: "auto" }}
               >
@@ -798,121 +799,13 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
               </div>
 
               <div style={{ marginTop: "2.2rem", maxWidth: "300px", marginInline: "auto" }}>
-                <div style={{ position: "relative", background: "#1a1a1a", borderRadius: "40px", padding: "10px", boxShadow: "0 30px 60px rgba(15,23,42,0.28)" }}>
-                  <div style={{ position: "absolute", top: "10px", left: "50%", transform: "translateX(-50%)", width: "80px", height: "22px", background: "#1a1a1a", borderRadius: "12px", zIndex: 2 }} />
-                  <div style={{ background: "#fff", borderRadius: "30px", overflow: "hidden" }}>
-
-                    {/* Status bar */}
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0.5rem 1rem 0.15rem", fontSize: "0.68rem", fontWeight: 700, color: "#000" }}>
-                      <span>10.30</span>
-                      <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                        <span style={{ display: "flex", alignItems: "flex-end", gap: "1.5px" }}>
-                          {[3, 5, 7, 9].map((h, i) => <span key={i} style={{ width: "2.5px", height: `${h}px`, background: "#000", borderRadius: "1px" }} />)}
-                        </span>
-                        <span style={{ width: "17px", height: "8px", border: "1px solid #000", borderRadius: "2px", position: "relative", display: "inline-block" }}>
-                          <span style={{ position: "absolute", inset: "1px", width: "65%", background: "#000", borderRadius: "1px" }} />
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* WhatsApp header */}
-                    <div style={{ display: "flex", alignItems: "center", gap: "0.55rem", padding: "0.45rem 0.8rem", borderBottom: "1px solid #eee" }}>
-                      <span style={{ fontSize: "1.05rem", color: "#000" }}>‹</span>
-                      <div style={{ position: "relative" }}>
-                        <span style={{ width: "32px", height: "32px", borderRadius: "50%", background: "var(--purple-soft)", display: "grid", placeItems: "center", fontSize: "0.95rem" }}>🤖</span>
-                        <span style={{ position: "absolute", bottom: 0, right: 0, width: "8px", height: "8px", borderRadius: "50%", background: "#22c55e", border: "1.5px solid #fff" }} />
-                      </div>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <b style={{ fontSize: "0.8rem", display: "block", color: "#000" }}>Sales Agent</b>
-                        <span style={{ fontSize: "0.64rem", color: "#666" }}>online</span>
-                      </div>
-                      <Icon name="video" size={15} />
-                      <Icon name="phone" size={13} />
-                      <span style={{ fontWeight: 900, color: "#000", fontSize: "0.9rem" }}>⋮</span>
-                    </div>
-
-                    {/* Chat body */}
-                    <div style={{ background: "#e9e3da", padding: "0.75rem 0.65rem", display: "flex", flexDirection: "column", gap: "0.5rem", height: "440px", overflowY: "auto" }}>
-                      <span style={{ alignSelf: "center", background: "rgba(255,255,255,0.7)", color: "#555", fontSize: "0.62rem", padding: "0.18rem 0.55rem", borderRadius: "8px" }}>Hari ini</span>
-
-                      <div style={{ alignSelf: "flex-end", background: "#dcf8c6", borderRadius: "9px 9px 2px 9px", padding: "0.45rem 0.55rem", maxWidth: "84%", fontSize: "0.72rem", color: "#111", lineHeight: 1.4 }}>
-                        Tolong follow-up semua leads yang masuk hari ini dan buatkan laporan hasilnya.
-                        <div style={{ textAlign: "right", fontSize: "0.56rem", color: "#667781", marginTop: "0.2rem" }}>10.30 <span style={{ color: "#53bdeb" }}>✓✓</span></div>
-                      </div>
-
-                      <div style={{ display: "flex", gap: "0.35rem", alignItems: "flex-end" }}>
-                        <span style={{ width: "18px", height: "18px", borderRadius: "50%", background: "var(--purple-soft)", display: "grid", placeItems: "center", fontSize: "0.58rem", flexShrink: 0 }}>🤖</span>
-                        <div style={{ background: "#fff", borderRadius: "9px 9px 9px 2px", padding: "0.45rem 0.55rem", maxWidth: "80%", fontSize: "0.72rem", color: "#111", lineHeight: 1.4 }}>
-                          Baik! Saya akan menjalankan workflow follow-up leads dan membuat laporan hasilnya.
-                          <div style={{ fontSize: "0.56rem", color: "#999", marginTop: "0.2rem" }}>10.30</div>
-                        </div>
-                      </div>
-
-                      <div style={{ marginLeft: "1.45rem", background: "#fff", borderRadius: "9px", padding: "0.6rem 0.7rem", fontSize: "0.72rem" }}>
-                        <b style={{ display: "flex", alignItems: "center", gap: "0.3rem", marginBottom: "0.45rem", fontSize: "0.74rem" }}>🚀 Workflow Sedang Berjalan</b>
-                        {[
-                          { label: "Menganalisis leads", status: "done" },
-                          { label: "Menentukan prioritas", status: "done" },
-                          { label: "Menyiapkan pesan", status: "done" },
-                          { label: "Melakukan follow-up", status: "progress" },
-                          { label: "Mencatat hasil", status: "pending" },
-                          { label: "Membuat laporan", status: "pending" },
-                        ].map((s, i) => (
-                          <div key={i} style={{ display: "flex", alignItems: "center", gap: "0.45rem", padding: "0.24rem 0" }}>
-                            <span style={{
-                              width: "15px", height: "15px", borderRadius: "50%", flexShrink: 0,
-                              background: s.status === "pending" ? "#e5e5e5" : s.status === "progress" ? "#3b82f6" : "#22c55e",
-                              color: "#fff", fontSize: "0.56rem", fontWeight: 800, display: "grid", placeItems: "center",
-                            }}>{i + 1}</span>
-                            <span style={{ flex: 1, color: "#222" }}>{s.label}</span>
-                            <span style={{ fontSize: "0.8rem" }}>{s.status === "done" ? "✅" : s.status === "progress" ? "🔵" : "⚪"}</span>
-                          </div>
-                        ))}
-                      </div>
-
-                      <div style={{ display: "flex", gap: "0.35rem", alignItems: "flex-end" }}>
-                        <span style={{ width: "18px", height: "18px", borderRadius: "50%", background: "var(--purple-soft)", display: "grid", placeItems: "center", fontSize: "0.58rem", flexShrink: 0 }}>🤖</span>
-                        <div style={{ background: "#fff", borderRadius: "9px 9px 9px 2px", padding: "0.45rem 0.55rem", maxWidth: "80%", fontSize: "0.72rem", color: "#111", lineHeight: 1.4 }}>
-                          Semua follow-up selesai! 🎉 Berikut laporan hasilnya:
-                        </div>
-                      </div>
-
-                      <div style={{ marginLeft: "1.45rem", background: "#fff", borderRadius: "9px", padding: "0.55rem 0.65rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                        <span style={{ width: "28px", height: "28px", borderRadius: "6px", background: "#16a34a", color: "#fff", display: "grid", placeItems: "center", fontSize: "0.76rem", fontWeight: 800, flexShrink: 0 }}>X</span>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <b style={{ fontSize: "0.68rem", display: "block", color: "#111" }}>Laporan Follow-up Leads.xlsx</b>
-                          <span style={{ fontSize: "0.6rem", color: "#888" }}>15 KB • 28 leads</span>
-                        </div>
-                      </div>
-
-                      <div style={{ marginLeft: "1.45rem", background: "#fff", borderRadius: "9px", padding: "0.55rem 0.3rem", display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "0.2rem", textAlign: "center" }}>
-                        {[
-                          { n: "28", label: "Total", color: "#111" },
-                          { n: "18", label: "Direspons", color: "#22c55e" },
-                          { n: "7", label: "Follow-up", color: "#f97316" },
-                          { n: "3", label: "Tidak Minat", color: "#999" },
-                        ].map((s, i) => (
-                          <div key={i}>
-                            <b style={{ display: "block", fontSize: "0.8rem", color: s.color }}>{s.n}</b>
-                            <span style={{ fontSize: "0.52rem", color: "#888" }}>{s.label}</span>
-                          </div>
-                        ))}
-                      </div>
-
-                      <div style={{ alignSelf: "flex-end", background: "#dcf8c6", borderRadius: "9px 9px 2px 9px", padding: "0.45rem 0.55rem", fontSize: "0.72rem", color: "#111" }}>
-                        Mantap! Terima kasih 🙏
-                        <div style={{ textAlign: "right", fontSize: "0.56rem", color: "#667781", marginTop: "0.2rem" }}>10.36 <span style={{ color: "#53bdeb" }}>✓✓</span></div>
-                      </div>
-                    </div>
-
-                    {/* Input bar */}
-                    <div style={{ display: "flex", alignItems: "center", gap: "0.45rem", padding: "0.45rem 0.65rem", background: "#f0f0f0" }}>
-                      <span style={{ fontSize: "1.05rem", color: "#666" }}>+</span>
-                      <div style={{ flex: 1, background: "#fff", borderRadius: "999px", padding: "0.35rem 0.75rem", fontSize: "0.68rem", color: "#999" }}>Ketik pesan</div>
-                      <span style={{ width: "24px", height: "24px", borderRadius: "50%", background: "#22c55e", display: "grid", placeItems: "center", color: "#fff", fontSize: "0.74rem" }}>🎤</span>
-                    </div>
-                  </div>
-                </div>
+                <Image
+                  src="/ChatGPT Image Aug 29, 2026, 09_30_21 AM.webp"
+                  alt="Contoh percakapan Sales Agent di WhatsApp"
+                  width={500}
+                  height={880}
+                  style={{ width: "100%", height: "auto", borderRadius: "24px", boxShadow: "0 30px 60px rgba(15,23,42,0.28)" }}
+                />
               </div>
 
               <p style={{ textAlign: "center", marginTop: "2.2rem", color: "var(--ink)", maxWidth: "30rem", marginInline: "auto", fontWeight: 700 }}>
@@ -1066,31 +959,34 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
                 </p>
               </div>
 
-              <div style={{ marginTop: "2rem", overflowX: "auto", paddingBottom: "0.6rem" }}>
-                <RevealStagger
-                  hover
-                  itemFlex={Array(10).fill("0 0 180px")}
-                  style={{ display: "flex", gap: "1rem", width: "max-content", paddingInline: "0.2rem" }}
-                >
-                  {[
-                    { label: "WhatsApp", icon: "💬", color: "#25D366", desc: "Chat dengan pelanggan & kirim update otomatis" },
-                    { label: "Telegram", icon: "✈️", color: "#229ED9", desc: "Terima perintah & notifikasi real-time" },
-                    { label: "Slack", icon: "#️⃣", color: "#611f69", desc: "Dapatkan update & kirim laporan ke channel" },
-                    { label: "Google Drive", icon: "📁", color: "#34A853", desc: "Baca, simpan, & kelola dokumen kerja" },
-                    { label: "Spreadsheet", icon: "📊", color: "#0F9D58", desc: "Olah data, buat laporan, & update otomatis" },
-                    { label: "Doc", icon: "📄", color: "#4285F4", desc: "Buat & edit dokumen langsung" },
-                    { label: "Database", icon: "🗄️", color: "#7c3aed", desc: "Akses data bisnis secara aman" },
-                    { label: "Kalender", icon: "📅", color: "#EA4335", desc: "Atur jadwal, buat event, & dapatkan reminder" },
-                    { label: "Web", icon: "🌐", color: "#F7941D", desc: "Ambil data, monitor, & otomatisasi web" },
-                    { label: "Aplikasi", icon: "🔌", color: "#17A05E", desc: "Terhubung dengan aplikasi favorit Anda" },
-                  ].map((tool, i) => (
-                    <div key={i} style={{ textAlign: "center", padding: "1.3rem 1rem", background: "var(--white)", border: "1px solid var(--border)", borderRadius: "16px", height: "100%" }}>
-                      <span style={{ width: "48px", height: "48px", borderRadius: "50%", background: `${tool.color}1a`, color: tool.color, fontSize: "1.3rem", display: "grid", placeItems: "center", marginInline: "auto" }}>{tool.icon}</span>
-                      <b style={{ fontSize: "0.88rem", display: "block", marginTop: "0.7rem" }}>{tool.label}</b>
-                      <p style={{ fontSize: "0.74rem", color: "var(--ink-soft)", lineHeight: 1.4, marginTop: "0.35rem" }}>{tool.desc}</p>
-                    </div>
-                  ))}
-                </RevealStagger>
+              <div style={{ position: "relative" }}>
+                <div style={{ marginTop: "2rem", overflowX: "auto", paddingBottom: "0.6rem" }}>
+                  <RevealStagger
+                    hover
+                    itemFlex={Array(10).fill("0 0 180px")}
+                    style={{ display: "flex", gap: "1rem", width: "max-content", paddingInline: "0.2rem" }}
+                  >
+                    {[
+                      { label: "WhatsApp", icon: "💬", color: "#25D366", desc: "Chat dengan pelanggan & kirim update otomatis" },
+                      { label: "Telegram", icon: "✈️", color: "#229ED9", desc: "Terima perintah & notifikasi real-time" },
+                      { label: "Slack", icon: "#️⃣", color: "#611f69", desc: "Dapatkan update & kirim laporan ke channel" },
+                      { label: "Google Drive", icon: "📁", color: "#34A853", desc: "Baca, simpan, & kelola dokumen kerja" },
+                      { label: "Spreadsheet", icon: "📊", color: "#0F9D58", desc: "Olah data, buat laporan, & update otomatis" },
+                      { label: "Doc", icon: "📄", color: "#4285F4", desc: "Buat & edit dokumen langsung" },
+                      { label: "Database", icon: "🗄️", color: "#7c3aed", desc: "Akses data bisnis secara aman" },
+                      { label: "Kalender", icon: "📅", color: "#EA4335", desc: "Atur jadwal, buat event, & dapatkan reminder" },
+                      { label: "Web", icon: "🌐", color: "#F7941D", desc: "Ambil data, monitor, & otomatisasi web" },
+                      { label: "Aplikasi", icon: "🔌", color: "#17A05E", desc: "Terhubung dengan aplikasi favorit Anda" },
+                    ].map((tool, i) => (
+                      <div key={i} style={{ textAlign: "center", padding: "1.3rem 1rem", background: "var(--white)", border: "1px solid var(--border)", borderRadius: "16px", height: "100%" }}>
+                        <span style={{ width: "48px", height: "48px", borderRadius: "50%", background: `${tool.color}1a`, color: tool.color, fontSize: "1.3rem", display: "grid", placeItems: "center", marginInline: "auto" }}>{tool.icon}</span>
+                        <b style={{ fontSize: "0.88rem", display: "block", marginTop: "0.7rem" }}>{tool.label}</b>
+                        <p style={{ fontSize: "0.74rem", color: "var(--ink-soft)", lineHeight: 1.4, marginTop: "0.35rem" }}>{tool.desc}</p>
+                      </div>
+                    ))}
+                  </RevealStagger>
+                </div>
+                <div style={{ position: "absolute", top: "2rem", right: 0, bottom: "0.6rem", width: "48px", background: "linear-gradient(90deg, transparent, var(--chip))", pointerEvents: "none" }} />
               </div>
               <p style={{ textAlign: "center", marginTop: "0.6rem", color: "var(--ink-faint)", fontSize: "0.76rem" }}>
                 ← Geser untuk lihat semua tools →
@@ -1231,7 +1127,7 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
                 <h2 style={{ fontSize: "clamp(1.6rem, 4vw, 2.4rem)" }}>Apakah Zero Human Company untuk Anda?</h2>
                 <p style={{ color: "var(--ink-soft)" }}>Cocok untuk:</p>
               </div>
-              <div style={{ marginTop: "1.8rem", display: "flex", flexWrap: "wrap", justifyContent: "center", gap: "0.9rem" }}>
+              <div className="mobile-grid-2col" style={{ marginTop: "1.8rem", display: "flex", flexWrap: "wrap", justifyContent: "center", gap: "0.9rem" }}>
                 {[
                   { title: "Owner Bisnis", icon: "👔", cls: "solution-card", desc: "Dapat 6 karyawan tambahan — tanpa nambah gaji bulanan." },
                   { title: "UMKM", icon: "🏪", cls: "accent-card-orange", desc: "Kerja setara tim besar, tanpa nambah orang & biaya operasional." },

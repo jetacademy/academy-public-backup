@@ -262,6 +262,9 @@
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+  overflow-wrap: break-word;
+  word-break: normal;
+  display: inline;
 }
 
 .hero-lead {
@@ -1541,6 +1544,15 @@
 .transform-arrow { transition: transform .3s ease; }
 @media (max-width: 700px) {
   .transform-arrow { transform: rotate(90deg); }
+}
+
+/* Grid kartu yang tetap 2 kolom di layar mobile (dipakai roster 6 Agent, persona, dll) */
+@media (max-width: 640px) {
+  .mobile-grid-2col {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 0.7rem !important;
+  }
 }
 
 /* ---------- Browser Mockup for Product Demo ---------- */
