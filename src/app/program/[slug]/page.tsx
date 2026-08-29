@@ -644,7 +644,7 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
             </div>
           </section>
 
-          {/* Section 1: Selamat Datang — Dulu vs Sekarang */}
+          {/* Section 1: Selamat Datang — Dulu vs Sekarang (Redesigned & Harmonized) */}
           <section className="section" style={{ paddingTop: "3.5rem", paddingBottom: "3.5rem", background: "var(--chip)" }}>
             <div className="container">
               <div className="section-head center">
@@ -654,72 +654,168 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
                   <span style={{ color: "var(--orange)", fontSize: "1.2rem" }}>✦</span>
                 </div>
                 <div style={{ position: "relative", display: "inline-block" }}>
-                  <div style={{ position: "absolute", inset: "-24px -50px", background: "radial-gradient(ellipse, rgba(108,92,231,0.22) 0%, rgba(247,148,29,0.12) 55%, transparent 75%)", filter: "blur(22px)", zIndex: 0, pointerEvents: "none" }} />
+                  <div style={{ position: "absolute", inset: "-24px -50px", background: "radial-gradient(ellipse, rgba(35,33,118,0.18) 0%, rgba(247,148,29,0.12) 55%, transparent 75%)", filter: "blur(22px)", zIndex: 0, pointerEvents: "none" }} />
                   <h2 style={{ fontSize: "clamp(1.8rem, 4vw, 2.6rem)", position: "relative", zIndex: 1 }}>Zero <span className="hero-h1-accent">Human Company</span></h2>
                 </div>
                 <p style={{ maxWidth: "34rem", marginInline: "auto", color: "var(--ink-soft)" }}>
-                  Dulu, menjalankan bisnis berarti mengurus semuanya sendiri. Sekarang, AI Agent bisa membantu mengerjakannya bersama Anda.
+                  Dulu, menjalankan bisnis butuh tim besar dengan beban biaya tinggi. Sekarang, 6 AI Agent otonom siap bekerja bersama Anda.
                 </p>
               </div>
-              <RevealStagger
-                itemFlex={["1 1 280px", "0 0 auto", "1 1 280px"]}
-                style={{ marginTop: "2rem", display: "flex", flexWrap: "wrap", justifyContent: "center", alignItems: "stretch", gap: "1rem", maxWidth: "50rem", marginInline: "auto" }}
+
+              <div
+                style={{
+                  marginTop: "2.5rem",
+                  display: "flex",
+                  flexWrap: "wrap",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  gap: "1.2rem",
+                  maxWidth: "60rem",
+                  marginInline: "auto",
+                }}
               >
-                <div className="pain-card" style={{ background: "var(--white)", border: "1px solid var(--border)", flexDirection: "column", alignItems: "stretch" }}>
-                  <div style={{ display: "flex", gap: "0.9rem" }}>
-                    <div className="pain-icon-wrapper" style={{ background: "var(--chip)", color: "var(--ink-faint)" }}>👥</div>
-                    <div>
-                      <b style={{ fontSize: "0.98rem" }}>Dulu</b>
-                      <p style={{ fontSize: "0.86rem", color: "var(--ink-soft)", lineHeight: 1.5, margin: "0.3rem 0 0" }}>Butuh 6 orang untuk 6 posisi berbeda — gaji, tunjangan, dan operasional jadi beban pengeluaran tiap bulan.</p>
-                    </div>
+                {/* Dulu: Model Konvensional */}
+                <div
+                  className="bento"
+                  style={{
+                    flex: "1 1 320px",
+                    maxWidth: "460px",
+                    padding: "1.8rem 1.6rem",
+                    background: "var(--white)",
+                    border: "1px solid rgba(229, 72, 77, 0.2)",
+                    borderRadius: "22px",
+                    boxShadow: "0 10px 30px rgba(229, 72, 77, 0.04)",
+                    display: "flex",
+                    flexDirection: "column",
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1rem" }}>
+                    <span style={{ fontSize: "0.72rem", fontWeight: 800, color: "var(--red)", background: "rgba(229, 72, 77, 0.08)", padding: "0.3rem 0.75rem", borderRadius: "999px", letterSpacing: "0.03em" }}>
+                      ⏳ MODEL KONVENSIONAL
+                    </span>
+                    <span style={{ width: "42px", height: "42px", borderRadius: "50%", background: "rgba(229, 72, 77, 0.08)", color: "var(--red)", display: "grid", placeItems: "center", fontSize: "1.25rem" }}>
+                      👥
+                    </span>
                   </div>
-                  <div style={{ marginTop: "1rem", display: "flex", flexDirection: "column", gap: "0.4rem" }}>
+
+                  <h3 style={{ fontSize: "1.15rem", fontWeight: 800, margin: "0 0 0.35rem", color: "var(--ink)" }}>
+                    Ketergantungan Tim 6 Orang
+                  </h3>
+                  <p style={{ fontSize: "0.84rem", color: "var(--ink-soft)", lineHeight: 1.5, margin: "0 0 1.2rem" }}>
+                    Biaya operasional membengkak tiap bulan dan aktivitas terhenti di luar jam kantor.
+                  </p>
+
+                  <div style={{ display: "flex", flexDirection: "column", gap: "0.55rem" }}>
                     {[
-                      { icon: "🧑‍💼", label: "Admin" },
-                      { icon: "🎧", label: "Customer Service" },
-                      { icon: "📢", label: "Marketing" },
-                      { icon: "✍️", label: "Content Creator" },
-                      { icon: "🤝", label: "Sales" },
-                      { icon: "📊", label: "Data & Report" },
-                    ].map((r, i) => (
-                      <div key={i} style={{ display: "flex", alignItems: "center", gap: "0.6rem", background: "var(--chip)", borderRadius: "999px", padding: "0.35rem 0.7rem 0.35rem 0.35rem" }}>
-                        <span style={{ width: "22px", height: "22px", borderRadius: "50%", background: "var(--white)", display: "grid", placeItems: "center", fontSize: "0.7rem", flexShrink: 0 }}>{r.icon}</span>
-                        <span style={{ fontSize: "0.76rem", fontWeight: 600, color: "var(--ink-soft)" }}>{r.label}</span>
+                      { icon: "💸", title: "6x Beban Gaji Bulanan", desc: "Gaji pokok, tunjangan, BPJS, & fasilitas kantor." },
+                      { icon: "⏰", title: "Terbatas 8 Jam Kerja", desc: "Leads malam & akhir pekan lambat direspons." },
+                      { icon: "📉", title: "Kapasitas Terbatas & Lelah", desc: "Mudah burnout, human error, & risiko resign." },
+                      { icon: "🔄", title: "Supervisi & Follow-up Rutin", desc: "Waktu owner habis memantau pekerjaan harian." },
+                    ].map((item, i) => (
+                      <div
+                        key={i}
+                        style={{
+                          display: "flex",
+                          alignItems: "flex-start",
+                          gap: "0.75rem",
+                          background: "rgba(229, 72, 77, 0.03)",
+                          border: "1px solid rgba(229, 72, 77, 0.08)",
+                          borderRadius: "14px",
+                          padding: "0.65rem 0.85rem",
+                        }}
+                      >
+                        <span style={{ fontSize: "1.1rem", lineHeight: 1.2 }}>{item.icon}</span>
+                        <div>
+                          <b style={{ fontSize: "0.82rem", color: "var(--ink)", display: "block" }}>{item.title}</b>
+                          <span style={{ fontSize: "0.76rem", color: "var(--ink-soft)", lineHeight: 1.4, display: "block" }}>{item.desc}</span>
+                        </div>
                       </div>
                     ))}
                   </div>
+
+                  <div style={{ marginTop: "1.2rem", padding: "0.65rem 0.9rem", background: "rgba(229, 72, 77, 0.06)", borderRadius: "12px", borderLeft: "3px solid var(--red)" }}>
+                    <span style={{ fontSize: "0.76rem", fontWeight: 700, color: "var(--red)" }}>
+                      ⚠️ Biaya tinggi & pertumbuhan bisnis terhambat kapasitas jam kerja manusia.
+                    </span>
+                  </div>
                 </div>
+
+                {/* Transform Arrow */}
                 <TransformArrow />
-                <div className="pain-card solution-card" style={{ flexDirection: "column", alignItems: "stretch" }}>
-                  <div style={{ display: "flex", gap: "0.9rem" }}>
-                    <div className="pain-icon-wrapper">🤖</div>
-                    <div>
-                      <b style={{ fontSize: "0.98rem" }}>Sekarang</b>
-                      <p style={{ fontSize: "0.86rem", color: "var(--ink-soft)", lineHeight: 1.5, margin: "0.3rem 0 0" }}>Manusia menentukan arah. 6 AI Agent yang mengerjakan — tanpa gaji bulanan.</p>
-                    </div>
+
+                {/* Sekarang: Zero Human Company */}
+                <div
+                  className="bento"
+                  style={{
+                    flex: "1 1 320px",
+                    maxWidth: "460px",
+                    padding: "1.8rem 1.6rem",
+                    background: "linear-gradient(180deg, rgba(35,33,118,0.03) 0%, var(--white) 100%)",
+                    border: "1.5px solid rgba(35, 33, 118, 0.22)",
+                    borderRadius: "22px",
+                    boxShadow: "0 14px 40px rgba(35,33,118,0.08)",
+                    display: "flex",
+                    flexDirection: "column",
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1rem" }}>
+                    <span style={{ fontSize: "0.72rem", fontWeight: 800, color: "#fff", background: "linear-gradient(135deg, var(--purple), var(--purple-deep))", padding: "0.3rem 0.8rem", borderRadius: "999px", letterSpacing: "0.03em", boxShadow: "0 3px 8px rgba(35,33,118,0.25)" }}>
+                      ✨ ZERO HUMAN COMPANY
+                    </span>
+                    <span style={{ width: "42px", height: "42px", borderRadius: "50%", background: "var(--purple-soft)", color: "var(--purple)", display: "grid", placeItems: "center", fontSize: "1.25rem", border: "1px solid rgba(35,33,118,0.18)" }}>
+                      🤖
+                    </span>
                   </div>
-                  <div style={{ marginTop: "1rem", display: "flex", flexDirection: "column", gap: "0.4rem" }}>
+
+                  <h3 style={{ fontSize: "1.15rem", fontWeight: 800, margin: "0 0 0.35rem", color: "var(--ink)" }}>
+                    6 AI Agent Otonom Bekerja
+                  </h3>
+                  <p style={{ fontSize: "0.84rem", color: "var(--ink-soft)", lineHeight: 1.5, margin: "0 0 1.2rem" }}>
+                    Manusia menentukan strategi & arah bisnis — AI Agent mengeksekusi secara otomatis 24/7.
+                  </p>
+
+                  <div style={{ display: "flex", flexDirection: "column", gap: "0.55rem" }}>
                     {[
-                      { icon: "💬", label: "Jawab Chat Otomatis", color: "#22c55e" },
-                      { icon: "📢", label: "Buat Konten & Iklan", color: "#7c3aed" },
-                      { icon: "📊", label: "Analisis & Laporan", color: "#f97316" },
-                      { icon: "📅", label: "Jadwal & Reminder", color: "#3b82f6" },
-                      { icon: "📧", label: "Kirim Email & Follow Up", color: "#ef4444" },
-                      { icon: "🗄️", label: "Kelola Data", color: "#10b981" },
-                    ].map((c, i) => (
-                      <div key={i} style={{ display: "flex", alignItems: "center", gap: "0.6rem", background: `${c.color}14`, borderRadius: "999px", padding: "0.35rem 0.7rem 0.35rem 0.35rem" }}>
-                        <span style={{ width: "22px", height: "22px", borderRadius: "50%", background: c.color, color: "#fff", display: "grid", placeItems: "center", fontSize: "0.68rem", flexShrink: 0 }}>{c.icon}</span>
-                        <span style={{ fontSize: "0.76rem", fontWeight: 700, color: c.color }}>{c.label}</span>
+                      { icon: "💰", title: "0 Beban Gaji Bulanan", desc: "Cukup 1x setup di laptop Anda tanpa langganan mahal." },
+                      { icon: "⚡", title: "Respon 24/7 Tanpa Jeda", desc: "Chat, closing, & follow-up leads aktif saat Anda tidur." },
+                      { icon: "🎯", title: "Konsisten 100% Sesuai SOP", desc: "Eksekusi presisi tinggi tanpa lelah dan tanpa drama." },
+                      { icon: "🚀", title: "Skalabilitas Tanpa Batas", desc: "Tangani ratusan prospek simultan tanpa rekrut staf." },
+                    ].map((item, i) => (
+                      <div
+                        key={i}
+                        style={{
+                          display: "flex",
+                          alignItems: "flex-start",
+                          gap: "0.75rem",
+                          background: "rgba(35, 33, 118, 0.03)",
+                          border: "1px solid rgba(35, 33, 118, 0.08)",
+                          borderRadius: "14px",
+                          padding: "0.65rem 0.85rem",
+                        }}
+                      >
+                        <span style={{ fontSize: "1.1rem", lineHeight: 1.2 }}>{item.icon}</span>
+                        <div>
+                          <b style={{ fontSize: "0.82rem", color: "var(--purple)", display: "block" }}>{item.title}</b>
+                          <span style={{ fontSize: "0.76rem", color: "var(--ink-soft)", lineHeight: 1.4, display: "block" }}>{item.desc}</span>
+                        </div>
                       </div>
                     ))}
                   </div>
+
+                  <div style={{ marginTop: "1.2rem", padding: "0.65rem 0.9rem", background: "rgba(23, 160, 94, 0.08)", borderRadius: "12px", borderLeft: "3px solid var(--green)" }}>
+                    <span style={{ fontSize: "0.76rem", fontWeight: 700, color: "var(--green)" }}>
+                      ✅ Operasional 100% mandiri & bisnis terus menghasilkan 24 jam.
+                    </span>
+                  </div>
                 </div>
-              </RevealStagger>
+              </div>
+
+              {/* Bottom Quote / Transformation Hook */}
               <div style={{
-                marginTop: "2rem", display: "flex", alignItems: "center", gap: "1rem",
+                marginTop: "2.2rem", display: "flex", alignItems: "center", gap: "1rem",
                 maxWidth: "40rem", marginInline: "auto", padding: "1rem 1.4rem",
                 background: "var(--white)", border: "1px solid var(--border)", borderRadius: "999px",
-                boxShadow: "0 12px 30px rgba(35,33,118,0.1)",
+                boxShadow: "0 12px 30px rgba(35,33,118,0.08)",
               }}>
                 <span style={{ width: "44px", height: "44px", borderRadius: "50%", background: "linear-gradient(135deg, var(--orange), var(--purple))", color: "#fff", display: "grid", placeItems: "center", fontSize: "1.2rem", flexShrink: 0 }}>💡</span>
                 <p style={{ flex: 1, margin: 0, fontWeight: 700, color: "var(--ink)", fontSize: "0.95rem", lineHeight: 1.5 }}>
@@ -733,53 +829,233 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
             </div>
           </section>
 
-          {/* Section 2: Roster 6 Karyawan AI (ringkas) */}
-          <section className="section" style={{ paddingBottom: "3rem" }}>
+          {/* Section 2: 6 Karyawan AI (Unified & Harmonized with Brand Palette) */}
+          <section className="section" style={{ paddingBottom: "3.5rem" }}>
             <div className="container">
               <div className="section-head center">
-                <span style={{ display: "inline-flex", alignItems: "center", gap: "0.4rem", background: "linear-gradient(135deg, var(--purple), #6C63FF)", color: "#fff", fontWeight: 800, fontSize: "0.75rem", letterSpacing: "0.04em", padding: "0.4rem 1rem", borderRadius: "999px", marginBottom: "1.2rem" }}>
+                <span style={{ display: "inline-flex", alignItems: "center", gap: "0.4rem", background: "linear-gradient(135deg, var(--purple), var(--purple-deep))", color: "#fff", fontWeight: 800, fontSize: "0.75rem", letterSpacing: "0.04em", padding: "0.4rem 1rem", borderRadius: "999px", marginBottom: "1.2rem", boxShadow: "0 3px 10px rgba(35,33,118,0.25)" }}>
                   ✨ 6 KARYAWAN AI
                 </span>
                 <h2 style={{ fontSize: "clamp(1.8rem, 4vw, 2.6rem)", lineHeight: 1.15 }}>
                   6 Karyawan yang<br />
                   <span className="hero-h1-accent">Tetap Bekerja Saat Anda Tidur</span>
                 </h2>
-                <p style={{ maxWidth: "30rem", marginInline: "auto", color: "var(--ink-soft)" }}>
-                  Anda sedang istirahat. Bisnis tetap berjalan.
+                <p style={{ maxWidth: "32rem", marginInline: "auto", color: "var(--ink-soft)" }}>
+                  Anda sedang istirahat. Bisnis tetap berjalan — 6 AI Agent yang siap Anda bangun dan jalankan untuk otomatisasi operasional.
                 </p>
               </div>
-              <RevealStagger
-                hover
-                className="mobile-grid-2col"
-                itemFlex={Array(6).fill("0 1 230px")}
-                style={{ marginTop: "2.2rem", display: "flex", flexWrap: "wrap", justifyContent: "center", gap: "1rem", maxWidth: "58rem", marginInline: "auto" }}
+
+              <div
+                style={{
+                  marginTop: "2.5rem",
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
+                  gap: "1.4rem",
+                  maxWidth: "68rem",
+                  marginInline: "auto",
+                }}
               >
                 {[
-                  { no: "01", title: "CS Agent", accent: "💬", color: "#6C63FF", desc: "Menjawab pertanyaan dan membantu pelanggan 24/7 tanpa henti." },
-                  { no: "02", title: "Sales Agent", accent: "🤝", color: "#F7941D", desc: "Menemukan prospek, ngobrol, dan menutup penjualan secara otomatis." },
-                  { no: "03", title: "Marketing Agent", accent: "📣", color: "#17A05E", desc: "Buat konten, kelola campaign, dan tarik lebih banyak pelanggan." },
-                  { no: "04", title: "Content Agent", accent: "✍️", color: "#8b5cf6", desc: "Tulis artikel, caption, script, dan konten berkualitas sesuai brand Anda." },
-                  { no: "05", title: "Developer Agent", accent: "🔧", color: "#3b82f6", desc: "Bantu ngoding, perbaiki bug, dan kembangkan sistem lebih cepat." },
-                  { no: "06", title: "Report Agent", accent: "📊", color: "#ec4899", desc: "Kumpulkan data, analisis, dan buat laporan akurat setiap hari." },
+                  {
+                    no: "01",
+                    title: "Customer Service Agent",
+                    accent: "💬",
+                    color: "var(--purple)",
+                    soft: "var(--purple-soft)",
+                    border: "rgba(35, 33, 118, 0.15)",
+                    desc: "Menjawab pertanyaan & bantu pelanggan 24/7 tanpa henti lebih cepat.",
+                    tasks: ["Menjawab pertanyaan", "Info produk", "Ikuti instruksi bisnis"],
+                  },
+                  {
+                    no: "02",
+                    title: "Sales Agent",
+                    accent: "🤝",
+                    color: "var(--orange)",
+                    soft: "var(--orange-soft)",
+                    border: "rgba(247, 148, 29, 0.2)",
+                    desc: "Menemukan prospek, follow-up, dan menutup penjualan secara otomatis.",
+                    tasks: ["Kelola leads", "Follow-up otomatis", "Laporan closing"],
+                  },
+                  {
+                    no: "03",
+                    title: "Marketing Agent",
+                    accent: "📣",
+                    color: "var(--green)",
+                    soft: "rgba(23, 160, 94, 0.08)",
+                    border: "rgba(23, 160, 94, 0.2)",
+                    desc: "Partner riset pasar, rancang strategi promosi, dan kelola campaign.",
+                    tasks: ["Riset pasar", "Ide campaign", "Strategi promosi"],
+                  },
+                  {
+                    no: "04",
+                    title: "Content Agent",
+                    accent: "✍️",
+                    color: "var(--purple)",
+                    soft: "var(--purple-soft)",
+                    border: "rgba(35, 33, 118, 0.15)",
+                    desc: "Mempercepat produksi artikel, caption, script, dan konten brand Anda.",
+                    tasks: ["Copywriting", "Caption & script", "Content planning"],
+                  },
+                  {
+                    no: "05",
+                    title: "Developer Agent",
+                    accent: "🔧",
+                    color: "var(--orange)",
+                    soft: "var(--orange-soft)",
+                    border: "rgba(247, 148, 29, 0.2)",
+                    desc: "Bantu coding, perbaiki bug, kembangkan fitur, dan kelola website.",
+                    tasks: ["Coding & script", "Debugging", "Fitur & website"],
+                  },
+                  {
+                    no: "06",
+                    title: "Report Agent",
+                    accent: "📊",
+                    color: "var(--green)",
+                    soft: "rgba(23, 160, 94, 0.08)",
+                    border: "rgba(23, 160, 94, 0.2)",
+                    desc: "Kumpulkan data, analisis, dan buat laporan akurat setiap hari.",
+                    tasks: ["Rangkum aktivitas", "Buat laporan", "Insight bisnis"],
+                  },
                 ].map((agent, i) => (
-                  <div key={i} style={{ position: "relative", padding: "1.8rem 1.2rem 1.5rem", background: "var(--white)", border: "1px solid var(--border)", borderRadius: "20px", textAlign: "center", boxShadow: "0 10px 30px rgba(35,33,118,0.06)", height: "100%" }}>
-                    <span style={{ position: "absolute", top: "14px", left: "14px", width: "30px", height: "30px", borderRadius: "50%", background: agent.color, color: "#fff", fontWeight: 800, fontSize: "0.72rem", display: "grid", placeItems: "center" }}>{agent.no}</span>
-                    <div style={{ position: "relative", width: "84px", height: "84px", marginInline: "auto" }}>
-                      <div style={{ width: "100%", height: "100%", borderRadius: "50%", background: `${agent.color}1a`, display: "grid", placeItems: "center", fontSize: "2.3rem" }}>🤖</div>
-                      <span style={{ position: "absolute", bottom: "-4px", right: "-4px", width: "32px", height: "32px", borderRadius: "50%", background: agent.color, color: "#fff", display: "grid", placeItems: "center", fontSize: "0.95rem", border: "3px solid var(--white)" }}>{agent.accent}</span>
+                  <div
+                    key={i}
+                    className="bento"
+                    style={{
+                      position: "relative",
+                      padding: 0,
+                      background: "var(--white)",
+                      border: "1px solid var(--border)",
+                      borderRadius: "20px",
+                      overflow: "hidden",
+                      display: "flex",
+                      flexDirection: "column",
+                      boxShadow: "0 10px 30px rgba(35,33,118,0.05)",
+                      transition: "transform 0.2s ease, box-shadow 0.2s ease",
+                    }}
+                  >
+                    {/* Top colored accent bar */}
+                    <div style={{ height: "4px", background: agent.color }} />
+
+                    <div style={{ padding: "1.6rem 1.4rem", display: "flex", flexDirection: "column", flex: 1 }}>
+                      {/* Top Row: Number badge + Robot Avatar */}
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1.2rem" }}>
+                        <span
+                          style={{
+                            width: "32px",
+                            height: "32px",
+                            borderRadius: "50%",
+                            background: agent.color,
+                            color: "#fff",
+                            fontWeight: 800,
+                            fontSize: "0.78rem",
+                            display: "grid",
+                            placeItems: "center",
+                          }}
+                        >
+                          {agent.no}
+                        </span>
+
+                        <div style={{ position: "relative", width: "60px", height: "60px" }}>
+                          <div
+                            style={{
+                              width: "100%",
+                              height: "100%",
+                              borderRadius: "50%",
+                              background: agent.soft,
+                              border: `1px solid ${agent.border}`,
+                              display: "grid",
+                              placeItems: "center",
+                              fontSize: "1.8rem",
+                            }}
+                          >
+                            🤖
+                          </div>
+                          <span
+                            style={{
+                              position: "absolute",
+                              bottom: "-2px",
+                              right: "-2px",
+                              width: "24px",
+                              height: "24px",
+                              borderRadius: "50%",
+                              background: agent.color,
+                              color: "#fff",
+                              display: "grid",
+                              placeItems: "center",
+                              fontSize: "0.75rem",
+                              border: "2px solid var(--white)",
+                              boxShadow: "0 2px 6px rgba(0,0,0,0.12)",
+                            }}
+                          >
+                            {agent.accent}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Title & Desc */}
+                      <h3 style={{ fontSize: "1.08rem", fontWeight: 800, margin: "0 0 0.45rem", color: "var(--ink)" }}>
+                        {agent.title}
+                      </h3>
+                      <p style={{ fontSize: "0.86rem", color: "var(--ink-soft)", lineHeight: 1.55, margin: "0 0 1.2rem" }}>
+                        {agent.desc}
+                      </p>
+
+                      {/* Capabilities / Task Chips */}
+                      <div style={{ marginTop: "auto", display: "flex", flexWrap: "wrap", gap: "0.4rem", paddingTop: "0.75rem", borderTop: "1px dashed var(--border)" }}>
+                        {agent.tasks.map((task, j) => (
+                          <span
+                            key={j}
+                            style={{
+                              fontSize: "0.74rem",
+                              fontWeight: 600,
+                              background: agent.soft,
+                              color: agent.color,
+                              border: `1px solid ${agent.border}`,
+                              padding: "0.26rem 0.62rem",
+                              borderRadius: "999px",
+                              letterSpacing: "0.01em",
+                            }}
+                          >
+                            {task}
+                          </span>
+                        ))}
+                      </div>
                     </div>
-                    <b style={{ display: "block", marginTop: "0.9rem", fontSize: "1rem" }}>{agent.title}</b>
-                    <p style={{ fontSize: "0.8rem", color: "var(--ink-soft)", lineHeight: 1.55, marginTop: "0.4rem" }}>{agent.desc}</p>
                   </div>
                 ))}
-              </RevealStagger>
-              <div style={{
-                marginTop: "2rem", display: "flex", alignItems: "center", gap: "1rem",
-                maxWidth: "36rem", marginInline: "auto", padding: "0.9rem 1.4rem",
-                background: "var(--white)", border: "1px solid var(--border)", borderRadius: "999px",
-                boxShadow: "0 12px 30px rgba(35,33,118,0.1)",
-              }}>
-                <span style={{ width: "44px", height: "44px", borderRadius: "50%", background: "linear-gradient(135deg, var(--purple), #6C63FF)", color: "#fff", display: "grid", placeItems: "center", fontSize: "1.2rem", flexShrink: 0 }}>⚡</span>
+              </div>
+
+              {/* Bottom workforce banner */}
+              <div
+                style={{
+                  marginTop: "2.2rem",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "1rem",
+                  maxWidth: "38rem",
+                  marginInline: "auto",
+                  padding: "0.9rem 1.4rem",
+                  background: "var(--white)",
+                  border: "1px solid var(--border)",
+                  borderRadius: "999px",
+                  boxShadow: "0 12px 30px rgba(35,33,118,0.08)",
+                }}
+              >
+                <span
+                  style={{
+                    width: "42px",
+                    height: "42px",
+                    borderRadius: "50%",
+                    background: "linear-gradient(135deg, var(--orange), var(--purple))",
+                    color: "#fff",
+                    display: "grid",
+                    placeItems: "center",
+                    fontSize: "1.2rem",
+                    flexShrink: 0,
+                  }}
+                >
+                  ⚡
+                </span>
                 <p style={{ margin: 0, fontWeight: 700, color: "var(--ink)", fontSize: "0.95rem" }}>
                   Enam pekerjaan. Enam AI Agent. <span className="hero-h1-accent">Satu digital workforce.</span>
                 </p>
@@ -791,7 +1067,7 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
           <section className="section" style={{ background: "var(--chip)", paddingBottom: "3.5rem" }}>
             <div className="container">
               <div className="section-head center">
-                <span className="type-tag" style={{ marginBottom: "1.2rem", display: "inline-block", background: "rgba(108, 92, 231, 0.08)", color: "var(--purple)" }}>Bukan Sekadar Chatbot</span>
+                <span className="type-tag" style={{ marginBottom: "1.2rem", display: "inline-block", background: "var(--purple-soft)", color: "var(--purple)" }}>Bukan Sekadar Chatbot</span>
                 <h2 style={{ fontSize: "clamp(1.8rem, 4vw, 2.6rem)" }}>ChatGPT Bisa Menjawab. AI Agent Bisa Bekerja.</h2>
                 <p style={{ maxWidth: "34rem", marginInline: "auto", color: "var(--ink-soft)" }}>
                   Chatbot menunggu pertanyaan. AI Agent diberi tujuan, tools, dan workflow untuk menyelesaikan pekerjaan.
@@ -811,45 +1087,6 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
               <p style={{ textAlign: "center", marginTop: "2.2rem", color: "var(--ink)", maxWidth: "30rem", marginInline: "auto", fontWeight: 700 }}>
                 Anda memberi pekerjaan. Agent yang mengerjakannya — inilah yang akan Anda praktikkan.
               </p>
-            </div>
-          </section>
-
-          {/* Section 4: 6 Karyawan AI Detail */}
-          <section className="section" style={{ paddingBottom: "3.5rem" }}>
-            <div className="container">
-              <div className="section-head center">
-                <span className="type-tag type-workshop" style={{ marginBottom: "1.2rem", display: "inline-block" }}>Apa yang Akan Anda Bangun?</span>
-                <h2 style={{ fontSize: "clamp(1.8rem, 4vw, 2.6rem)" }}>6 Karyawan AI untuk Bisnis Anda</h2>
-              </div>
-              <div style={{ marginTop: "2.2rem", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "1.4rem" }}>
-                {[
-                  { no: "01", title: "Customer Service Agent", icon: "💬", color: "var(--purple)", soft: "var(--purple-soft)", desc: "Menjawab pertanyaan & bantu pelanggan lebih cepat.", tasks: ["Menjawab pertanyaan", "Info produk", "Ikuti instruksi bisnis"] },
-                  { no: "02", title: "Sales Agent", icon: "🤝", color: "var(--orange)", soft: "var(--orange-soft)", desc: "Kelola leads & follow-up secara konsisten.", tasks: ["Kelola leads", "Follow-up", "Laporan aktivitas"] },
-                  { no: "03", title: "Marketing Agent", icon: "📣", color: "var(--green)", soft: "rgba(23,160,94,0.1)", desc: "Partner riset, strategi, dan campaign.", tasks: ["Riset pasar", "Ide campaign", "Strategi promosi"] },
-                  { no: "04", title: "Content Agent", icon: "✍️", color: "var(--purple)", soft: "var(--purple-soft)", desc: "Mempercepat produksi ide & konten.", tasks: ["Copywriting", "Caption", "Content planning"] },
-                  { no: "05", title: "Developer Agent", icon: "🔧", color: "var(--orange)", soft: "var(--orange-soft)", desc: "Bantu coding, debugging, dan website.", tasks: ["Coding", "Debugging", "Fitur & website"] },
-                  { no: "06", title: "Report Agent", icon: "📊", color: "var(--green)", soft: "rgba(23,160,94,0.1)", desc: "Mengolah data jadi laporan & insight.", tasks: ["Rangkum aktivitas", "Buat laporan", "Insight bisnis"] },
-                ].map((agent, i) => (
-                  <div key={i} className="bento" style={{ padding: 0, border: "1px solid var(--border)", borderRadius: "var(--r-md)", background: "var(--white)", overflow: "hidden" }}>
-                    <div style={{ height: "5px", background: agent.color }} />
-                    <div style={{ padding: "1.6rem" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: "0.8rem", marginBottom: "0.9rem" }}>
-                        <span style={{ width: "44px", height: "44px", borderRadius: "50%", background: agent.soft, color: agent.color, fontSize: "1.3rem", display: "grid", placeItems: "center", flexShrink: 0 }}>{agent.icon}</span>
-                        <div>
-                          <span style={{ fontSize: "0.72rem", fontWeight: 800, color: agent.color }}>{agent.no}</span>
-                          <h3 style={{ fontSize: "1.05rem", fontWeight: 800, margin: 0 }}>{agent.title}</h3>
-                        </div>
-                      </div>
-                      <p style={{ fontSize: "0.88rem", color: "var(--ink-soft)", lineHeight: 1.5, marginBottom: "1rem" }}>{agent.desc}</p>
-                      <div style={{ display: "flex", flexWrap: "wrap", gap: "0.4rem" }}>
-                        {agent.tasks.map((t, j) => (
-                          <span key={j} style={{ fontSize: "0.75rem", fontWeight: 600, background: agent.soft, color: agent.color, padding: "0.28rem 0.65rem", borderRadius: "999px" }}>{t}</span>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
             </div>
           </section>
 
@@ -944,63 +1181,241 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
             </div>
           </section>
 
-          {/* Section 6.5: Terhubung ke Tools yang Sudah Anda Pakai */}
+          {/* Section 6.5: Terhubung ke Tools yang Sudah Anda Pakai (Redesigned with Real Logos) */}
           <section className="section" style={{ background: "var(--chip)", paddingBottom: "3.5rem" }}>
             <div className="container">
               <div className="section-head center">
-                <span style={{ display: "inline-flex", alignItems: "center", gap: "0.4rem", background: "var(--orange)", color: "#fff", fontWeight: 800, fontSize: "0.75rem", letterSpacing: "0.04em", padding: "0.4rem 1rem", borderRadius: "999px", marginBottom: "1.2rem" }}>
+                <span style={{ display: "inline-flex", alignItems: "center", gap: "0.4rem", background: "var(--orange)", color: "#fff", fontWeight: 800, fontSize: "0.75rem", letterSpacing: "0.04em", padding: "0.4rem 1rem", borderRadius: "999px", marginBottom: "1.2rem", boxShadow: "0 3px 8px rgba(247,148,29,0.3)" }}>
                   🔗 TERHUBUNG KEMANA SAJA
                 </span>
                 <h2 style={{ fontSize: "clamp(1.6rem, 4vw, 2.4rem)" }}>
                   Agent Bisa Terhubung ke <span className="hero-h1-accent">Tools yang Sudah Anda Pakai</span>
                 </h2>
-                <p style={{ maxWidth: "32rem", marginInline: "auto", color: "var(--ink-soft)" }}>
-                  Dari chat pelanggan sampai dokumen kerja — Agent Anda bisa bekerja langsung di sana.
+                <p style={{ maxWidth: "34rem", marginInline: "auto", color: "var(--ink-soft)" }}>
+                  Tanpa perlu ganti aplikasi — AI Agent Anda bekerja langsung di ekosistem software yang sudah biasa Anda gunakan setiap hari.
                 </p>
               </div>
 
-              <div style={{ position: "relative" }}>
-                <div style={{ marginTop: "2rem", overflowX: "auto", paddingBottom: "0.6rem" }}>
-                  <RevealStagger
-                    hover
-                    itemFlex={Array(10).fill("0 0 180px")}
-                    style={{ display: "flex", gap: "1rem", width: "max-content", paddingInline: "0.2rem" }}
+              <div
+                style={{
+                  marginTop: "2.5rem",
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+                  gap: "1rem",
+                  maxWidth: "68rem",
+                  marginInline: "auto",
+                }}
+              >
+                {[
+                  {
+                    name: "WhatsApp",
+                    desc: "Chat prospek, jawab FAQ, dan broadcast update otomatis.",
+                    logo: (
+                      <svg viewBox="0 0 24 24" width="28" height="28" fill="none">
+                        <path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91C2.13 13.66 2.59 15.36 3.45 16.86L2.05 22L7.3 20.63C8.75 21.42 10.38 21.83 12.04 21.83C17.5 21.83 21.95 17.38 21.95 11.92C21.95 9.27 20.92 6.78 19.05 4.9C17.18 3.03 14.69 2 12.04 2Z" fill="#25D366"/>
+                        <path d="M17.47 14.38C17.17 14.23 15.7 13.51 15.43 13.41C15.15 13.31 14.95 13.26 14.75 13.56C14.55 13.86 13.98 14.53 13.8 14.73C13.63 14.93 13.45 14.96 13.15 14.81C12.85 14.66 11.89 14.35 10.75 13.33C9.86 12.54 9.26 11.56 9.09 11.26C8.91 10.96 9.07 10.8 9.22 10.65C9.35 10.52 9.51 10.31 9.66 10.13C9.81 9.96 9.86 9.83 9.96 9.63C10.06 9.43 10.01 9.26 9.94 9.11C9.86 8.96 9.29 7.56 9.06 7C8.83 6.45 8.6 6.53 8.43 6.52C8.27 6.51 8.07 6.51 7.87 6.51C7.67 6.51 7.35 6.58 7.07 6.89C6.8 7.19 6.02 7.92 6.02 9.4C6.02 10.88 7.1 12.31 7.25 12.51C7.4 12.71 9.37 15.75 12.39 17.05C13.11 17.36 13.68 17.55 14.11 17.69C14.83 17.92 15.48 17.89 16 17.81C16.58 17.72 17.79 17.07 18.04 16.37C18.29 15.67 18.29 15.07 18.21 14.94C18.14 14.81 17.94 14.73 17.64 14.58L17.47 14.38Z" fill="white"/>
+                      </svg>
+                    ),
+                  },
+                  {
+                    name: "Telegram",
+                    desc: "Terima perintah, notifikasi instan, & pantau status agent.",
+                    logo: (
+                      <svg viewBox="0 0 24 24" width="28" height="28" fill="none">
+                        <circle cx="12" cy="12" r="12" fill="#229ED9"/>
+                        <path d="M5.4 11.9L17.6 7.2C18.2 6.95 18.7 7.32 18.5 8.15L16.4 18.05C16.25 18.75 15.8 18.92 15.2 18.58L12 16.22L10.45 17.71C10.28 17.88 10.13 18.03 9.8 18.03L10.03 14.73L16.03 9.31C16.29 9.08 15.97 8.95 15.63 9.18L8.21 13.85L5.02 12.85C4.33 12.63 4.31 12.16 5.4 11.9Z" fill="white"/>
+                      </svg>
+                    ),
+                  },
+                  {
+                    name: "Slack",
+                    desc: "Kirim laporan harian, insight bisnis, & alert ke channel tim.",
+                    logo: (
+                      <svg viewBox="0 0 24 24" width="28" height="28" fill="none">
+                        <path d="M5.04 14.5a2.52 2.52 0 0 1-2.52-2.52c0-1.39 1.13-2.52 2.52-2.52h2.52v2.52c0 1.39-1.13 2.52-2.52 2.52z" fill="#E01E5A"/>
+                        <path d="M8.82 14.5c1.39 0 2.52-1.13 2.52-2.52V5.04A2.52 2.52 0 0 0 8.82 2.52a2.52 2.52 0 0 0-2.52 2.52v6.94c0 1.39 1.13 2.52 2.52 2.52z" fill="#E01E5A"/>
+                        <path d="M9.5 5.04a2.52 2.52 0 0 1 2.52-2.52c1.39 0 2.52 1.13 2.52 2.52v2.52h-2.52c-1.39 0-2.52-1.13-2.52-2.52z" fill="#36C5F0"/>
+                        <path d="M9.5 8.82c0 1.39 1.13 2.52 2.52 2.52h6.94a2.52 2.52 0 0 0 2.52-2.52 2.52 2.52 0 0 0-2.52-2.52H12.02c-1.39 0-2.52 1.13-2.52 2.52z" fill="#36C5F0"/>
+                        <path d="M18.96 9.5c1.39 0 2.52 1.13 2.52 2.52 0 1.39-1.13 2.52-2.52 2.52h-2.52V9.5h2.52z" fill="#2EB67D"/>
+                        <path d="M15.18 9.5c-1.39 0-2.52 1.13-2.52 2.52v6.94a2.52 2.52 0 0 0 2.52 2.52 2.52 2.52 0 0 0 2.52-2.52V12.02c0-1.39-1.13-2.52-2.52-2.52z" fill="#2EB67D"/>
+                        <path d="M14.5 18.96a2.52 2.52 0 0 1-2.52 2.52c-1.39 0-2.52-1.13-2.52-2.52v-2.52h2.52c1.39 0 2.52 1.13 2.52 2.52z" fill="#ECB22E"/>
+                        <path d="M14.5 15.18c0-1.39-1.13-2.52-2.52-2.52H5.04A2.52 2.52 0 0 0 2.52 15.18a2.52 2.52 0 0 0 2.52 2.52h6.94c1.39 0 2.52-1.13 2.52-2.52z" fill="#ECB22E"/>
+                      </svg>
+                    ),
+                  },
+                  {
+                    name: "Google Sheets",
+                    desc: "Catat lead, rekap transaksi, & update spreadsheet otomatis.",
+                    logo: (
+                      <svg viewBox="0 0 24 24" width="28" height="28" fill="none">
+                        <path d="M14.5 2H6C4.9 2 4 2.9 4 4V20C4 21.1 4.9 22 6 22H18C19.1 22 20 21.1 20 20V7.5L14.5 2Z" fill="#0F9D58"/>
+                        <path d="M14 2V8H20" fill="#87CEAB"/>
+                        <path d="M8 12H16V18H8V12Z" fill="white" opacity="0.95"/>
+                        <path d="M8 14H16M8 16H16M12 12V18" stroke="#0F9D58" strokeWidth="1.2"/>
+                      </svg>
+                    ),
+                  },
+                  {
+                    name: "Google Docs",
+                    desc: "Tulis draft artikel, proposal, & dokumen bisnis instan.",
+                    logo: (
+                      <svg viewBox="0 0 24 24" width="28" height="28" fill="none">
+                        <path d="M14.5 2H6C4.9 2 4 2.9 4 4V20C4 21.1 4.9 22 6 22H18C19.1 22 20 21.1 20 20V7.5L14.5 2Z" fill="#4285F4"/>
+                        <path d="M14 2V8H20" fill="#A1C2FA"/>
+                        <path d="M8 12H16M8 15H16M8 18H13" stroke="white" strokeWidth="1.5" strokeLinecap="round"/>
+                      </svg>
+                    ),
+                  },
+                  {
+                    name: "Google Drive",
+                    desc: "Baca file SOP, simpan dokumen kerja, & kelola folder cloud.",
+                    logo: (
+                      <svg viewBox="0 0 24 24" width="28" height="28" fill="none">
+                        <path d="M8.27 2L15.73 2L22 13L14.54 13L8.27 2Z" fill="#FFBA00"/>
+                        <path d="M2 13L5.73 19.5L13.19 19.5L9.46 13L2 13Z" fill="#0066DA"/>
+                        <path d="M15.73 2L9.46 13L13.19 19.5L19.46 8.5L15.73 2Z" fill="#00AC47"/>
+                        <path d="M2 13L8.27 2L12 8.5L5.73 19.5L2 13Z" fill="#2684FC"/>
+                      </svg>
+                    ),
+                  },
+                  {
+                    name: "Gmail & Email",
+                    desc: "Kirim email konfirmasi, penawaran, & follow-up pelanggan.",
+                    logo: (
+                      <svg viewBox="0 0 24 24" width="28" height="28" fill="none">
+                        <path d="M20 4H4C2.9 4 2 4.9 2 6V18C2 19.1 2.9 20 4 20H20C21.1 20 22 19.1 22 18V6C22 4.9 21.1 4 20 4Z" fill="#EA4335"/>
+                        <path d="M20 4L12 11.5L4 4H20Z" fill="#BB001B"/>
+                        <path d="M2 6L12 13.5L22 6V18H2V6Z" fill="#F2F2F2"/>
+                        <path d="M2 6L12 13.5L22 6" stroke="#D93025" strokeWidth="1.5"/>
+                      </svg>
+                    ),
+                  },
+                  {
+                    name: "Google Calendar",
+                    desc: "Atur jadwal meeting, booking sesi, & kirim reminder otomatis.",
+                    logo: (
+                      <svg viewBox="0 0 24 24" width="28" height="28" fill="none">
+                        <rect x="3" y="4" width="18" height="17" rx="3" fill="white" stroke="#4285F4" strokeWidth="2"/>
+                        <path d="M3 8H21" stroke="#4285F4" strokeWidth="2"/>
+                        <rect x="7" y="2" width="2" height="4" rx="1" fill="#4285F4"/>
+                        <rect x="15" y="2" width="2" height="4" rx="1" fill="#4285F4"/>
+                        <text x="12" y="16.5" textAnchor="middle" fill="#4285F4" fontSize="8" fontWeight="bold" fontFamily="sans-serif">31</text>
+                      </svg>
+                    ),
+                  },
+                  {
+                    name: "Notion",
+                    desc: "Akses knowledge base, wiki SOP, & update task manajemen.",
+                    logo: (
+                      <svg viewBox="0 0 24 24" width="28" height="28" fill="none">
+                        <rect width="24" height="24" rx="6" fill="#000000"/>
+                        <path d="M6 6.5L8.5 6L17.5 6.5L18 8L16.5 8.5V17L13.5 17.5L9.5 11V16.5L11 17.5L6.5 17.5L6 16L7.5 15.5V8.5L6 8L6 6.5ZM13.5 8.5L9.5 14.5V8.5H13.5Z" fill="white"/>
+                      </svg>
+                    ),
+                  },
+                  {
+                    name: "Database & API",
+                    desc: "Sinkronisasi ke CRM, PostgreSQL, Airtable, & Webhook bisnis.",
+                    logo: (
+                      <svg viewBox="0 0 24 24" width="28" height="28" fill="none">
+                        <path d="M12 2C6.5 2 2 3.8 2 6V18C2 20.2 6.5 22 12 22C17.5 22 22 20.2 22 18V6C22 3.8 17.5 2 12 2Z" fill="#232176" opacity="0.1"/>
+                        <ellipse cx="12" cy="6" rx="9" ry="3.5" stroke="var(--purple)" strokeWidth="2" fill="none"/>
+                        <path d="M3 6V12C3 13.93 7.03 15.5 12 15.5C16.97 15.5 21 13.93 21 12V6" stroke="var(--purple)" strokeWidth="2" fill="none"/>
+                        <path d="M3 12V18C3 19.93 7.03 21.5 12 21.5C16.97 21.5 21 19.93 21 18V12" stroke="var(--purple)" strokeWidth="2" fill="none"/>
+                      </svg>
+                    ),
+                  },
+                ].map((tool, i) => (
+                  <div
+                    key={i}
+                    className="bento"
+                    style={{
+                      background: "var(--white)",
+                      border: "1px solid var(--border)",
+                      borderRadius: "18px",
+                      padding: "1.25rem 1.15rem",
+                      display: "flex",
+                      flexDirection: "column",
+                      boxShadow: "0 6px 20px rgba(35,33,118,0.03)",
+                      transition: "transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease",
+                    }}
                   >
-                    {[
-                      { label: "WhatsApp", icon: "💬", color: "#25D366", desc: "Chat dengan pelanggan & kirim update otomatis" },
-                      { label: "Telegram", icon: "✈️", color: "#229ED9", desc: "Terima perintah & notifikasi real-time" },
-                      { label: "Slack", icon: "#️⃣", color: "#611f69", desc: "Dapatkan update & kirim laporan ke channel" },
-                      { label: "Google Drive", icon: "📁", color: "#34A853", desc: "Baca, simpan, & kelola dokumen kerja" },
-                      { label: "Spreadsheet", icon: "📊", color: "#0F9D58", desc: "Olah data, buat laporan, & update otomatis" },
-                      { label: "Doc", icon: "📄", color: "#4285F4", desc: "Buat & edit dokumen langsung" },
-                      { label: "Database", icon: "🗄️", color: "#7c3aed", desc: "Akses data bisnis secara aman" },
-                      { label: "Kalender", icon: "📅", color: "#EA4335", desc: "Atur jadwal, buat event, & dapatkan reminder" },
-                      { label: "Web", icon: "🌐", color: "#F7941D", desc: "Ambil data, monitor, & otomatisasi web" },
-                      { label: "Aplikasi", icon: "🔌", color: "#17A05E", desc: "Terhubung dengan aplikasi favorit Anda" },
-                    ].map((tool, i) => (
-                      <div key={i} style={{ textAlign: "center", padding: "1.3rem 1rem", background: "var(--white)", border: "1px solid var(--border)", borderRadius: "16px", height: "100%" }}>
-                        <span style={{ width: "48px", height: "48px", borderRadius: "50%", background: `${tool.color}1a`, color: tool.color, fontSize: "1.3rem", display: "grid", placeItems: "center", marginInline: "auto" }}>{tool.icon}</span>
-                        <b style={{ fontSize: "0.88rem", display: "block", marginTop: "0.7rem" }}>{tool.label}</b>
-                        <p style={{ fontSize: "0.74rem", color: "var(--ink-soft)", lineHeight: 1.4, marginTop: "0.35rem" }}>{tool.desc}</p>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.85rem" }}>
+                      <div
+                        style={{
+                          width: "48px",
+                          height: "48px",
+                          borderRadius: "12px",
+                          display: "grid",
+                          placeItems: "center",
+                          background: "#fff",
+                          border: "1px solid var(--border)",
+                          boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
+                        }}
+                      >
+                        {tool.logo}
                       </div>
-                    ))}
-                  </RevealStagger>
-                </div>
-                <div style={{ position: "absolute", top: "2rem", right: 0, bottom: "0.6rem", width: "48px", background: "linear-gradient(90deg, transparent, var(--chip))", pointerEvents: "none" }} />
-              </div>
-              <p style={{ textAlign: "center", marginTop: "0.6rem", color: "var(--ink-faint)", fontSize: "0.76rem" }}>
-                ← Geser untuk lihat semua tools →
-              </p>
+                      <span
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "0.3rem",
+                          fontSize: "0.68rem",
+                          fontWeight: 700,
+                          color: "var(--green)",
+                          background: "rgba(23, 160, 94, 0.08)",
+                          padding: "0.2rem 0.55rem",
+                          borderRadius: "999px",
+                        }}
+                      >
+                        <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "var(--green)" }} />
+                        Terhubung
+                      </span>
+                    </div>
 
-              <div style={{
-                marginTop: "1.6rem", display: "flex", alignItems: "center", gap: "1rem",
-                maxWidth: "36rem", marginInline: "auto", padding: "0.9rem 1.4rem",
-                background: "var(--white)", border: "1px solid var(--border)", borderRadius: "999px",
-                boxShadow: "0 12px 30px rgba(35,33,118,0.1)",
-              }}>
-                <span style={{ width: "44px", height: "44px", borderRadius: "50%", background: "linear-gradient(135deg, var(--purple), #6C63FF)", color: "#fff", display: "grid", placeItems: "center", fontSize: "1.2rem", flexShrink: 0 }}>⚡</span>
+                    <h3 style={{ fontSize: "0.98rem", fontWeight: 800, margin: "0 0 0.3rem", color: "var(--ink)" }}>
+                      {tool.name}
+                    </h3>
+                    <p style={{ fontSize: "0.78rem", color: "var(--ink-soft)", lineHeight: 1.45, margin: 0 }}>
+                      {tool.desc}
+                    </p>
+                  </div>
+                ))}
+              </div>
+
+              {/* Bottom Summary Banner */}
+              <div
+                style={{
+                  marginTop: "2.2rem",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "1rem",
+                  maxWidth: "38rem",
+                  marginInline: "auto",
+                  padding: "0.9rem 1.4rem",
+                  background: "var(--white)",
+                  border: "1px solid var(--border)",
+                  borderRadius: "999px",
+                  boxShadow: "0 12px 30px rgba(35,33,118,0.08)",
+                }}
+              >
+                <span
+                  style={{
+                    width: "42px",
+                    height: "42px",
+                    borderRadius: "50%",
+                    background: "linear-gradient(135deg, var(--orange), var(--purple))",
+                    color: "#fff",
+                    display: "grid",
+                    placeItems: "center",
+                    fontSize: "1.2rem",
+                    flexShrink: 0,
+                  }}
+                >
+                  ⚡
+                </span>
                 <p style={{ margin: 0, fontWeight: 700, color: "var(--ink)", fontSize: "0.92rem" }}>
-                  Semua tools terhubung. Agent bekerja otomatis, <span className="hero-h1-accent">Anda fokus ke hal yang penting.</span>
+                  Semua tools terhubung. Agent bekerja otomatis, <span className="hero-h1-accent">Anda fokus ke hal penting.</span>
                 </p>
               </div>
             </div>
