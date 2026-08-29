@@ -415,7 +415,7 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
             )}
             <div className="prg-cta-col">
               <a href="#daftar" className="btn btn-purple btn-lg btn-block" style={{ width: "100%", textAlign: "center" }}>
-                {isZeroHuman ? `Pulang Bawa 6 Karyawan AI` : (isFree ? "Daftar Gratis Sekarang" : `Daftar — ${priceLabel}`)}
+                {isFree ? "Daftar Gratis Sekarang" : `Daftar — ${priceLabel}`}
               </a>
               {!isFree && program.priceOld && (
                 <span className="prg-hero-strike" style={{ color: "var(--ink-soft)", textDecoration: "line-through", display: "block", textAlign: "center", marginTop: "0.2rem" }}>
@@ -1090,45 +1090,180 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
             </div>
           </section>
 
-          {/* Section 5: Dalam 3 Jam — Timeline */}
-          <section className="section" style={{ background: "var(--chip)", paddingBottom: "3.5rem" }}>
+          {/* Section 5: Dalam 3 Jam — Timeline (Redesigned & Premium) */}
+          <section className="section" style={{ background: "var(--chip)", paddingBottom: "4rem", paddingTop: "3.5rem" }}>
             <div className="container">
               <div className="section-head center">
+                <span className="type-tag type-workshop" style={{ marginBottom: "1rem", display: "inline-block" }}>
+                  ⏱️ Alur Workshop 3 Jam
+                </span>
                 <h2 style={{ fontSize: "clamp(1.8rem, 4vw, 2.6rem)" }}>Dalam 3 Jam, Anda Membangunnya Sendiri</h2>
-                <p style={{ maxWidth: "30rem", marginInline: "auto", color: "var(--ink-soft)" }}>
-                  Bukan seminar berisi presentasi — Anda praktik langsung.
+                <p style={{ maxWidth: "34rem", marginInline: "auto", color: "var(--ink-soft)", lineHeight: 1.6 }}>
+                  Bukan seminar teori atau slide presentasi — 100% praktik langsung live step-by-step dari nol hingga sistem bekerja.
                 </p>
               </div>
 
-              <div style={{ marginTop: "2.5rem", display: "flex", alignItems: "center", maxWidth: "34rem", marginInline: "auto" }}>
-                {["1", "2", "3"].map((n, i) => (
-                  <div key={i} style={{ display: "contents" }}>
-                    <span style={{
-                      width: "40px", height: "40px", borderRadius: "50%", flexShrink: 0,
-                      background: [ "var(--purple)", "var(--orange)", "var(--green)" ][i], color: "#fff",
-                      fontWeight: 900, fontSize: "1.05rem", display: "grid", placeItems: "center",
-                    }}>{n}</span>
-                    {i < 2 && <span style={{ flex: 1, height: "3px", background: "var(--border)" }} />}
+              {/* 3 Step Cards Grid */}
+              <div
+                style={{
+                  marginTop: "2.5rem",
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+                  gap: "1.4rem",
+                  maxWidth: "66rem",
+                  marginInline: "auto",
+                }}
+              >
+                {[
+                  {
+                    step: "JAM 1",
+                    phase: "TAHAP 01",
+                    title: "Build",
+                    subtitle: "Rancang Otak & Identitas",
+                    icon: "🏗️",
+                    accent: "var(--purple)",
+                    accentSoft: "rgba(35, 33, 118, 0.08)",
+                    borderSoft: "rgba(35, 33, 118, 0.2)",
+                    desc: "Bangun AI Agent pertama Anda: identitas, instruksi kerja, tujuan bisnis, dan batas kemampuannya secara presisi.",
+                    points: [
+                      "Konfigurasi System Prompt & Karakter",
+                      "Penetapan SOP & Batasan Pekerjaan",
+                    ],
+                  },
+                  {
+                    step: "JAM 2",
+                    phase: "TAHAP 02",
+                    title: "Connect",
+                    subtitle: "Integrasi Workflow & Data",
+                    icon: "⚡",
+                    accent: "var(--orange)",
+                    accentSoft: "rgba(247, 148, 29, 0.1)",
+                    borderSoft: "rgba(247, 148, 29, 0.25)",
+                    desc: "Hubungkan Agent ke alur kerja nyata: menghubungkan tools penunjang, sumber data, dan trigger respon otomatis.",
+                    points: [
+                      "Koneksi Tools & Trigger Workflow",
+                      "Integrasi Knowledge Base & Data",
+                    ],
+                  },
+                  {
+                    step: "JAM 3",
+                    phase: "TAHAP 03",
+                    title: "Run",
+                    subtitle: "Uji & Replikasi 6 Agent",
+                    icon: "🚀",
+                    accent: "#10b981",
+                    accentSoft: "rgba(16, 185, 129, 0.1)",
+                    borderSoft: "rgba(16, 185, 129, 0.25)",
+                    desc: "Jalankan, simulasikan tugas nyata, evaluasi akurasi — lalu replikasi sistem untuk mengaktifkan seluruh 6 AI Agent.",
+                    points: [
+                      "Live Testing & Evaluasi Skenario",
+                      "Replikasi Menjadi 6 AI Agent Lengkap",
+                    ],
+                  },
+                ].map((item, i) => (
+                  <div
+                    key={i}
+                    className="bento"
+                    style={{
+                      background: "var(--white)",
+                      borderRadius: "20px",
+                      border: `1.5px solid ${item.borderSoft}`,
+                      padding: "1.8rem 1.6rem",
+                      display: "flex",
+                      flexDirection: "column",
+                      boxShadow: "0 10px 30px rgba(0,0,0,0.03)",
+                      position: "relative",
+                      overflow: "hidden",
+                    }}
+                  >
+                    {/* Top Accent Line */}
+                    <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: "4px", background: item.accent }} />
+
+                    {/* Step Header */}
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1.2rem" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                        <span
+                          style={{
+                            fontSize: "0.72rem",
+                            fontWeight: 900,
+                            letterSpacing: "0.06em",
+                            padding: "0.28rem 0.65rem",
+                            borderRadius: "999px",
+                            background: item.accentSoft,
+                            color: item.accent,
+                            border: `1px solid ${item.borderSoft}`,
+                          }}
+                        >
+                          {item.step}
+                        </span>
+                        <span style={{ fontSize: "0.72rem", fontWeight: 700, color: "var(--ink-faint)" }}>
+                          {item.phase}
+                        </span>
+                      </div>
+                      <span
+                        style={{
+                          width: "38px",
+                          height: "38px",
+                          borderRadius: "12px",
+                          background: item.accentSoft,
+                          display: "grid",
+                          placeItems: "center",
+                          fontSize: "1.2rem",
+                        }}
+                      >
+                        {item.icon}
+                      </span>
+                    </div>
+
+                    {/* Title */}
+                    <h3 style={{ fontSize: "1.3rem", fontWeight: 900, margin: "0 0 0.2rem", color: "var(--ink)" }}>
+                      {item.title}
+                    </h3>
+                    <p style={{ fontSize: "0.82rem", fontWeight: 700, color: item.accent, margin: "0 0 0.8rem" }}>
+                      {item.subtitle}
+                    </p>
+
+                    {/* Description */}
+                    <p style={{ fontSize: "0.86rem", color: "var(--ink-soft)", lineHeight: 1.55, margin: "0 0 1.2rem" }}>
+                      {item.desc}
+                    </p>
+
+                    {/* Check Points */}
+                    <div style={{ marginTop: "auto", display: "flex", flexDirection: "column", gap: "0.45rem", paddingTop: "0.8rem", borderTop: "1px dashed var(--border)" }}>
+                      {item.points.map((pt, pIdx) => (
+                        <div key={pIdx} style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.78rem", fontWeight: 600, color: "var(--ink)" }}>
+                          <span style={{ color: item.accent, fontWeight: 900 }}>✓</span>
+                          <span>{pt}</span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 ))}
               </div>
 
-              <div style={{ marginTop: "1.2rem", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: "1.4rem", maxWidth: "60rem", marginInline: "auto" }}>
-                {[
-                  { title: "Build", color: "var(--purple)", desc: "Bangun AI Agent pertama Anda: identitas, instruksi, tujuan, dan kemampuannya." },
-                  { title: "Connect", color: "var(--orange)", desc: "Hubungkan Agent ke workflow dan tools yang dibutuhkan." },
-                  { title: "Run", color: "var(--green)", desc: "Jalankan, uji, evaluasi — lalu bangun Agent berikutnya." },
-                ].map((step, i) => (
-                  <div key={i} className="bento" style={{ padding: "1.6rem", border: "1px solid var(--border)", borderTop: `4px solid ${step.color}`, borderRadius: "var(--r-md)", background: "var(--white)" }}>
-                    <p style={{ fontSize: "0.72rem", fontWeight: 800, color: step.color, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "0.3rem" }}>Jam {i + 1}</p>
-                    <h3 style={{ fontSize: "1.1rem", fontWeight: 800, marginBottom: "0.4rem" }}>{step.title}</h3>
-                    <p style={{ fontSize: "0.86rem", color: "var(--ink-soft)", lineHeight: 1.55, margin: 0 }}>{step.desc}</p>
-                  </div>
-                ))}
+              {/* Target Banner */}
+              <div
+                style={{
+                  maxWidth: "52rem",
+                  marginInline: "auto",
+                  marginTop: "2rem",
+                  padding: "1.2rem 1.6rem",
+                  background: "linear-gradient(135deg, rgba(35,33,118,0.06) 0%, rgba(247,148,29,0.06) 100%)",
+                  border: "1.5px solid rgba(35,33,118,0.14)",
+                  borderRadius: "16px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "0.9rem",
+                  textAlign: "center",
+                  flexWrap: "wrap",
+                }}
+              >
+                <span style={{ fontSize: "1.4rem", lineHeight: 1 }}>🎯</span>
+                <p style={{ margin: 0, fontSize: "0.92rem", fontWeight: 800, color: "var(--purple)", lineHeight: 1.45 }}>
+                  <span style={{ color: "var(--ink)" }}>Target Akhir:</span> 6 AI Agent pertama Anda selesai dikonfigurasi & siap dijalankan di laptop Anda.
+                </p>
               </div>
-              <p style={{ textAlign: "center", marginTop: "2rem", fontWeight: 800, fontSize: "1.05rem", color: "var(--purple)" }}>
-                🎯 Target: 6 AI Agent pertama Anda siap digunakan dan dikembangkan.
-              </p>
             </div>
           </section>
 
@@ -1946,57 +2081,41 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
       )}
 
       {/* ===== VALUE STACK + MATERI ===== */}
-      <section className="section">
-        <div className="container">
-          <div className="hero-card">
-            <div className="bento reveal">
-              <h2 style={{ marginBottom: "1.2rem" }}>Yang Anda <span className="acc-p">terima</span></h2>
-              <ValueStack
-                deliverables={isZeroHuman ? [
-                  { label: "Praktik langsung bangun 6 AI Agent (CS, Sales, Marketing, Content, Developer, Report)", value: 299000 },
-                  { label: "AI Agent Environment, Tools & Workflow Dasar", value: 199000 },
-                  { label: "Rekaman Workshop + Panduan Pengembangan", value: 149000 },
-                  { label: "e-Sertifikat Resmi + Komunitas Alumni", value: 0 },
-                ] : program.deliverables}
-                price={isFree ? 0 : program.price}
-                priceOld={isFree ? null : program.priceOld}
-                ctaHref="#daftar"
-                ctaLabel={isZeroHuman ? "Pulang Bawa 6 Karyawan AI" : (isFree ? "Ikuti Sesi Gratis" : "Daftar Sekarang")}
-                isFree={isFree}
-              />
-              {isFree && (
-                <p className="reg-note">* Seluruh fasilitas di atas dapat diakses secara gratis oleh peserta webinar.</p>
-              )}
-              {isZeroHuman && (
-                <div style={{ marginTop: "1rem", padding: "0.8rem 1rem", background: "rgba(46, 204, 113, 0.06)", borderLeft: "3px solid #27ae60", borderRadius: "0 10px 10px 0" }}>
-                  <p style={{ margin: 0, fontSize: "0.88rem", fontWeight: 700, color: "#27ae60" }}>
-                    🎓 Plus akses grup alumni — diskusi, tanya jawab, & update AI Agent bersama peserta lain setelah workshop selesai.
-                  </p>
-                </div>
-              )}
-            </div>
-            <div className="bento reveal">
-              <h2 style={{ marginBottom: "1.2rem" }}>Yang Anda <span className="acc-o">pelajari</span></h2>
-              <ul className="check-list">
-                {(isZeroHuman ? [
-                  "Customer Service Agent — jawab pertanyaan & bantu pelanggan",
-                  "Sales Agent — kelola leads & follow-up",
-                  "Marketing Agent — riset, strategi, dan campaign",
-                  "Content Agent — ide & produksi konten",
-                  "Developer Agent — coding, debugging, website",
-                ] : program.materi.slice(0, 5)).map((m, i) => <li key={i}>{m}</li>)}
-              </ul>
-              <div className="chip-box" style={{ marginTop: ".8rem", display: "flex", gap: "1rem", alignItems: "center" }}>
-                <span className="dot-btn dot-p"><Icon name="user" /></span>
-                <div>
-                  <h3>{program.mentorName}</h3>
-                  <p>{program.mentorBio}</p>
+      {!isZeroHuman && (
+        <section className="section">
+          <div className="container">
+            <div className="hero-card">
+              <div className="bento reveal">
+                <h2 style={{ marginBottom: "1.2rem" }}>Yang Anda <span className="acc-p">terima</span></h2>
+                <ValueStack
+                  deliverables={program.deliverables}
+                  price={isFree ? 0 : program.price}
+                  priceOld={isFree ? null : program.priceOld}
+                  ctaHref="#daftar"
+                  ctaLabel={isFree ? "Ikuti Sesi Gratis" : "Daftar Sekarang"}
+                  isFree={isFree}
+                />
+                {isFree && (
+                  <p className="reg-note">* Seluruh fasilitas di atas dapat diakses secara gratis oleh peserta webinar.</p>
+                )}
+              </div>
+              <div className="bento reveal">
+                <h2 style={{ marginBottom: "1.2rem" }}>Yang Anda <span className="acc-o">pelajari</span></h2>
+                <ul className="check-list">
+                  {program.materi.slice(0, 5).map((m, i) => <li key={i}>{m}</li>)}
+                </ul>
+                <div className="chip-box" style={{ marginTop: ".8rem", display: "flex", gap: "1rem", alignItems: "center" }}>
+                  <span className="dot-btn dot-p"><Icon name="user" /></span>
+                  <div>
+                    <h3>{program.mentorName}</h3>
+                    <p>{program.mentorBio}</p>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* ===== JAMINAN PENERBITAN ===== */}
       {program.guarantee && !isFree && (
@@ -2144,7 +2263,7 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
       {/* Bar CTA lengket di mobile */}
       <div className="sticky-cta">
         <div><b>{priceLabel}</b><small>{displayHari}, {formatJam(displayScheduleAt)}</small></div>
-        <a href="#daftar" className="btn btn-lime">{isZeroHuman ? "Pulang Bawa 6 Karyawan AI" : (isFree ? "Daftar Gratis" : "Daftar")}</a>
+        <a href="#daftar" className="btn btn-lime">{isFree ? "Daftar Gratis" : "Daftar"}</a>
       </div>
 
       <WaFloat text={`Halo, saya ingin bertanya mengenai program ${program.title}`} />
