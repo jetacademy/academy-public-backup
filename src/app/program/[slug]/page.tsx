@@ -1314,22 +1314,13 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
                 </p>
               </div>
 
-              <div
-                style={{
-                  marginTop: "2.5rem",
-                  display: "grid",
-                  gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-                  gap: "1rem",
-                  maxWidth: "68rem",
-                  marginInline: "auto",
-                }}
-              >
+              <div className="tool-integ-grid">
                 {[
                   {
                     name: "WhatsApp",
                     desc: "Chat prospek, jawab FAQ, dan broadcast update otomatis.",
                     logo: (
-                      <svg viewBox="0 0 24 24" width="28" height="28" fill="none">
+                      <svg viewBox="0 0 24 24" fill="none">
                         <path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91C2.13 13.66 2.59 15.36 3.45 16.86L2.05 22L7.3 20.63C8.75 21.42 10.38 21.83 12.04 21.83C17.5 21.83 21.95 17.38 21.95 11.92C21.95 9.27 20.92 6.78 19.05 4.9C17.18 3.03 14.69 2 12.04 2Z" fill="#25D366"/>
                         <path d="M17.47 14.38C17.17 14.23 15.7 13.51 15.43 13.41C15.15 13.31 14.95 13.26 14.75 13.56C14.55 13.86 13.98 14.53 13.8 14.73C13.63 14.93 13.45 14.96 13.15 14.81C12.85 14.66 11.89 14.35 10.75 13.33C9.86 12.54 9.26 11.56 9.09 11.26C8.91 10.96 9.07 10.8 9.22 10.65C9.35 10.52 9.51 10.31 9.66 10.13C9.81 9.96 9.86 9.83 9.96 9.63C10.06 9.43 10.01 9.26 9.94 9.11C9.86 8.96 9.29 7.56 9.06 7C8.83 6.45 8.6 6.53 8.43 6.52C8.27 6.51 8.07 6.51 7.87 6.51C7.67 6.51 7.35 6.58 7.07 6.89C6.8 7.19 6.02 7.92 6.02 9.4C6.02 10.88 7.1 12.31 7.25 12.51C7.4 12.71 9.37 15.75 12.39 17.05C13.11 17.36 13.68 17.55 14.11 17.69C14.83 17.92 15.48 17.89 16 17.81C16.58 17.72 17.79 17.07 18.04 16.37C18.29 15.67 18.29 15.07 18.21 14.94C18.14 14.81 17.94 14.73 17.64 14.58L17.47 14.38Z" fill="white"/>
                       </svg>
@@ -1339,7 +1330,7 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
                     name: "Telegram",
                     desc: "Terima perintah, notifikasi instan, & pantau status agent.",
                     logo: (
-                      <svg viewBox="0 0 24 24" width="28" height="28" fill="none">
+                      <svg viewBox="0 0 24 24" fill="none">
                         <circle cx="12" cy="12" r="12" fill="#229ED9"/>
                         <path d="M5.4 11.9L17.6 7.2C18.2 6.95 18.7 7.32 18.5 8.15L16.4 18.05C16.25 18.75 15.8 18.92 15.2 18.58L12 16.22L10.45 17.71C10.28 17.88 10.13 18.03 9.8 18.03L10.03 14.73L16.03 9.31C16.29 9.08 15.97 8.95 15.63 9.18L8.21 13.85L5.02 12.85C4.33 12.63 4.31 12.16 5.4 11.9Z" fill="white"/>
                       </svg>
@@ -1349,7 +1340,7 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
                     name: "Slack",
                     desc: "Kirim laporan harian, insight bisnis, & alert ke channel tim.",
                     logo: (
-                      <svg viewBox="0 0 24 24" width="28" height="28" fill="none">
+                      <svg viewBox="0 0 24 24" fill="none">
                         <path d="M5.04 14.5a2.52 2.52 0 0 1-2.52-2.52c0-1.39 1.13-2.52 2.52-2.52h2.52v2.52c0 1.39-1.13 2.52-2.52 2.52z" fill="#E01E5A"/>
                         <path d="M8.82 14.5c1.39 0 2.52-1.13 2.52-2.52V5.04A2.52 2.52 0 0 0 8.82 2.52a2.52 2.52 0 0 0-2.52 2.52v6.94c0 1.39 1.13 2.52 2.52 2.52z" fill="#E01E5A"/>
                         <path d="M9.5 5.04a2.52 2.52 0 0 1 2.52-2.52c1.39 0 2.52 1.13 2.52 2.52v2.52h-2.52c-1.39 0-2.52-1.13-2.52-2.52z" fill="#36C5F0"/>
@@ -1365,7 +1356,7 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
                     name: "Google Sheets",
                     desc: "Catat lead, rekap transaksi, & update spreadsheet otomatis.",
                     logo: (
-                      <svg viewBox="0 0 24 24" width="28" height="28" fill="none">
+                      <svg viewBox="0 0 24 24" fill="none">
                         <path d="M14.5 2H6C4.9 2 4 2.9 4 4V20C4 21.1 4.9 22 6 22H18C19.1 22 20 21.1 20 20V7.5L14.5 2Z" fill="#0F9D58"/>
                         <path d="M14 2V8H20" fill="#87CEAB"/>
                         <path d="M8 12H16V18H8V12Z" fill="white" opacity="0.95"/>
@@ -1377,7 +1368,7 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
                     name: "Google Docs",
                     desc: "Tulis draft artikel, proposal, & dokumen bisnis instan.",
                     logo: (
-                      <svg viewBox="0 0 24 24" width="28" height="28" fill="none">
+                      <svg viewBox="0 0 24 24" fill="none">
                         <path d="M14.5 2H6C4.9 2 4 2.9 4 4V20C4 21.1 4.9 22 6 22H18C19.1 22 20 21.1 20 20V7.5L14.5 2Z" fill="#4285F4"/>
                         <path d="M14 2V8H20" fill="#A1C2FA"/>
                         <path d="M8 12H16M8 15H16M8 18H13" stroke="white" strokeWidth="1.5" strokeLinecap="round"/>
@@ -1388,7 +1379,7 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
                     name: "Google Drive",
                     desc: "Baca file SOP, simpan dokumen kerja, & kelola folder cloud.",
                     logo: (
-                      <svg viewBox="0 0 24 24" width="28" height="28" fill="none">
+                      <svg viewBox="0 0 24 24" fill="none">
                         <path d="M8.27 2L15.73 2L22 13L14.54 13L8.27 2Z" fill="#FFBA00"/>
                         <path d="M2 13L5.73 19.5L13.19 19.5L9.46 13L2 13Z" fill="#0066DA"/>
                         <path d="M15.73 2L9.46 13L13.19 19.5L19.46 8.5L15.73 2Z" fill="#00AC47"/>
@@ -1400,7 +1391,7 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
                     name: "Gmail & Email",
                     desc: "Kirim email konfirmasi, penawaran, & follow-up pelanggan.",
                     logo: (
-                      <svg viewBox="0 0 24 24" width="28" height="28" fill="none">
+                      <svg viewBox="0 0 24 24" fill="none">
                         <path d="M20 4H4C2.9 4 2 4.9 2 6V18C2 19.1 2.9 20 4 20H20C21.1 20 22 19.1 22 18V6C22 4.9 21.1 4 20 4Z" fill="#EA4335"/>
                         <path d="M20 4L12 11.5L4 4H20Z" fill="#BB001B"/>
                         <path d="M2 6L12 13.5L22 6V18H2V6Z" fill="#F2F2F2"/>
@@ -1412,7 +1403,7 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
                     name: "Google Calendar",
                     desc: "Atur jadwal meeting, booking sesi, & kirim reminder otomatis.",
                     logo: (
-                      <svg viewBox="0 0 24 24" width="28" height="28" fill="none">
+                      <svg viewBox="0 0 24 24" fill="none">
                         <rect x="3" y="4" width="18" height="17" rx="3" fill="white" stroke="#4285F4" strokeWidth="2"/>
                         <path d="M3 8H21" stroke="#4285F4" strokeWidth="2"/>
                         <rect x="7" y="2" width="2" height="4" rx="1" fill="#4285F4"/>
@@ -1425,7 +1416,7 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
                     name: "Notion",
                     desc: "Akses knowledge base, wiki SOP, & update task manajemen.",
                     logo: (
-                      <svg viewBox="0 0 24 24" width="28" height="28" fill="none">
+                      <svg viewBox="0 0 24 24" fill="none">
                         <rect width="24" height="24" rx="6" fill="#000000"/>
                         <path d="M6 6.5L8.5 6L17.5 6.5L18 8L16.5 8.5V17L13.5 17.5L9.5 11V16.5L11 17.5L6.5 17.5L6 16L7.5 15.5V8.5L6 8L6 6.5ZM13.5 8.5L9.5 14.5V8.5H13.5Z" fill="white"/>
                       </svg>
@@ -1435,7 +1426,7 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
                     name: "Database & API",
                     desc: "Sinkronisasi ke CRM, PostgreSQL, Airtable, & Webhook bisnis.",
                     logo: (
-                      <svg viewBox="0 0 24 24" width="28" height="28" fill="none">
+                      <svg viewBox="0 0 24 24" fill="none">
                         <path d="M12 2C6.5 2 2 3.8 2 6V18C2 20.2 6.5 22 12 22C17.5 22 22 20.2 22 18V6C22 3.8 17.5 2 12 2Z" fill="#232176" opacity="0.1"/>
                         <ellipse cx="12" cy="6" rx="9" ry="3.5" stroke="var(--purple)" strokeWidth="2" fill="none"/>
                         <path d="M3 6V12C3 13.93 7.03 15.5 12 15.5C16.97 15.5 21 13.93 21 12V6" stroke="var(--purple)" strokeWidth="2" fill="none"/>
@@ -1444,57 +1435,21 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
                     ),
                   },
                 ].map((tool, i) => (
-                  <div
-                    key={i}
-                    className="bento"
-                    style={{
-                      background: "var(--white)",
-                      border: "1px solid var(--border)",
-                      borderRadius: "18px",
-                      padding: "1.25rem 1.15rem",
-                      display: "flex",
-                      flexDirection: "column",
-                      boxShadow: "0 6px 20px rgba(35,33,118,0.03)",
-                      transition: "transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease",
-                    }}
-                  >
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.85rem" }}>
-                      <div
-                        style={{
-                          width: "48px",
-                          height: "48px",
-                          borderRadius: "12px",
-                          display: "grid",
-                          placeItems: "center",
-                          background: "#fff",
-                          border: "1px solid var(--border)",
-                          boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
-                        }}
-                      >
+                  <div key={i} className="tool-card">
+                    <div className="tool-card-head">
+                      <div className="tool-logo-box">
                         {tool.logo}
                       </div>
-                      <span
-                        style={{
-                          display: "inline-flex",
-                          alignItems: "center",
-                          gap: "0.3rem",
-                          fontSize: "0.68rem",
-                          fontWeight: 700,
-                          color: "var(--green)",
-                          background: "rgba(23, 160, 94, 0.08)",
-                          padding: "0.2rem 0.55rem",
-                          borderRadius: "999px",
-                        }}
-                      >
-                        <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "var(--green)" }} />
+                      <span className="tool-badge">
+                        <span className="tool-badge-dot" />
                         Terhubung
                       </span>
                     </div>
 
-                    <h3 style={{ fontSize: "0.98rem", fontWeight: 800, margin: "0 0 0.3rem", color: "var(--ink)" }}>
+                    <h3 className="tool-name">
                       {tool.name}
                     </h3>
-                    <p style={{ fontSize: "0.78rem", color: "var(--ink-soft)", lineHeight: 1.45, margin: 0 }}>
+                    <p className="tool-desc">
                       {tool.desc}
                     </p>
                   </div>
@@ -1502,37 +1457,11 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
               </div>
 
               {/* Bottom Summary Banner */}
-              <div
-                style={{
-                  marginTop: "2.2rem",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "1rem",
-                  maxWidth: "38rem",
-                  marginInline: "auto",
-                  padding: "0.9rem 1.4rem",
-                  background: "var(--white)",
-                  border: "1px solid var(--border)",
-                  borderRadius: "999px",
-                  boxShadow: "0 12px 30px rgba(35,33,118,0.08)",
-                }}
-              >
-                <span
-                  style={{
-                    width: "42px",
-                    height: "42px",
-                    borderRadius: "50%",
-                    background: "linear-gradient(135deg, var(--orange), var(--purple))",
-                    color: "#fff",
-                    display: "grid",
-                    placeItems: "center",
-                    fontSize: "1.2rem",
-                    flexShrink: 0,
-                  }}
-                >
+              <div className="tool-integ-banner">
+                <span className="tool-integ-banner-icon">
                   ⚡
                 </span>
-                <p style={{ margin: 0, fontWeight: 700, color: "var(--ink)", fontSize: "0.92rem" }}>
+                <p className="tool-integ-banner-text">
                   Semua tools terhubung. Agent bekerja otomatis, <span className="hero-h1-accent">Anda fokus ke hal penting.</span>
                 </p>
               </div>

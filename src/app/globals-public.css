@@ -1653,6 +1653,215 @@
   color: var(--ink);
 }
 
+/* ---------- Tools Integration Grid (Compact & Responsive) ---------- */
+.tool-integ-grid {
+  margin-top: 2.2rem;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 1rem;
+  max-width: 68rem;
+  margin-inline: auto;
+}
+
+.tool-card {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 1.15rem 1.05rem;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 4px 16px rgba(35, 33, 118, 0.03);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.tool-card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(35, 33, 118, 0.2);
+  box-shadow: 0 10px 24px rgba(35, 33, 118, 0.07);
+}
+
+.tool-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+}
+
+.tool-logo-box {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  background: #fff;
+  border: 1px solid var(--border);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+  flex-shrink: 0;
+}
+
+.tool-logo-box svg {
+  width: 26px;
+  height: 26px;
+}
+
+.tool-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--green);
+  background: rgba(23, 160, 94, 0.08);
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+}
+
+.tool-badge-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--green);
+}
+
+.tool-name {
+  font-size: 0.95rem;
+  font-weight: 800;
+  margin: 0 0 0.25rem;
+  color: var(--ink);
+}
+
+.tool-desc {
+  font-size: 0.76rem;
+  color: var(--ink-soft);
+  line-height: 1.4;
+  margin: 0;
+}
+
+.tool-integ-banner {
+  margin-top: 2rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  max-width: 38rem;
+  margin-inline: auto;
+  padding: 0.85rem 1.4rem;
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  box-shadow: 0 10px 25px rgba(35, 33, 118, 0.06);
+}
+
+.tool-integ-banner-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--orange), var(--purple));
+  color: #fff;
+  display: grid;
+  place-items: center;
+  font-size: 1.15rem;
+  flex-shrink: 0;
+}
+
+.tool-integ-banner-text {
+  margin: 0;
+  font-weight: 700;
+  color: var(--ink);
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+@media (max-width: 980px) {
+  .tool-integ-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.85rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .tool-integ-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.55rem;
+    margin-top: 1.5rem;
+  }
+
+  .tool-card {
+    padding: 0.75rem 0.65rem;
+    border-radius: 14px;
+  }
+
+  .tool-card-head {
+    margin-bottom: 0.5rem;
+  }
+
+  .tool-logo-box {
+    width: 34px;
+    height: 34px;
+    border-radius: 9px;
+  }
+
+  .tool-logo-box svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .tool-badge {
+    font-size: 0.6rem;
+    padding: 0.15rem 0.4rem;
+    gap: 0.25rem;
+  }
+
+  .tool-badge-dot {
+    width: 5px;
+    height: 5px;
+  }
+
+  .tool-name {
+    font-size: 0.82rem;
+    margin: 0 0 0.15rem;
+  }
+
+  .tool-desc {
+    font-size: 0.69rem;
+    line-height: 1.32;
+  }
+
+  .tool-integ-banner {
+    margin-top: 1.25rem;
+    padding: 0.7rem 0.95rem;
+    border-radius: 14px;
+    gap: 0.7rem;
+  }
+
+  .tool-integ-banner-icon {
+    width: 32px;
+    height: 32px;
+    font-size: 0.95rem;
+  }
+
+  .tool-integ-banner-text {
+    font-size: 0.8rem;
+  }
+}
+
+@media (max-width: 360px) {
+  .tool-integ-grid {
+    gap: 0.45rem;
+  }
+
+  .tool-card {
+    padding: 0.65rem 0.5rem;
+  }
+
+  .tool-name {
+    font-size: 0.78rem;
+  }
+
+  .tool-desc {
+    font-size: 0.65rem;
+  }
+}
+
 /* ---------- Modern Testimonials ---------- */
 .testi-card {
   background: var(--white);
