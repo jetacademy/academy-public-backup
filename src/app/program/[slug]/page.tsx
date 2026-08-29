@@ -800,7 +800,7 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
 
               <div style={{ marginTop: "2.2rem", maxWidth: "300px", marginInline: "auto" }}>
                 <Image
-                  src="/ChatGPT Image Aug 29, 2026, 09_30_21 AM.webp"
+                  src="/zhc-whatsapp-demo.webp"
                   alt="Contoh percakapan Sales Agent di WhatsApp"
                   width={500}
                   height={880}
