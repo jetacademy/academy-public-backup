@@ -94,6 +94,7 @@ model Program {
   categoryId         String?
   category           Category?          @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   media              Media[]
+  leads              Lead[]
   createdAt          DateTime           @default(now())
   updatedAt          DateTime           @updatedAt
 
@@ -135,7 +136,7 @@ model MediaFile {
   programId String
   filename  String
   url       String   @db.Text
-  type      String   // 'PDF' | 'IMAGE' | 'VIDEO'
+  type      String // 'PDF' | 'IMAGE' | 'VIDEO'
   mime      String?
   size      Int?
   createdAt DateTime @default(now())
@@ -163,6 +164,7 @@ model Registration {
   attempts     TestAttempt[]
   certificate  Certificate?
   completions  Completion[]
+  lead         Lead?
   createdAt    DateTime           @default(now())
   updatedAt    DateTime           @updatedAt
 
@@ -345,15 +347,15 @@ model LmsGroup {
 
 // Modul / sub-bab — berisi materi; bisa berdiri sendiri atau di dalam kelompok
 model LmsModule {
-  id        String    @id @default(cuid())
-  program   Program   @relation(fields: [programId], references: [id], onDelete: Cascade)
-  programId String
-  group     LmsGroup? @relation(fields: [groupId], references: [id], onDelete: SetNull)
-  groupId   String?
-  title     String
-  order     Int       @default(0)
-  lessons     Lesson[]
-  batchLinks  BatchModule[]
+  id         String        @id @default(cuid())
+  program    Program       @relation(fields: [programId], references: [id], onDelete: Cascade)
+  programId  String
+  group      LmsGroup?     @relation(fields: [groupId], references: [id], onDelete: SetNull)
+  groupId    String?
+  title      String
+  order      Int           @default(0)
+  lessons    Lesson[]
+  batchLinks BatchModule[]
 
   @@index([programId])
   @@index([groupId])
@@ -379,21 +381,21 @@ model BatchModule {
 
 // LMS Lessons (Materi pembelajaran: video / teks / PDF / kuis)
 model Lesson {
-  id           String       @id @default(cuid())
-  module       LmsModule    @relation(fields: [moduleId], references: [id], onDelete: Cascade)
-  moduleId     String
-  title        String
-  type         LessonType   @default(VIDEO)
-  videoUrl     String? // URL Video YouTube / Vimeo
-  fileUrl      String?      @db.Text // URL PDF (upload atau eksternal)
-  content      String?      @db.Text // Teks materi pembelajaran
-  duration     String       @default("10 menit") // Durasi materi
-  passingScore Int? // khusus QUIZ: skor minimal lulus (null = pakai passingScore program)
-  isPreview    Boolean      @default(false) // materi bisa diakses gratis sebagai preview
-  allowDownload Boolean     @default(false) // khusus PDF: izinkan peserta mengunduh file (default: hanya baca)
-  order        Int          @default(0)
-  questions    Question[] // soal kuis (khusus type QUIZ)
-  completions  Completion[]
+  id            String       @id @default(cuid())
+  module        LmsModule    @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  moduleId      String
+  title         String
+  type          LessonType   @default(VIDEO)
+  videoUrl      String? // URL Video YouTube / Vimeo
+  fileUrl       String?      @db.Text // URL PDF (upload atau eksternal)
+  content       String?      @db.Text // Teks materi pembelajaran
+  duration      String       @default("10 menit") // Durasi materi
+  passingScore  Int? // khusus QUIZ: skor minimal lulus (null = pakai passingScore program)
+  isPreview     Boolean      @default(false) // materi bisa diakses gratis sebagai preview
+  allowDownload Boolean      @default(false) // khusus PDF: izinkan peserta mengunduh file (default: hanya baca)
+  order         Int          @default(0)
+  questions     Question[] // soal kuis (khusus type QUIZ)
+  completions   Completion[]
 
   @@index([moduleId])
   @@map("lesson")
@@ -684,13 +686,82 @@ model Media {
   id        String   @id @default(cuid())
   program   Program  @relation(fields: [programId], references: [id], onDelete: Cascade)
   programId String
-  filename  String   // nama file asli
+  filename  String // nama file asli
   url       String   @db.Text // path URL publik file
-  mimeType  String   // MIME type file
-  size      Int      // ukuran file dalam bytes
+  mimeType  String // MIME type file
+  size      Int // ukuran file dalam bytes
   createdAt DateTime @default(now())
 
   @@index([programId])
   @@index([programId, createdAt])
   @@map("media")
+}
+
+// ============================================================
+// LEAD PIPELINE (owner 29 Agu 2026)
+// Menangkap percakapan calon peserta SEBELUM daftar: sumber lead,
+// bidang usaha, ringkasan percakapan, objection (data training CS),
+// status follow-up, dan hasil akhir. Saat lead jadi peserta, tertaut
+// ke Registration sehingga pipeline menutup & tidak di-follow-up lagi.
+// ============================================================
+
+// Sumber lead — dari mana pengunjung/percakapan masuk
+enum LeadSource {
+  INSTAGRAM
+  FACEBOOK
+  WHATSAPP
+  REFERRAL // rujukan teman/alumni/affiliate
+  ORGANIC // search/organic
+  OTHER
+}
+
+// Status follow-up — progres komunikasi CS dengan lead.
+// Menentukan kapan nextFollowUpAt jatuh tempo (lihat helper di lib).
+enum LeadStatus {
+  NEW // baru masuk percakapan / tercatat
+  INTERESTED // tertarik (sudah tanya harga/jadwal/sign beli) → follow-up ketat D+1
+  POTENTIAL // berpotensi (tanya-tanya, belum commit) → D+1→D+3→D+7
+  COLD // sekadar mampir / respon minim → follow-up ringan/jeda
+}
+
+// Hasil akhir — nilai utk training: mana yang menutup, mana buntu.
+enum LeadResult {
+  ACTIVE // masih berjalan
+  REGISTERED // sudah daftar (terhubung Registration, status REGISTERED)
+  PAID // sudah bayar
+  CANCELLED // batal / menolak
+  NO_REPLY // tidak direspons (bere henti follow-up, data tetap dipakai training)
+}
+
+model Lead {
+  id                    String        @id @default(cuid())
+  name                  String
+  whatsapp              String // format 08xxx / LID saat auto-capture; dinormalisasi ke 628 saat kirim WA
+  email                 String?
+  source                LeadSource    @default(OTHER)
+  program               Program?      @relation(fields: [programId], references: [id], onDelete: SetNull)
+  programId             String?
+  bidangUsaha           String?       @db.Text // bidang usaha lead — dipakai CS respond & training
+  pesanPertama          String?       @db.Text // pesan awal asli (data training)
+  ringkasanConversation String?       @db.Text // inti percakapan: apa ditanya, objection, kenapa closing/tidak
+  objections            Json? // array string objection yang muncul (harga?, gaptek?, ragu?) utk agregasi training
+  status                LeadStatus    @default(NEW)
+  hasil                 LeadResult    @default(ACTIVE)
+  nextFollowUpAt        DateTime? // jatuh tempo follow-up berikutnya (auto-hitung oleh helper saat status berubah)
+  lastFollowUpAt        DateTime?
+  followUpCount         Int           @default(0)
+  followUpHistory       Json? // array {at: ISO, note: string} riwayat follow-up
+  registration          Registration? @relation(fields: [registrationId], references: [id], onDelete: SetNull)
+  registrationId        String?       @unique // begitu lead daftar, taut ke Registration — pipeline menutup
+  closedAt              DateTime? // waktu hasil berubah jadi terminal (REGISTERED/PAID/CANCELLED/NO_REPLY)
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+
+  @@index([status])
+  @@index([hasil])
+  @@index([source])
+  @@index([nextFollowUpAt])
+  @@index([createdAt])
+  @@index([whatsapp])
+  @@map("lead")
 }
