@@ -296,24 +296,7 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
                   <p className="prg-hero-desc" style={{ marginBottom: 0, fontSize: "0.92rem" }}>
                     Tanpa coding. Tanpa langganan platform AI Agent. Tanpa server berbayar untuk setup dasar.
                   </p>
-                  <div style={{ marginTop: "1.3rem", display: "flex", alignItems: "center", gap: "0.6rem", flexWrap: "wrap" }}>
-                    <span style={{ background: "rgba(247,148,29,0.15)", border: "1px solid rgba(247,148,29,0.4)", color: "var(--orange)", fontWeight: 800, fontSize: "0.68rem", letterSpacing: "0.03em", padding: "0.25rem 0.65rem", borderRadius: "999px" }}>
-                      🔥 PROMO HARI INI
-                    </span>
-                  </div>
-                  <div style={{ marginTop: "0.5rem", display: "flex", alignItems: "baseline", gap: "0.7rem", flexWrap: "wrap" }}>
-                    <span style={{ fontSize: "clamp(1.8rem, 4vw, 2.4rem)", fontWeight: 900, color: "var(--orange)" }}>Rp225.000</span>
-                    <span className="prg-hero-strike">Rp490.000</span>
-                  </div>
-                  <p style={{ fontSize: "0.85rem", color: "rgba(255,255,255,0.5)", marginTop: "0.1rem" }}>
-                    Sekali bayar • Praktik langsung • 6 AI Agent
-                  </p>
-                  <a href="#daftar" className="btn btn-purple btn-lg" style={{ marginTop: "1rem", display: "inline-flex", maxWidth: "100%", whiteSpace: "normal", textAlign: "center", lineHeight: 1.25 }}>
-                    🚀 Saya Mau Bangun 6 Karyawan AI
-                  </a>
-                  <p style={{ fontSize: "0.82rem", color: "rgba(255,255,255,0.45)", marginTop: "0.7rem" }}>
-                    Cukup laptop + internet. Anda membangun dan menjalankannya sendiri.
-                  </p>
+
                 </>
               ) : (
               <>
