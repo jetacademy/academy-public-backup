@@ -5,6 +5,7 @@ import { sendWa, msgPaid, msgAccess, normalizeWa } from "@/lib/wa";
 import { formatJadwal } from "@/lib/format";
 import { sendEmail, getPaidEmailHtml, getInvoiceExpiredEmailHtml, getInvoiceFailedEmailHtml } from "@/lib/email";
 import { recordAffiliateConversion, settleWithdrawalConversions, notifyWithdrawalResult } from "@/lib/affiliate";
+import { linkLeadToRegistration } from "@/lib/lead-link";
 import { sendCapiEvent, buildPurchaseEvent } from "@/lib/capi";
 
 /**
@@ -107,6 +108,7 @@ export async function POST(req: Request) {
 
         // Kirim Purchase event ke Meta Conversions API (server-side)
         const reg = payment.registration;
+        await linkLeadToRegistration(reg.id, reg.whatsapp, reg.programId, true);
         sendCapiEvent(buildPurchaseEvent(
           reg.email,
           reg.whatsapp,

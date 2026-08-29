@@ -4,6 +4,7 @@ import { createInvoice, isXenditConfigured } from "@/lib/xendit";
 import { normalizeWa } from "@/lib/wa";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { validateVoucher, consumeVoucher } from "@/lib/voucher";
+import { linkLeadToRegistration } from "@/lib/lead-link";
 import { resolveAffiliateForCheckout, applyAffiliateDiscount, recordAffiliateConversion, getAffiliateRefCookie } from "@/lib/affiliate";
 
 /**
@@ -118,6 +119,7 @@ export async function POST(req: Request) {
         prisma.registration.update({ where: { id: reg.id }, data: { status: "PAID" } }),
       ]);
       if (affiliateId) await recordAffiliateConversion(payment.id);
+      await linkLeadToRegistration(reg.id, reg.whatsapp, reg.programId, true);
       return NextResponse.json({ ok: true, postTestUrl: `${baseUrl}/member` });
     }
 

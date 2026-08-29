@@ -11,6 +11,7 @@ import { sendWa, msgAccess, msgPaid, normalizeWa } from "@/lib/wa";
 import { formatJadwal, parseWIB } from "@/lib/format";
 import { sendEmail, getPaidEmailHtml } from "@/lib/email";
 import { recordAffiliateConversion, voidAffiliateConversion } from "@/lib/affiliate";
+import { linkLeadToRegistration } from "@/lib/lead-link";
 import { isCertIssuanceEnabled, issueCertificate, checkCertEligibility, isScheduleGateOpen } from "@/lib/certificates";
 import { createBunnyVideo, getBunnyUploadAuth, deleteBunnyVideo } from "@/lib/bunny";
 import { sanitizeHtml } from "@/lib/sanitize";
@@ -570,6 +571,7 @@ export async function markPaid(formData: FormData) {
     prisma.registration.update({ where: { id: reg.id }, data: { status: "PAID" } }),
   ]);
   await recordAffiliateConversion(payment.id);
+  await linkLeadToRegistration(reg.id, reg.whatsapp, reg.programId, true);
 
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? "http://localhost:3000";
   const memberUrl = `${baseUrl}/member`;
@@ -643,6 +645,9 @@ export async function saveRegistration(formData: FormData) {
       const created = await prisma.registration.create({ data });
       regId = created.id;
     }
+
+    // Tautkan ke Lead pipeline (hasil sesuai status pembayaran)
+    await linkLeadToRegistration(regId, whatsapp, programId, status === "PAID");
 
     // Admin menandai lulus manual → terbitkan sertifikat langsung (bukan cuma ubah status),
     // supaya "PASSED" selalu konsisten dengan sertifikat yang benar-benar ada. Tetap taat pada

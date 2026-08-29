@@ -6,6 +6,7 @@ import { formatJadwal } from "@/lib/format";
 import { sendEmail, getWelcomeEmailHtml, getPaidEmailHtml, getInvoiceEmailHtml } from "@/lib/email";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { createMemberSession } from "@/lib/member-auth";
+import { linkLeadToRegistration } from "@/lib/lead-link";
 import { validateVoucher, consumeVoucher } from "@/lib/voucher";
 import { resolveAffiliateForCheckout, applyAffiliateDiscount, recordAffiliateConversion, getAffiliateRefCookie } from "@/lib/affiliate";
 import { fetchGoogleTokeninfo } from "@/lib/google-tokeninfo";
@@ -337,6 +338,9 @@ export async function POST(req: Request) {
 
     // Buat session member secara otomatis setelah pendaftaran berhasil
     await createMemberSession(email);
+
+    // Tautkan ke Lead (pipeline) — hasil=REGISTERED. Saat bayar akan jadi PAID di titik checkout.
+    await linkLeadToRegistration(reg.id, whatsapp, program.id, false);
 
     // ── PROGRAM GRATIS (WEBINAR) ─────────────────────────────────
     if (program.price === 0) {

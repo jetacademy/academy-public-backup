@@ -11,6 +11,7 @@ import { normalizeWa, normalizeIdentifier } from "@/lib/wa";
 import { sendEmail, getWelcomeMemberEmailHtml } from "@/lib/email";
 import { createInvoice, isXenditConfigured } from "@/lib/xendit";
 import { findActiveAffiliateByCode, applyAffiliateDiscount, recordAffiliateConversion, getAffiliateRefCookie } from "@/lib/affiliate";
+import { linkLeadToRegistration } from "@/lib/lead-link";
 
 async function loginByIdentifier(cleanVal: string): Promise<{ ok?: boolean; error?: string; isAdmin?: boolean }> {
   // 1. Cari User record terlebih dahulu — user yang baru daftar akun
@@ -581,6 +582,7 @@ export async function initiateCertificateCheckout(registrationId: string) {
       prisma.registration.update({ where: { id: reg.id }, data: { status: "PAID" } }),
     ]);
     if (affiliateId) await recordAffiliateConversion(payment.id);
+    await linkLeadToRegistration(reg.id, reg.whatsapp, reg.programId, true);
     return { redirectUrl: `${baseUrl}/member` };
   }
 
