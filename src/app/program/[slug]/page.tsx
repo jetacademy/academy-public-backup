@@ -1744,34 +1744,24 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
                 </p>
               </div>
 
-              <div className="bento" style={{ padding: "clamp(2rem, 5vw, 3rem)", textAlign: "center", background: "linear-gradient(150deg, #1e1b4b 0%, #0f172a 100%)", color: "#fff", borderRadius: "var(--r-lg)", position: "relative", overflow: "hidden" }}>
-                <div style={{ position: "absolute", width: "400px", height: "400px", borderRadius: "50%", background: "radial-gradient(circle, rgba(247,148,29,0.15) 0%, transparent 70%)", top: "-150px", right: "-100px", pointerEvents: "none" }} />
-                <h2 style={{ fontSize: "clamp(1.6rem, 4vw, 2.4rem)", position: "relative", color: "#fff" }}>Berapa Nilai 6 Karyawan AI?</h2>
-                <p style={{ maxWidth: "30rem", marginInline: "auto", color: "rgba(255,255,255,0.7)", position: "relative" }}>
-                  Untuk keenam pekerjaan ini, Anda biasanya butuh banyak tenaga, waktu, dan biaya:
-                </p>
-                <div style={{ display: "flex", justifyContent: "center", flexWrap: "wrap", gap: "0.5rem", marginTop: "1rem", position: "relative" }}>
-                  {["💬 CS", "🤝 Sales", "📣 Marketing", "✍️ Content", "🔧 Developer", "📊 Report"].map((t, i) => (
-                    <span key={i} style={{ fontSize: "0.78rem", fontWeight: 700, background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.14)", padding: "0.3rem 0.7rem", borderRadius: "999px" }}>{t}</span>
-                  ))}
-                </div>
-                <p style={{ fontWeight: 800, color: "#fff", fontSize: "1.05rem", position: "relative", marginTop: "1.2rem" }}>
-                  Zero Human Company beda: Anda tidak merekrut 6 orang — Anda belajar membangun 6 AI Agent.
-                </p>
-                <span style={{ display: "inline-block", marginTop: "1.4rem", position: "relative", background: "rgba(247,148,29,0.15)", border: "1px solid rgba(247,148,29,0.4)", color: "var(--orange)", fontWeight: 800, fontSize: "0.78rem", letterSpacing: "0.04em", padding: "0.35rem 0.9rem", borderRadius: "999px" }}>
+              <div className="bento" style={{ padding: "clamp(1.8rem, 4vw, 2.6rem)", textAlign: "center", background: "linear-gradient(150deg, #1e1b4b 0%, #0f172a 100%)", color: "#fff", borderRadius: "var(--r-lg)", position: "relative", overflow: "hidden", maxWidth: "46rem", marginInline: "auto" }}>
+                <div style={{ position: "absolute", width: "350px", height: "350px", borderRadius: "50%", background: "radial-gradient(circle, rgba(247,148,29,0.15) 0%, transparent 70%)", top: "-120px", right: "-80px", pointerEvents: "none" }} />
+                <span style={{ display: "inline-block", position: "relative", background: "rgba(247,148,29,0.15)", border: "1px solid rgba(247,148,29,0.4)", color: "var(--orange)", fontWeight: 800, fontSize: "0.78rem", letterSpacing: "0.04em", padding: "0.35rem 0.9rem", borderRadius: "999px" }}>
                   🔥 PROMO HARI INI — HARGA TERMURAH
                 </span>
-                <div style={{ display: "flex", justifyContent: "center", alignItems: "baseline", gap: "0.7rem", marginTop: "0.9rem", flexWrap: "wrap", position: "relative" }}>
-                  <span style={{ fontSize: "clamp(2rem, 5vw, 2.6rem)", fontWeight: 900, color: "var(--orange)" }}>Rp225.000</span>
-                  <span className="prg-hero-strike">Rp490.000</span>
+                <div style={{ display: "flex", justifyContent: "center", alignItems: "baseline", gap: "0.7rem", marginTop: "1rem", flexWrap: "wrap", position: "relative" }}>
+                  <span style={{ fontSize: "clamp(2rem, 5vw, 2.8rem)", fontWeight: 900, color: "var(--orange)" }}>Rp225.000</span>
+                  <span className="prg-hero-strike" style={{ fontSize: "1.1rem" }}>Rp490.000</span>
                   <span className="eb-save">Hemat 54%</span>
                 </div>
-                <p style={{ fontSize: "0.85rem", color: "rgba(255,255,255,0.6)", position: "relative" }}>Sekali bayar. Tanpa langganan platform AI Agent dari Jetschool.</p>
-                <a href="#daftar" className="btn btn-purple btn-lg" style={{ marginTop: "0.8rem", display: "inline-flex", maxWidth: "100%", position: "relative", background: "var(--orange)", whiteSpace: "normal", textAlign: "center", lineHeight: 1.25 }}>
-                  🚀 Saya Mau Membangun 6 Karyawan AI
+                <p style={{ fontSize: "0.9rem", color: "rgba(255,255,255,0.75)", margin: "0.6rem 0 1.2rem", position: "relative" }}>
+                  Sekali bayar untuk 6 AI Agent • Praktik langsung • Tanpa biaya langganan bulanan
+                </p>
+                <a href="#daftar" className="btn btn-purple btn-lg" style={{ display: "inline-flex", maxWidth: "100%", position: "relative", background: "var(--orange)", whiteSpace: "normal", textAlign: "center", lineHeight: 1.25, fontWeight: 800 }}>
+                  🚀 Daftar Sekarang — Rp 225.000
                 </a>
-                <p style={{ fontSize: "0.72rem", color: "rgba(255,255,255,0.35)", marginTop: "0.8rem", position: "relative" }}>
-                  *Harga promo sewaktu-waktu dapat berubah.
+                <p style={{ fontSize: "0.75rem", color: "rgba(255,255,255,0.4)", marginTop: "0.8rem", marginBottom: 0, position: "relative" }}>
+                  *Harga promo sewaktu-waktu dapat kembali normal.
                 </p>
               </div>
             </div>
@@ -1975,25 +1965,6 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
             </div>
           </section>
 
-          {/* Section 10: Mengapa Sekarang */}
-          <section className="section" style={{ paddingBottom: "3.5rem" }}>
-            <div className="container">
-              <div className="section-head center" style={{ maxWidth: "34rem", marginInline: "auto" }}>
-                <h2 style={{ fontSize: "clamp(1.6rem, 4vw, 2.4rem)" }}>Mengapa Sekarang?</h2>
-                <p style={{ color: "var(--ink-soft)", lineHeight: 1.7 }}>
-                  AI berkembang dari sekadar menjawab menjadi Agent yang bisa mengerjakan pekerjaan — dan mulai membentuk cara bisnis bekerja.
-                </p>
-              </div>
-              <div className="bento" style={{ maxWidth: "34rem", marginInline: "auto", marginTop: "1.8rem", padding: "2rem", background: "var(--chip)", border: "1px solid var(--border)", borderRadius: "var(--r-md)", textAlign: "center" }}>
-                <p style={{ fontSize: "0.8rem", fontWeight: 800, color: "var(--ink-faint)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "0.4rem" }}>Pertanyaannya bukan lagi</p>
-                <p style={{ fontStyle: "italic", color: "var(--ink-faint)", textDecoration: "line-through", fontSize: "1rem", marginBottom: "1.2rem" }}>&ldquo;Apakah saya perlu menggunakan AI?&rdquo;</p>
-                <p style={{ fontSize: "0.8rem", fontWeight: 800, color: "var(--purple)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "0.4rem" }}>Tetapi</p>
-                <p style={{ fontWeight: 900, fontSize: "1.3rem", color: "var(--ink)", margin: 0 }}>
-                  &ldquo;Berapa banyak pekerjaan yang masih saya kerjakan sendiri?&rdquo;
-                </p>
-              </div>
-            </div>
-          </section>
 
           {/* Section 11: Philosophy Closing */}
           <section className="section" style={{ paddingBottom: "3.5rem" }}>
