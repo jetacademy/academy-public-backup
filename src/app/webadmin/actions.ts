@@ -556,7 +556,7 @@ export async function moveLmsLesson(formData: FormData) {
 export async function markPaid(formData: FormData) {
   await requireAdmin();
   const id = String(formData.get("id"));
-  const reg = await prisma.registration.findUnique({ where: { id }, include: { program: true, payment: true } });
+  const reg = await prisma.registration.findUnique({ where: { id }, include: { program: true, batch: true, payment: true } });
   const MARKPAID_ALLOWED = ["REGISTERED", "EXPIRED", "FAILED"];
   if (!reg || !MARKPAID_ALLOWED.includes(reg.status)) return;
 
@@ -574,24 +574,31 @@ export async function markPaid(formData: FormData) {
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? "http://localhost:3000";
   const memberUrl = `${baseUrl}/member`;
   if (reg.program.price > 0) {
+    const scheduleStr = reg.batch ? formatJadwal(reg.batch.scheduleAt) : formatJadwal(reg.program.scheduleAt);
+    const zoomLinkVal = reg.batch ? (reg.batch.zoomLink || null) : reg.program.zoomLink;
+    const waGroupLinkVal = reg.batch ? (reg.batch.waGroupLink || null) : reg.program.waGroupLink;
+    const lmsLinkVal = reg.batch ? (reg.batch.recordingLink || null) : reg.program.lmsLink;
     await sendWa(reg.whatsapp, msgAccess({
       name: reg.name,
       programTitle: reg.program.title,
-      schedule: formatJadwal(reg.program.scheduleAt),
-      zoomLink: reg.program.zoomLink,
-      waGroupLink: reg.program.waGroupLink,
-      lmsLink: reg.program.lmsLink,
+      schedule: scheduleStr,
+      zoomLink: zoomLinkVal,
+      waGroupLink: waGroupLinkVal,
+      lmsLink: lmsLinkVal,
       memberUrl,
     }));
   } else {
     await sendWa(reg.whatsapp, msgPaid(reg.name, reg.program.title, memberUrl));
   }
 
-  // Kirim email pembayaran sukses — best-effort
+  // Kirim email pembayaran sukses — best-effort (template email tdk memuat jadwal)
   await sendEmail({
     to: reg.email,
     subject: `Pembayaran Berhasil: Akses Pelatihan ${reg.program.title}`,
-    html: getPaidEmailHtml(reg.name, reg.program.title, memberUrl, reg.program.zoomLink, reg.program.waGroupLink, reg.program.lmsLink),
+    html: getPaidEmailHtml(reg.name, reg.program.title, memberUrl,
+      reg.batch ? (reg.batch.zoomLink || null) : reg.program.zoomLink,
+      reg.batch ? (reg.batch.waGroupLink || null) : reg.program.waGroupLink,
+      reg.batch ? (reg.batch.recordingLink || null) : reg.program.lmsLink),
   }).catch((err) => console.error("Gagal mengirim email manual markPaid:", err));
 
   revalidatePath("/webadmin/pendaftar");
