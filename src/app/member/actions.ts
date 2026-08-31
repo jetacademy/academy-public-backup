@@ -11,7 +11,6 @@ import { normalizeWa, normalizeIdentifier } from "@/lib/wa";
 import { sendEmail, getWelcomeMemberEmailHtml } from "@/lib/email";
 import { createInvoice, isXenditConfigured } from "@/lib/xendit";
 import { findActiveAffiliateByCode, applyAffiliateDiscount, recordAffiliateConversion, getAffiliateRefCookie } from "@/lib/affiliate";
-import { fetchGoogleTokeninfo } from "@/lib/google-tokeninfo";
 
 async function loginByIdentifier(cleanVal: string): Promise<{ ok?: boolean; error?: string; isAdmin?: boolean }> {
   // 1. Cari User record terlebih dahulu — user yang baru daftar akun
@@ -156,7 +155,10 @@ export async function memberLoginWithGoogle(credential: string) {
   if (!clientId) return { error: "Login Google belum dikonfigurasi." };
 
   try {
-    const res = await fetchGoogleTokeninfo(credential);
+    const res = await fetch(
+      `https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(credential)}`,
+      { cache: "no-store", signal: AbortSignal.timeout(15_000) }
+    );
 
     if (!res.ok) {
       const body = await res.text().catch(() => "");
@@ -211,7 +213,8 @@ export async function memberLoginWithGoogle(credential: string) {
         data: {
           name: existingReg?.name ?? name,
           email,
-          whatsapp: existingReg?.whatsapp ?? "",
+          // NULL (bukan "") — kolom whatsapp @unique; string kosong bentrok antar user Google-only
+          whatsapp: existingReg?.whatsapp ?? null,
           role: "STUDENT"
         }
       });
@@ -228,7 +231,7 @@ export async function memberLoginWithGoogle(credential: string) {
     return { ok: true, isAdmin: isAdminRole };
   } catch (err) {
     console.error("[memberLoginWithGoogle] Unexpected error:", err);
-    return { error: "Gagal menghubungi server Google. Periksa koneksi dan coba lagi." };
+    return { error: "Terjadi kendala saat memproses akun. Silakan coba lagi, atau gunakan login via WhatsApp/Email di bawah." };
   }
 }
 
