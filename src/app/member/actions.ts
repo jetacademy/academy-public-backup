@@ -11,6 +11,7 @@ import { normalizeWa, normalizeIdentifier } from "@/lib/wa";
 import { sendEmail, getWelcomeMemberEmailHtml } from "@/lib/email";
 import { createInvoice, isXenditConfigured } from "@/lib/xendit";
 import { findActiveAffiliateByCode, applyAffiliateDiscount, recordAffiliateConversion, getAffiliateRefCookie } from "@/lib/affiliate";
+import { fetchGoogleTokeninfo } from "@/lib/google-tokeninfo";
 
 async function loginByIdentifier(cleanVal: string): Promise<{ ok?: boolean; error?: string; isAdmin?: boolean }> {
   // 1. Cari User record terlebih dahulu — user yang baru daftar akun
@@ -155,10 +156,7 @@ export async function memberLoginWithGoogle(credential: string) {
   if (!clientId) return { error: "Login Google belum dikonfigurasi." };
 
   try {
-    const res = await fetch(
-      `https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(credential)}`,
-      { cache: "no-store" }
-    );
+    const res = await fetchGoogleTokeninfo(credential);
 
     if (!res.ok) {
       const body = await res.text().catch(() => "");

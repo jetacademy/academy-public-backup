@@ -8,6 +8,7 @@ import { checkRateLimit } from "@/lib/rate-limit";
 import { createMemberSession } from "@/lib/member-auth";
 import { validateVoucher, consumeVoucher } from "@/lib/voucher";
 import { resolveAffiliateForCheckout, applyAffiliateDiscount, recordAffiliateConversion, getAffiliateRefCookie } from "@/lib/affiliate";
+import { fetchGoogleTokeninfo } from "@/lib/google-tokeninfo";
 
 /**
  * POST /api/register — satu pintu untuk semua tipe program.
@@ -97,10 +98,9 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Login Google belum dikonfigurasi." }, { status: 503 });
     }
     try {
-      const res = await fetch(
-        `https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(credential)}`,
-        { cache: "no-store" }
-      );
+      // Force IPv4 + retry (undici) — pola sama dengan login member: host prod
+      // kadang gagal route IPv6 ke oauth2.googleapis.com → fetch throw.
+      const res = await fetchGoogleTokeninfo(credential);
       if (!res.ok) {
         return NextResponse.json({ error: "Token Google tidak valid." }, { status: 401 });
       }
