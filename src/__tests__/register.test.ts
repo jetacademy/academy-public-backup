@@ -592,3 +592,83 @@ describe('POST /api/register — paid program flow', () => {
     expect(data).toMatchObject({ ok: true, paid: true });
   });
 });
+
+describe('POST /api/register — multi-participant flow', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('rejects duplicate email between main registrant and additional participant', async () => {
+    const program = makeProgram({ price: 0 });
+    mockPrisma.program.findUnique.mockResolvedValue(program);
+
+    const res = await makePostRequest({
+      name: 'Budi Santoso',
+      whatsapp: '081234567890',
+      email: 'budi@example.com',
+      programSlug: 'test-program',
+      participants: [
+        { name: 'Siti Rahma', email: 'budi@example.com', whatsapp: '081298765432' },
+      ],
+    });
+
+    const data = await expectJsonResponse(res, 400);
+    expect(data.error).toMatch(/sudah dipakai/i);
+  });
+
+  it('rejects duplicate whatsapp between participants', async () => {
+    const program = makeProgram({ price: 0 });
+    mockPrisma.program.findUnique.mockResolvedValue(program);
+
+    const res = await makePostRequest({
+      name: 'Budi Santoso',
+      whatsapp: '081234567890',
+      email: 'budi@example.com',
+      programSlug: 'test-program',
+      participants: [
+        { name: 'Siti Rahma', email: 'siti@example.com', whatsapp: '081298765432' },
+        { name: 'Ahmad Faiz', email: 'ahmad@example.com', whatsapp: '081298765432' },
+      ],
+    });
+
+    const data = await expectJsonResponse(res, 400);
+    expect(data.error).toMatch(/sudah dipakai/i);
+  });
+
+  it('registers multiple participants and provisions accounts for free webinar', async () => {
+    const program = makeProgram({ price: 0 });
+    mockPrisma.program.findUnique.mockResolvedValue(program);
+    mockPrisma.registration.findFirst.mockResolvedValue(null);
+    mockPrisma.user.findFirst.mockResolvedValue(null);
+    mockPrisma.user.create.mockResolvedValue({
+      id: 'user-1',
+      name: 'Budi Santoso',
+      email: 'budi@example.com',
+      whatsapp: '6281234567890',
+      role: 'STUDENT',
+    });
+    mockPrisma.registration.upsert.mockResolvedValue(
+      makeRegistration({ programId: program.id, status: 'REGISTERED' })
+    );
+
+    const res = await makePostRequest({
+      name: 'Budi Santoso',
+      whatsapp: '081234567890',
+      email: 'budi@example.com',
+      programSlug: 'test-program',
+      participants: [
+        { name: 'Siti Rahma', email: 'siti@example.com', whatsapp: '081298765432' },
+      ],
+    });
+
+    const data = await expectJsonResponse(res, 200);
+    expect(data).toMatchObject({
+      ok: true,
+      free: true,
+      participantCount: 2,
+    });
+    // Verifies user creation and registration was called for both
+    expect(mockPrisma.registration.upsert).toHaveBeenCalledTimes(2);
+  });
+});
+

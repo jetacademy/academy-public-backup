@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { isValidCallback } from "@/lib/xendit";
-import { sendWa, msgPaid, msgAccess } from "@/lib/wa";
+import { sendWa, msgPaid, msgAccess, normalizeWa } from "@/lib/wa";
 import { formatJadwal } from "@/lib/format";
 import { sendEmail, getPaidEmailHtml, getInvoiceExpiredEmailHtml, getInvoiceFailedEmailHtml } from "@/lib/email";
 import { recordAffiliateConversion, settleWithdrawalConversions, notifyWithdrawalResult } from "@/lib/affiliate";
@@ -143,6 +143,86 @@ export async function POST(req: Request) {
           subject: `Pembayaran Berhasil: Akses Pelatihan ${reg.program.title}`,
           html: getPaidEmailHtml(reg.name, reg.program.title, memberUrl, zoomLinkVal, waGroupLinkVal, lmsLinkVal),
         }).catch((err) => console.error("Gagal mengirim email webhook lunas:", err));
+
+        // Buat akun & registrasi lunas untuk setiap peserta tambahan
+        if (reg.participants) {
+          try {
+            const rawP = reg.participants;
+            const participantsList: Array<{ name: string; email?: string; whatsapp?: string }> = Array.isArray(rawP)
+              ? rawP.map((item: unknown) => {
+                  if (typeof item === "string") return { name: item };
+                  if (item && typeof item === "object") {
+                    const obj = item as Record<string, unknown>;
+                    return {
+                      name: String(obj.name ?? ""),
+                      email: obj.email ? String(obj.email) : undefined,
+                      whatsapp: obj.whatsapp ? String(obj.whatsapp) : undefined,
+                    };
+                  }
+                  return { name: "" };
+                })
+              : [];
+
+            for (const p of participantsList) {
+              if (!p.email || !p.whatsapp || p.name.length < 3) continue;
+              const pWa = normalizeWa(p.whatsapp);
+              const pEmail = p.email.toLowerCase().trim();
+
+              let pUser = await prisma.user.findFirst({
+                where: { OR: [{ email: pEmail }, { whatsapp: pWa }] },
+              });
+              if (!pUser) {
+                pUser = await prisma.user.create({
+                  data: { name: p.name, email: pEmail, whatsapp: pWa, role: "STUDENT" },
+                });
+              }
+
+              await prisma.registration.upsert({
+                where: { whatsapp_programId: { whatsapp: pWa, programId: reg.programId } },
+                create: {
+                  name: p.name,
+                  whatsapp: pWa,
+                  email: pEmail,
+                  institution: reg.institution,
+                  programId: reg.programId,
+                  userId: pUser.id,
+                  batchId: reg.batchId,
+                  status: "PAID",
+                },
+                update: {
+                  name: p.name,
+                  email: pEmail,
+                  institution: reg.institution,
+                  userId: pUser.id,
+                  status: "PAID",
+                  ...(reg.batchId ? { batchId: reg.batchId } : {}),
+                },
+              });
+
+              if (reg.program.price > 0) {
+                await sendWa(pWa, msgAccess({
+                  name: p.name,
+                  programTitle: reg.program.title,
+                  schedule: scheduleStr,
+                  zoomLink: zoomLinkVal,
+                  waGroupLink: waGroupLinkVal,
+                  lmsLink: lmsLinkVal,
+                  memberUrl,
+                })).catch((err) => console.error("Gagal mengirim WA peserta tambahan webhook:", err));
+              } else {
+                await sendWa(pWa, msgPaid(p.name, reg.program.title, memberUrl)).catch((err) => console.error("Gagal mengirim WA peserta tambahan webhook:", err));
+              }
+
+              await sendEmail({
+                to: pEmail,
+                subject: `Pembayaran Berhasil: Akses Pelatihan ${reg.program.title}`,
+                html: getPaidEmailHtml(p.name, reg.program.title, memberUrl, zoomLinkVal, waGroupLinkVal, lmsLinkVal),
+              }).catch((err) => console.error("Gagal mengirim email peserta tambahan webhook:", err));
+            }
+          } catch (err) {
+            console.error("Gagal memproses peserta tambahan di webhook Xendit:", err);
+          }
+        }
       }
     } else if (event.status === "EXPIRED" && payment.status !== "PAID" && isCurrentInvoice) {
       await prisma.$transaction([

@@ -27,6 +27,18 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: limit.error }, { status: limit.status });
   }
 
+  interface ParticipantPayload {
+    name?: string;
+    email?: string;
+    whatsapp?: string;
+  }
+
+  interface ParticipantData {
+    name: string;
+    email: string;
+    whatsapp: string;
+  }
+
   let body: {
     name?: string;
     whatsapp?: string;
@@ -35,7 +47,7 @@ export async function POST(req: Request) {
     institution?: string;
     batchId?: string;
     credential?: string;
-    participants?: string[];
+    participants?: (string | ParticipantPayload)[];
     voucherCode?: string;
   };
   try {
@@ -64,28 +76,63 @@ export async function POST(req: Request) {
 
   // ── Multi-pendaftar: parse & validasi peserta tambahan ──────────
   const rawParticipants = Array.isArray(body.participants) ? body.participants : [];
-  const participants: string[] = [];
+  const participants: ParticipantData[] = [];
+  const usedEmails = new Set<string>([email]);
+  const usedWhatsapps = new Set<string>([whatsapp]);
+
   for (const p of rawParticipants) {
-    const trimmed = (typeof p === "string" ? p : "").trim().slice(0, 100);
-    if (trimmed.length < 3) {
+    let pName = "";
+    let pEmail = "";
+    let pWa = "";
+
+    if (typeof p === "string") {
+      pName = p.trim().slice(0, 100);
+    } else if (p && typeof p === "object") {
+      pName = (p.name ?? "").trim().slice(0, 100);
+      pEmail = (p.email ?? "").trim().toLowerCase();
+      const rawWa = (p.whatsapp ?? "").trim();
+      pWa = rawWa ? normalizeWa(rawWa) : "";
+    }
+
+    if (pName.length < 3) {
       return NextResponse.json({
         error: "Nama peserta tidak valid. Setiap nama minimal 3 huruf.",
       }, { status: 400 });
     }
-    // Cegah duplikasi nama dalam satu group
-    if (participants.includes(trimmed)) {
+
+    if (pEmail && !/^\S+@\S+\.\S+$/.test(pEmail)) {
       return NextResponse.json({
-        error: `Nama "${trimmed}" sudah dipakai untuk peserta lain. Setiap peserta harus punya nama berbeda.`,
+        error: `Format email peserta "${pName}" tidak valid.`,
       }, { status: 400 });
     }
-    participants.push(trimmed);
+
+    if (pWa && !/^628[0-9]{8,13}$/.test(pWa)) {
+      return NextResponse.json({
+        error: `Nomor WhatsApp peserta "${pName}" tidak valid (contoh: 081234567890).`,
+      }, { status: 400 });
+    }
+
+    if (pEmail) {
+      if (usedEmails.has(pEmail)) {
+        return NextResponse.json({
+          error: `Email "${pEmail}" sudah dipakai untuk peserta lain atau pendaftar utama.`,
+        }, { status: 400 });
+      }
+      usedEmails.add(pEmail);
+    }
+
+    if (pWa) {
+      if (usedWhatsapps.has(pWa)) {
+        return NextResponse.json({
+          error: `Nomor WhatsApp "${pWa}" sudah dipakai untuk peserta lain atau pendaftar utama.`,
+        }, { status: 400 });
+      }
+      usedWhatsapps.add(pWa);
+    }
+
+    participants.push({ name: pName, email: pEmail, whatsapp: pWa });
   }
-  // Cek nama utama jangan sama dengan peserta tambahan
-  if (participants.includes(name)) {
-    return NextResponse.json({
-      error: `Nama "${name}" sudah digunakan.`,
-    }, { status: 400 });
-  }
+
   const participantCount = 1 + participants.length; // pendaftar utama + tambahan
   if (participantCount > 10) {
     return NextResponse.json({ error: "Maksimal 10 peserta dalam satu pendaftaran." }, { status: 400 });
@@ -250,13 +297,15 @@ export async function POST(req: Request) {
     }
 
     // idempoten: daftar dua kali dengan nomor sama = tetap sukses (update data terbaru)
-    // Data multi-pendaftar disimpan di field participants (Json array of strings)
+    // Data multi-pendaftar disimpan di field participants (Json array)
+    const participantsJson = participants.length > 0 ? JSON.parse(JSON.stringify(participants)) : undefined;
+
     const reg = await prisma.registration.upsert({
       where: { whatsapp_programId: { whatsapp, programId: program.id } },
       create: {
         name, whatsapp, email, institution,
         programId: program.id, userId: user.id, batchId,
-        participants: participants.length > 0 ? participants : undefined,
+        participants: participantsJson,
       },
       update: {
         name, email, institution, userId: user.id,
@@ -264,7 +313,7 @@ export async function POST(req: Request) {
         // Kasus 3 di atas sudah menolak lebih dulu kalau statusnya benar-benar PAID/PASSED.
         status: "REGISTERED",
         ...(batchId ? { batchId } : {}),
-        ...(participants.length > 0 ? { participants } : {}),
+        ...(participantsJson ? { participants: participantsJson } : {}),
       },
       include: { payment: true },
     });
@@ -283,7 +332,7 @@ export async function POST(req: Request) {
       const formattedJadwal = formatJadwal(activeScheduleAt);
 
       // Gabung semua nama peserta untuk keperluan notifikasi
-      const allNames = [name, ...participants];
+      const allNames = [name, ...participants.map((p) => p.name)];
 
       await sendWa(
         whatsapp,
@@ -300,6 +349,55 @@ export async function POST(req: Request) {
         html: getWelcomeEmailHtml(name, program.title, formattedJadwal, activeWaGroupLink ?? "")
           .replace("</div>", `${pesertaInfo}</div>`),
       }).catch((err) => console.error("Gagal mengirim email pendaftaran gratis:", err));
+
+      // Buat akun dan registrasi mandiri untuk setiap peserta tambahan
+      for (const p of participants) {
+        if (!p.email || !p.whatsapp) continue;
+        try {
+          let pUser = await prisma.user.findFirst({
+            where: { OR: [{ email: p.email }, { whatsapp: p.whatsapp }] },
+          });
+          if (!pUser) {
+            pUser = await prisma.user.create({
+              data: { name: p.name, email: p.email, whatsapp: p.whatsapp, role: "STUDENT" },
+            });
+          }
+          await prisma.registration.upsert({
+            where: { whatsapp_programId: { whatsapp: p.whatsapp, programId: program.id } },
+            create: {
+              name: p.name,
+              whatsapp: p.whatsapp,
+              email: p.email,
+              institution,
+              programId: program.id,
+              userId: pUser.id,
+              batchId,
+              status: "REGISTERED",
+            },
+            update: {
+              name: p.name,
+              email: p.email,
+              institution,
+              userId: pUser.id,
+              status: "REGISTERED",
+              ...(batchId ? { batchId } : {}),
+            },
+          });
+
+          await sendWa(
+            p.whatsapp,
+            msgWelcome(p.name, program.title, formattedJadwal, activeZoomLink, activeWaGroupLink)
+          ).catch((err) => console.error("Gagal mengirim WA peserta tambahan:", err));
+
+          await sendEmail({
+            to: p.email,
+            subject: `Pendaftaran Berhasil: ${program.title}`,
+            html: getWelcomeEmailHtml(p.name, program.title, formattedJadwal, activeWaGroupLink ?? ""),
+          }).catch((err) => console.error("Gagal mengirim email pendaftaran peserta tambahan:", err));
+        } catch (err) {
+          console.error("Gagal memproses peserta tambahan gratis:", err);
+        }
+      }
 
       return NextResponse.json({
         ok: true, paid: false, free: true,
@@ -375,6 +473,60 @@ export async function POST(req: Request) {
         subject: `Pembayaran Berhasil: Akses Pelatihan ${program.title}`,
         html: getPaidEmailHtml(name, program.title, `${baseUrl}/member`, program.zoomLink, program.waGroupLink, program.lmsLink)
       }).catch((err) => console.error("Gagal mengirim email pembayaran dev:", err));
+
+      // Buat akun & registrasi lunas untuk setiap peserta tambahan di mode dev
+      for (const p of participants) {
+        if (!p.email || !p.whatsapp) continue;
+        try {
+          let pUser = await prisma.user.findFirst({
+            where: { OR: [{ email: p.email }, { whatsapp: p.whatsapp }] },
+          });
+          if (!pUser) {
+            pUser = await prisma.user.create({
+              data: { name: p.name, email: p.email, whatsapp: p.whatsapp, role: "STUDENT" },
+            });
+          }
+          await prisma.registration.upsert({
+            where: { whatsapp_programId: { whatsapp: p.whatsapp, programId: program.id } },
+            create: {
+              name: p.name,
+              whatsapp: p.whatsapp,
+              email: p.email,
+              institution,
+              programId: program.id,
+              userId: pUser.id,
+              batchId,
+              status: "PAID",
+            },
+            update: {
+              name: p.name,
+              email: p.email,
+              institution,
+              userId: pUser.id,
+              status: "PAID",
+              ...(batchId ? { batchId } : {}),
+            },
+          });
+
+          await sendWa(p.whatsapp, msgAccess({
+            name: p.name,
+            programTitle: program.title,
+            schedule: formatJadwal(program.scheduleAt),
+            zoomLink: program.zoomLink,
+            waGroupLink: program.waGroupLink,
+            lmsLink: program.lmsLink,
+            memberUrl: `${baseUrl}/member`,
+          })).catch((err) => console.error("Gagal mengirim WA akses peserta tambahan dev:", err));
+
+          await sendEmail({
+            to: p.email,
+            subject: `Pembayaran Berhasil: Akses Pelatihan ${program.title}`,
+            html: getPaidEmailHtml(p.name, program.title, `${baseUrl}/member`, program.zoomLink, program.waGroupLink, program.lmsLink),
+          }).catch((err) => console.error("Gagal mengirim email peserta tambahan dev:", err));
+        } catch (err) {
+          console.error("Gagal memproses peserta tambahan dev:", err);
+        }
+      }
 
       return NextResponse.json({
         ok: true, paid: true,

@@ -53,33 +53,14 @@ export default function Navbar({ minimal = false, ctaHref = "/program", ctaLabel
           {isLoggedIn ? (
             <Link
               href="/member"
-              title="Dashboard Peserta"
+              title="Akses LMS & Dashboard Peserta"
               className="nav-user-btn"
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                width: "40px",
-                height: "40px",
-                borderRadius: "50%",
-                background: "rgba(108, 92, 231, 0.08)",
-                border: "1px solid var(--purple)",
-                color: "var(--purple)",
-                transition: "all 0.25s ease"
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = "var(--purple)";
-                e.currentTarget.style.color = "var(--white)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = "rgba(108, 92, 231, 0.08)";
-                e.currentTarget.style.color = "var(--purple)";
-              }}
             >
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
                 <circle cx="12" cy="7" r="4"></circle>
               </svg>
+              <span className="nav-user-label">LMS</span>
             </Link>
           ) : (
             <Link href="/member/login" className="btn btn-line btn-sm" style={{ fontSize: ".85rem" }}>

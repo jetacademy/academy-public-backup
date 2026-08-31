@@ -67,6 +67,39 @@
 .nav .btn { padding: .8em 1.6em; font-size: .88rem; }
 .btn-text-mobile { display: none; }
 .nav-burger { display: none; font-size: 1.5rem; line-height: 1; color: var(--ink); }
+
+/* Tombol Akses LMS di Navbar */
+.nav-user-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.42rem 0.85rem 0.42rem 0.65rem;
+  border-radius: 999px;
+  background: rgba(108, 92, 231, 0.08);
+  border: 1.5px solid var(--purple);
+  color: var(--purple);
+  font-weight: 750;
+  font-size: 0.84rem;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  line-height: 1;
+}
+.nav-user-btn:hover {
+  background: var(--purple);
+  color: #fff;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(108, 92, 231, 0.25);
+}
+.nav-user-btn svg {
+  width: 17px;
+  height: 17px;
+  flex-shrink: 0;
+}
+.nav-user-label {
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
 @media (max-width: 860px) {
   .nav-links {
     display: none;
@@ -100,12 +133,16 @@
     gap: 0.4rem !important;
   }
   .nav-user-btn {
-    width: 34px !important;
-    height: 34px !important;
+    padding: 0.35rem 0.65rem 0.35rem 0.5rem !important;
+    font-size: 0.76rem !important;
+    gap: 0.32rem !important;
+    border-radius: 999px !important;
+    width: auto !important;
+    height: auto !important;
   }
   .nav-user-btn svg {
-    width: 16px !important;
-    height: 16px !important;
+    width: 15px !important;
+    height: 15px !important;
   }
   .nav .btn {
     padding: 0.55em 0.95em !important;

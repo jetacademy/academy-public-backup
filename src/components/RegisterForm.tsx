@@ -45,7 +45,7 @@ export default function RegisterForm({ programId, programSlug, programTitle, jad
   const [credentialVal, setCredentialVal] = useState<string | undefined>(undefined);
   const [batchId, setBatchId] = useState<string | undefined>(batches?.[0]?.id);
   const [jumlahPeserta, setJumlahPeserta] = useState(1);
-  const [additionalNames, setAdditionalNames] = useState<string[]>([]);
+  const [additionalParticipants, setAdditionalParticipants] = useState<{ name: string; email: string; whatsapp: string }[]>([]);
   const [voucherVal, setVoucherVal] = useState("");
   const [hasCompletedProfile, setHasCompletedProfile] = useState(false);
 
@@ -101,13 +101,6 @@ export default function RegisterForm({ programId, programSlug, programTitle, jad
       setError("Nama utama harus minimal 3 karakter.");
       return;
     }
-    const extraNames = additionalNames.map((n) => n.trim()).filter((n) => n.length > 0);
-    for (let i = 0; i < extraNames.length; i++) {
-      if (extraNames[i].length < 3) {
-        setError(`Nama Peserta ${i + 2} harus minimal 3 karakter.`);
-        return;
-      }
-    }
 
     // Validasi: institution minimal 3 karakter
     if (institutionVal.trim().length < 3) {
@@ -115,18 +108,59 @@ export default function RegisterForm({ programId, programSlug, programTitle, jad
       return;
     }
     // Validasi: WhatsApp minimal 10 digit
-    if (whatsappVal.trim().length < 10) {
-      setError("Nomor WhatsApp minimal 10 digit");
+    const cleanMainWa = whatsappVal.trim();
+    if (!/^08[0-9]{8,13}$/.test(cleanMainWa)) {
+      setError("Nomor WhatsApp utama tidak valid (contoh: 081234567890)");
+      return;
+    }
+    const cleanMainEmail = emailVal.trim().toLowerCase();
+    if (!/^\S+@\S+\.\S+$/.test(cleanMainEmail)) {
+      setError("Email utama tidak valid");
       return;
     }
 
+    const participantsPayload: { name: string; email: string; whatsapp: string }[] = [];
+    const usedEmails = new Set<string>([cleanMainEmail]);
+    const usedWhatsapps = new Set<string>([cleanMainWa]);
+
+    for (let i = 0; i < additionalParticipants.length; i++) {
+      const p = additionalParticipants[i];
+      const pName = safeName(p.name).trim();
+      const pEmail = p.email.trim().toLowerCase();
+      const pWa = p.whatsapp.trim();
+
+      if (pName.length < 3) {
+        setError(`Nama Peserta ${i + 2} harus minimal 3 karakter.`);
+        return;
+      }
+      if (!/^\S+@\S+\.\S+$/.test(pEmail)) {
+        setError(`Email Peserta ${i + 2} tidak valid.`);
+        return;
+      }
+      if (usedEmails.has(pEmail)) {
+        setError(`Email Peserta ${i + 2} (${pEmail}) sudah digunakan untuk peserta lain.`);
+        return;
+      }
+      if (!/^08[0-9]{8,13}$/.test(pWa)) {
+        setError(`Nomor WhatsApp Peserta ${i + 2} tidak valid (format 08...).`);
+        return;
+      }
+      if (usedWhatsapps.has(pWa)) {
+        setError(`Nomor WhatsApp Peserta ${i + 2} (${pWa}) sudah digunakan untuk peserta lain.`);
+        return;
+      }
+
+      usedEmails.add(pEmail);
+      usedWhatsapps.add(pWa);
+      participantsPayload.push({ name: pName, email: pEmail, whatsapp: pWa });
+    }
+
     setState("loading");
-    const participants = extraNames;
     const data: Record<string, unknown> = {
       name: mainName,
-      participants,
-      whatsapp: whatsappVal.trim(),
-      email: emailVal.trim(),
+      participants: participantsPayload,
+      whatsapp: cleanMainWa,
+      email: cleanMainEmail,
       institution: institutionVal.trim(),
       programSlug,
     };
@@ -149,17 +183,12 @@ export default function RegisterForm({ programId, programSlug, programTitle, jad
       const json: Record<string, unknown> & { error?: string } = await res.json();
       if (!res.ok) throw new Error(json.error ?? "Pendaftaran gagal. Silakan coba kembali.");
 
-      // [FIX C4+N2] Session sudah dibuat oleh /api/register (createMemberSession).
-      // Tidak perlu panggil memberLogin lagi — cukup redirect.
-      // API route sudah set cookie session di response. Browser akan menyimpannya.
-
       if (json.invoiceUrl) {
         window.fbq?.("track", "InitiateCheckout");
         window.location.href = json.invoiceUrl as string; // halaman pembayaran Xendit
         return;
       }
 
-      // [FIX G2] Set result agar tampilan sukses muncul
       window.fbq?.("track", "Lead");
       setResult({
         name: safeName(nameVal),
@@ -170,7 +199,6 @@ export default function RegisterForm({ programId, programSlug, programTitle, jad
       });
       setState("done");
 
-      // Redirect ke dashboard untuk program gratis (session sudah ada)
       if (!json.invoiceUrl) {
         router.push("/member");
       }
@@ -181,21 +209,20 @@ export default function RegisterForm({ programId, programSlug, programTitle, jad
   }
 
   function handleGoogleSelect(email: string, name: string, credential?: string) {
-    setGoogleOpen(false);
     setNameVal(name);
     setEmailVal(email);
     setCredentialVal(credential);
     setGoogleSelected(true);
-    setIsEditing(false);
+    setGoogleOpen(false);
   }
 
   async function handleResetGoogle() {
+    setGoogleSelected(false);
+    setCredentialVal(undefined);
     setNameVal("");
     setEmailVal("");
     setWhatsappVal("");
     setInstitutionVal("");
-    setCredentialVal(undefined);
-    setGoogleSelected(false);
     setIsEditing(false);
     setHasCompletedProfile(false);
     try {
@@ -207,10 +234,20 @@ export default function RegisterForm({ programId, programSlug, programTitle, jad
 
   function handleJumlahPesertaChange(val: number) {
     setJumlahPeserta(val);
-    setAdditionalNames((prev) => {
+    setAdditionalParticipants((prev) => {
       if (val <= 1) return [];
       if (prev.length >= val - 1) return prev.slice(0, val - 1);
-      return [...prev, ...Array(val - 1 - prev.length).fill("")];
+      const needed = val - 1 - prev.length;
+      const additional = Array.from({ length: needed }, () => ({ name: "", email: "", whatsapp: "" }));
+      return [...prev, ...additional];
+    });
+  }
+
+  function updateParticipant(index: number, field: "name" | "email" | "whatsapp", value: string) {
+    setAdditionalParticipants((prev) => {
+      const copy = [...prev];
+      copy[index] = { ...copy[index], [field]: value };
+      return copy;
     });
   }
 
@@ -233,30 +270,86 @@ export default function RegisterForm({ programId, programSlug, programTitle, jad
     );
   }
 
-  function renderAdditionalNameFields() {
+  function renderAdditionalParticipantFields() {
     if (jumlahPeserta <= 1) return null;
     return (
-      <>
-        {additionalNames.map((n, i) => (
-          <div className="field" key={i}>
-            <label htmlFor={`fNamaPeserta${i + 2}`}>Nama Peserta {i + 2}</label>
-            <input
-              id={`fNamaPeserta${i + 2}`}
-              name={`participantName${i + 2}`}
-              type="text"
-              placeholder="Contoh: Siti Nurhaliza"
-              required
-              minLength={3}
-              value={n}
-              onChange={(e) => {
-                const copy = [...additionalNames];
-                copy[i] = e.target.value;
-                setAdditionalNames(copy);
-              }}
-            />
+      <div style={{ display: "grid", gap: "1rem", marginTop: "1rem", marginBottom: "1rem" }}>
+        {additionalParticipants.map((p, i) => (
+          <div
+            key={i}
+            style={{
+              background: "var(--card-subtle, rgba(108, 92, 231, 0.04))",
+              border: "1px solid var(--line)",
+              borderRadius: "var(--r-md, 10px)",
+              padding: "1rem",
+              textAlign: "left",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.8rem" }}>
+              <span
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  width: 24,
+                  height: 24,
+                  borderRadius: "50%",
+                  background: "var(--purple)",
+                  color: "#fff",
+                  fontSize: "0.75rem",
+                  fontWeight: 700,
+                  flexShrink: 0,
+                }}
+              >
+                {i + 2}
+              </span>
+              <strong style={{ fontSize: "0.92rem", color: "var(--ink)" }}>Data Peserta {i + 2}</strong>
+            </div>
+
+            <div className="field" style={{ marginBottom: "0.7rem" }}>
+              <label htmlFor={`fNamaPeserta${i + 2}`}>Nama Lengkap (untuk sertifikat)</label>
+              <input
+                id={`fNamaPeserta${i + 2}`}
+                name={`participantName${i + 2}`}
+                type="text"
+                placeholder="Contoh: Siti Nurhaliza, S.Kom."
+                required
+                minLength={3}
+                value={p.name}
+                onChange={(e) => updateParticipant(i, "name", e.target.value)}
+              />
+            </div>
+
+            <div className="field" style={{ marginBottom: "0.7rem" }}>
+              <label htmlFor={`fEmailPeserta${i + 2}`}>Email Aktif (untuk login LMS)</label>
+              <input
+                id={`fEmailPeserta${i + 2}`}
+                name={`participantEmail${i + 2}`}
+                type="email"
+                placeholder="Contoh: siti@gmail.com"
+                required
+                value={p.email}
+                onChange={(e) => updateParticipant(i, "email", e.target.value)}
+              />
+            </div>
+
+            <div className="field" style={{ marginBottom: 0 }}>
+              <label htmlFor={`fWaPeserta${i + 2}`}>WhatsApp Aktif (untuk akses materi)</label>
+              <input
+                id={`fWaPeserta${i + 2}`}
+                name={`participantWa${i + 2}`}
+                type="tel"
+                pattern="^08[0-9]{8,13}$"
+                title="Format: 08xxxxxxxxx (min 10 digit, max 15 digit)"
+                placeholder="Contoh: 081234567890"
+                required
+                value={p.whatsapp}
+                onChange={(e) => updateParticipant(i, "whatsapp", e.target.value)}
+              />
+            </div>
           </div>
         ))}
-      </>
+      </div>
     );
   }
 
@@ -372,7 +465,7 @@ export default function RegisterForm({ programId, programSlug, programTitle, jad
                   </div>
                 </div>
 
-                {renderAdditionalNameFields()}
+                {renderAdditionalParticipantFields()}
                 {renderVoucherField()}
 
                 <button type="submit" className="btn btn-purple btn-lg btn-block" disabled={state === "loading"} style={{ width: "100%" }}>
@@ -512,7 +605,7 @@ export default function RegisterForm({ programId, programSlug, programTitle, jad
                   />
                 </div>
 
-                {renderAdditionalNameFields()}
+                {renderAdditionalParticipantFields()}
                 {renderVoucherField()}
 
                 <button type="submit" className="btn btn-purple btn-lg btn-block" disabled={state === "loading"} style={{ width: "100%" }}>
