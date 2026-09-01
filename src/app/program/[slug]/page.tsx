@@ -2063,6 +2063,18 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
                 <h2 style={{ fontSize: "clamp(1.9rem, 4.5vw, 3rem)", marginBottom: ".8rem" }}>
                   {isZeroHuman ? "Siap Membangun Perusahaan Anda dengan AI?" : "Daftar Sekarang"}
                 </h2>
+
+                {/* Countdown & Pricing Psychology for Zero Human Company */}
+                {isZeroHuman && (
+                  <div style={{ marginBottom: "1.5rem", padding: "1rem", background: "rgba(35,33,118,0.03)", borderRadius: "12px", border: "1px solid rgba(35,33,118,0.08)" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.75rem", flexWrap: "wrap", gap: "0.5rem" }}>
+                      <span style={{ fontSize: "0.85rem", color: "var(--ink-soft)" }}>Diskon berakhir dalam</span>
+                      <Countdown target="2026-09-08T13:00:00+07:00" />
+                    </div>
+                    <div style={{ fontWeight: 700, color: "#8be9fd", fontSize: "1.1rem" }}>Hanya Rp225.000</div>
+                    <p style={{ fontSize: "0.85rem", color: "var(--ink-soft)", marginTop: "0.25rem", marginBottom: 0 }}>Jangan tunggu hingga harga naik kembali ke Rp490.000.</p>
+                  </div>
+                )}
                 <p style={{ fontWeight: 700, opacity: .85 }}>
                   {isZeroHuman
                     ? "Mulai dari satu Agent. Bangun enam. Rp225.000 — diskon dari Rp490.000, sekali bayar. Isi data di bawah, konfirmasi melalui WhatsApp."
