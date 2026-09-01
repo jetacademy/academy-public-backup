@@ -18,6 +18,7 @@ import TransformArrow from "@/components/TransformArrow";
 import { getProgramBySlug } from "@/lib/programs";
 import { TYPE_LABEL, type ProgramType } from "@/lib/fallback";
 import Image from "next/image";
+import { prisma } from "@/lib/prisma";
 import { formatJadwal, formatHari, formatJam, rupiah } from "@/lib/format";
 
 // Halaman ini di-ISR (cache 5 menit) — personalisasi member (prefill profil,
@@ -76,14 +77,43 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
   const isVibesCoding = program.slug === "vibes-coding";
   const jadwal = formatJadwal(program.scheduleAt);
 
+  // Early Bird quota logic untuk Zero Human Company (50 orang pertama)
+  let zhcPaidCount = 0;
+  if (isZeroHuman) {
+    try {
+      zhcPaidCount = await prisma.registration.count({
+        where: {
+          programId: program.id,
+          status: { in: ["PAID", "PASSED"] },
+        },
+      });
+    } catch {
+      zhcPaidCount = 0;
+    }
+  }
+
+  const EARLY_BIRD_QUOTA = 50;
+  const isEarlyBirdActive = isZeroHuman ? zhcPaidCount < EARLY_BIRD_QUOTA : false;
+  const earlyBirdSeatsLeft = isZeroHuman ? Math.max(0, EARLY_BIRD_QUOTA - zhcPaidCount) : 0;
+  const earlyBirdPercent = isZeroHuman ? Math.min(100, Math.round((zhcPaidCount / EARLY_BIRD_QUOTA) * 100)) : 0;
+
+  const effectivePrice = isZeroHuman
+    ? (isEarlyBirdActive ? 225000 : 490000)
+    : program.price;
+  const effectivePriceOld = isZeroHuman
+    ? (isEarlyBirdActive ? 490000 : null)
+    : program.priceOld;
+
   // Prioritaskan batch aktif mendatang untuk jadwal display
   const nextBatch = program.batches?.[0];
   const displayScheduleAt = nextBatch?.scheduleAt ?? program.scheduleAt;
   const displayJadwal = nextBatch ? formatJadwal(nextBatch.scheduleAt) : jadwal;
   const displayHari = nextBatch ? formatHari(nextBatch.scheduleAt) : formatHari(program.scheduleAt);
   const displayJam = nextBatch ? formatJam(nextBatch.scheduleAt) : formatJam(program.scheduleAt);
-  const priceLabel = isFree ? "GRATIS" : rupiah(program.price);
-  const ebCtaNavLabel = isZeroHuman ? "Rp 225.000 — Sekali" : (isFree ? "Daftar Gratis" : "Daftar");
+  const priceLabel = isFree ? "GRATIS" : rupiah(effectivePrice);
+  const ebCtaNavLabel = isZeroHuman
+    ? (isEarlyBirdActive ? "Early Bird Rp 225.000" : "Daftar — Rp 490.000")
+    : (isFree ? "Daftar Gratis" : "Daftar");
 
   const faqItems = isAiForTeachers
     ? [
@@ -219,7 +249,7 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
     },
     offers: {
       "@type": "Offer",
-      price: program.price,
+      price: effectivePrice,
       priceCurrency: "IDR",
       category: isFree ? "Free" : "Paid",
       availability: "https://schema.org/InStock",
@@ -399,11 +429,11 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
             )}
             <div className="prg-cta-col">
               <a href="#daftar" className="btn btn-purple btn-lg btn-block" style={{ width: "100%", textAlign: "center" }}>
-                {isFree ? "Daftar Gratis Sekarang" : `Daftar — ${priceLabel}`}
+                {isFree ? "Daftar Gratis Sekarang" : isZeroHuman && isEarlyBirdActive ? `Daftar Early Bird — ${priceLabel}` : `Daftar — ${priceLabel}`}
               </a>
-              {!isFree && program.priceOld && (
+              {!isFree && effectivePriceOld && (
                 <span className="prg-hero-strike" style={{ color: "var(--ink-soft)", textDecoration: "line-through", display: "block", textAlign: "center", marginTop: "0.2rem" }}>
-                  {rupiah(program.priceOld)}
+                  {rupiah(effectivePriceOld)}
                 </span>
               )}
               <div className="prg-cta-meta-list" style={{ marginTop: "0.5rem" }}>
@@ -1660,21 +1690,38 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
               <div className="bento" style={{ padding: "clamp(1.8rem, 4vw, 2.6rem)", textAlign: "center", background: "linear-gradient(150deg, #1e1b4b 0%, #0f172a 100%)", color: "#fff", borderRadius: "var(--r-lg)", position: "relative", overflow: "hidden", maxWidth: "46rem", marginInline: "auto" }}>
                 <div style={{ position: "absolute", width: "350px", height: "350px", borderRadius: "50%", background: "radial-gradient(circle, rgba(247,148,29,0.15) 0%, transparent 70%)", top: "-120px", right: "-80px", pointerEvents: "none" }} />
                 <span style={{ display: "inline-block", position: "relative", background: "rgba(247,148,29,0.15)", border: "1px solid rgba(247,148,29,0.4)", color: "var(--orange)", fontWeight: 800, fontSize: "0.78rem", letterSpacing: "0.04em", padding: "0.35rem 0.9rem", borderRadius: "999px" }}>
-                  🔥 PROMO HARI INI — HARGA TERMURAH
+                  {isEarlyBirdActive ? "⚡ EARLY BIRD PROMO — 50 ORANG PERTAMA" : "HARGA NORMAL WORKSHOP"}
                 </span>
+
+                {isEarlyBirdActive && (
+                  <div style={{ maxWidth: "340px", margin: "1.2rem auto 0.4rem", background: "rgba(255,255,255,0.08)", padding: "0.8rem 1rem", borderRadius: "12px", border: "1px solid rgba(255,255,255,0.12)", position: "relative" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.82rem", fontWeight: 700, marginBottom: "0.4rem" }}>
+                      <span style={{ color: "var(--orange)" }}>🔥 Sisa {earlyBirdSeatsLeft} Kuota!</span>
+                      <span style={{ color: "rgba(255,255,255,0.7)" }}>{zhcPaidCount} / 50 Terisi</span>
+                    </div>
+                    <div style={{ width: "100%", height: "8px", background: "rgba(255,255,255,0.15)", borderRadius: "999px", overflow: "hidden" }}>
+                      <div style={{ width: `${Math.max(8, earlyBirdPercent)}%`, height: "100%", background: "linear-gradient(90deg, #f7941d, #ef4444)", borderRadius: "999px", transition: "width 0.5s ease" }} />
+                    </div>
+                  </div>
+                )}
+
                 <div style={{ display: "flex", justifyContent: "center", alignItems: "baseline", gap: "0.7rem", marginTop: "1rem", flexWrap: "wrap", position: "relative" }}>
-                  <span style={{ fontSize: "clamp(2rem, 5vw, 2.8rem)", fontWeight: 900, color: "var(--orange)" }}>Rp225.000</span>
-                  <span className="prg-hero-strike" style={{ fontSize: "1.1rem" }}>Rp490.000</span>
-                  <span className="eb-save">Hemat 54%</span>
+                  <span style={{ fontSize: "clamp(2rem, 5vw, 2.8rem)", fontWeight: 900, color: "var(--orange)" }}>{rupiah(effectivePrice)}</span>
+                  {effectivePriceOld && (
+                    <span className="prg-hero-strike" style={{ fontSize: "1.1rem" }}>{rupiah(effectivePriceOld)}</span>
+                  )}
+                  {isEarlyBirdActive && (
+                    <span className="eb-save">Hemat 54%</span>
+                  )}
                 </div>
                 <p style={{ fontSize: "0.9rem", color: "rgba(255,255,255,0.75)", margin: "0.6rem 0 1.2rem", position: "relative" }}>
                   Sekali bayar untuk 6 AI Agent • Praktik langsung • Tanpa biaya langganan bulanan
                 </p>
                 <a href="#daftar" className="btn btn-purple btn-lg" style={{ display: "inline-flex", maxWidth: "100%", position: "relative", background: "var(--orange)", whiteSpace: "normal", textAlign: "center", lineHeight: 1.25, fontWeight: 800 }}>
-                  🚀 Daftar Sekarang — Rp 225.000
+                  🚀 {isEarlyBirdActive ? `Amankan Kuota Early Bird — ${rupiah(225000)}` : `Daftar Sekarang — ${rupiah(490000)}`}
                 </a>
-                <p style={{ fontSize: "0.75rem", color: "rgba(255,255,255,0.4)", marginTop: "0.8rem", marginBottom: 0, position: "relative" }}>
-                  *Harga promo sewaktu-waktu dapat kembali normal.
+                <p style={{ fontSize: "0.75rem", color: "rgba(255,255,255,0.5)", marginTop: "0.8rem", marginBottom: 0, position: "relative" }}>
+                  {isEarlyBirdActive ? "*Setelah 50 kuota pertama terpenuhi, harga otomatis kembali normal ke Rp490.000." : "*Akses penuh ke sesi workshop & materi rekaman."}
                 </p>
               </div>
             </div>
@@ -2065,27 +2112,50 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
                   {isZeroHuman ? "Siap Membangun Perusahaan Anda dengan AI?" : "Daftar Sekarang"}
                 </h2>
 
-                {/* Countdown & Pricing Psychology for Zero Human Company */}
+                {/* Early Bird Quota & Pricing Psychology for Zero Human Company */}
                 {isZeroHuman && (
-                  <div style={{ marginBottom: "1.5rem", padding: "1.1rem 1.25rem", background: "rgba(255, 255, 255, 0.9)", borderRadius: "16px", border: "1px solid var(--border)", boxShadow: "0 4px 20px rgba(0,0,0,0.04)" }}>
+                  <div style={{ marginBottom: "1.5rem", padding: "1.1rem 1.25rem", background: "rgba(255, 255, 255, 0.95)", borderRadius: "16px", border: "1px solid var(--border)", boxShadow: "0 4px 20px rgba(0,0,0,0.04)" }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.85rem", flexWrap: "wrap", gap: "0.6rem" }}>
                       <div style={{ display: "flex", alignItems: "center", gap: "0.45rem" }}>
-                        <span style={{ display: "inline-block", width: "8px", height: "8px", borderRadius: "50%", background: "#ef4444" }} />
-                        <span style={{ fontSize: "0.85rem", fontWeight: 700, color: "var(--ink)" }}>Penawaran Berakhir Dalam:</span>
+                        <span style={{ display: "inline-block", width: "8px", height: "8px", borderRadius: "50%", background: isEarlyBirdActive ? "#ef4444" : "#6b7280" }} />
+                        <span style={{ fontSize: "0.85rem", fontWeight: 700, color: "var(--ink)" }}>
+                          {isEarlyBirdActive ? `⚡ Kuota Early Bird: Sisa ${earlyBirdSeatsLeft} dari 50 Kuota!` : "Sesi Pendaftaran Reguler"}
+                        </span>
                       </div>
-                      <Countdown target={displayScheduleAt.toISOString()} />
+                      {isEarlyBirdActive && (
+                        <span style={{ fontSize: "0.78rem", fontWeight: 700, color: "var(--purple)", background: "var(--purple-soft)", padding: "0.2rem 0.6rem", borderRadius: "999px" }}>
+                          {zhcPaidCount} / 50 Terisi
+                        </span>
+                      )}
                     </div>
+
+                    {isEarlyBirdActive && (
+                      <div style={{ width: "100%", height: "8px", background: "rgba(108, 92, 231, 0.12)", borderRadius: "999px", overflow: "hidden", marginBottom: "0.9rem" }}>
+                        <div style={{ width: `${Math.max(8, earlyBirdPercent)}%`, height: "100%", background: "linear-gradient(90deg, #6c5ce7, #f7941d)", borderRadius: "999px", transition: "width 0.5s ease" }} />
+                      </div>
+                    )}
+
                     <div style={{ display: "flex", alignItems: "baseline", gap: "0.6rem", flexWrap: "wrap" }}>
-                      <span style={{ fontWeight: 800, color: "var(--purple)", fontSize: "1.35rem" }}>Rp 225.000</span>
-                      <span style={{ textDecoration: "line-through", color: "var(--ink-faint)", fontSize: "0.95rem", fontWeight: 600 }}>Rp 490.000</span>
-                      <span style={{ background: "rgba(34, 197, 94, 0.12)", color: "#15803d", fontSize: "0.75rem", fontWeight: 700, padding: "0.2rem 0.5rem", borderRadius: "6px" }}>Hemat Rp 265.000</span>
+                      <span style={{ fontWeight: 800, color: "var(--purple)", fontSize: "1.35rem" }}>{rupiah(effectivePrice)}</span>
+                      {effectivePriceOld && (
+                        <span style={{ textDecoration: "line-through", color: "var(--ink-faint)", fontSize: "0.95rem", fontWeight: 600 }}>{rupiah(effectivePriceOld)}</span>
+                      )}
+                      {isEarlyBirdActive && (
+                        <span style={{ background: "rgba(34, 197, 94, 0.12)", color: "#15803d", fontSize: "0.75rem", fontWeight: 700, padding: "0.2rem 0.5rem", borderRadius: "6px" }}>Hemat Rp 265.000</span>
+                      )}
                     </div>
-                    <p style={{ fontSize: "0.82rem", color: "var(--ink-soft)", marginTop: "0.4rem", marginBottom: 0 }}>Kunci harga ini sekarang sebelum batch dimulai &amp; harga kembali ke Rp 490.000.</p>
+                    <p style={{ fontSize: "0.82rem", color: "var(--ink-soft)", marginTop: "0.4rem", marginBottom: 0 }}>
+                      {isEarlyBirdActive
+                        ? "Harga spesial Rp225.000 khusus untuk 50 pendaftar pertama. Setelah kuota habis, otomatis kembali ke Rp490.000."
+                        : "Daftar sekarang untuk mengamankan kursi Anda sebelum sesi workshop dimulai."}
+                    </p>
                   </div>
                 )}
                 <p style={{ fontWeight: 700, opacity: .85 }}>
                   {isZeroHuman
-                    ? "Mulai dari satu Agent. Bangun enam. Rp225.000 — diskon dari Rp490.000, sekali bayar. Isi data di bawah, konfirmasi melalui WhatsApp."
+                    ? isEarlyBirdActive
+                      ? "Mulai dari satu Agent. Bangun enam. Kuota Early Bird Rp225.000 (diskon dari Rp490.000), sekali bayar. Isi data di bawah, konfirmasi melalui WhatsApp."
+                      : "Mulai dari satu Agent. Bangun enam. Rp490.000 sekali bayar. Isi data di bawah, konfirmasi melalui WhatsApp."
                     : isVibesCoding
                       ? "Harga spesial — ~~Rp 860.000~~. Isi data di bawah, konfirmasi melalui WhatsApp."
                       : "Pendaftaran satu menit. Akses instan di web &amp; dikirim via WhatsApp."}
@@ -2096,7 +2166,7 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
                 programSlug={program.slug}
                 programTitle={program.title}
                 jadwal={jadwal}
-                price={program.price}
+                price={effectivePrice}
                 priceLabel={priceLabel}
                 batches={program.batches?.map((b) => ({ id: b.id, scheduleAt: b.scheduleAt.toISOString(), seatsLeft: b.seatsLeft }))}
               />

@@ -213,10 +213,17 @@ export async function POST(req: Request) {
       }
     }
 
-    // ── HARGA TETAP: zero-human-company ──────────────────────
+    // ── HARGA / EARLY BIRD: zero-human-company (50 Kuota Pertama) ──
     let unitPrice = program.price;
     if (program.slug === "zero-human-company") {
-      unitPrice = 225000;
+      const EARLY_BIRD_QUOTA = 50;
+      const earlyBirdPaidCount = await prisma.registration.count({
+        where: {
+          programId: program.id,
+          status: { in: ["PAID", "PASSED"] },
+        },
+      });
+      unitPrice = earlyBirdPaidCount < EARLY_BIRD_QUOTA ? 225000 : 490000;
     }
 
     // Total harga = harga per peserta × jumlah peserta

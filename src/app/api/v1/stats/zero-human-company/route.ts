@@ -29,16 +29,24 @@ export async function GET() {
     ["PAID", "PASSED"].includes(r.status)
   ).length;
 
+  const earlyBirdQuota = 50;
+  const earlyBirdSeatsLeft = Math.max(0, earlyBirdQuota - lunas);
+  const isEarlyBirdActive = lunas < earlyBirdQuota;
+  const currentPrice = isEarlyBirdActive ? 225000 : (program.price || 490000);
+
   return NextResponse.json({
     program: program.title,
     slug: program.slug,
-    price: program.price,
-    priceOld: program.priceOld,
+    price: currentPrice,
+    priceOld: isEarlyBirdActive ? 490000 : program.priceOld,
+    earlyBirdQuota,
+    earlyBirdSeatsLeft,
+    isEarlyBirdActive,
     schedule: program.scheduleAt,
     total: regs.length,
     byStatus,
     lunas,
     belumBayar: byStatus["REGISTERED"] || 0,
-    pendapatan: lunas * (program.price || 0),
+    pendapatan: lunas * (program.price || 225000),
   });
 }
