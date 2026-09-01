@@ -8,7 +8,7 @@ import Footer from "@/components/Footer";
 import WaFloat from "@/components/WaFloat";
 import Icon, { TYPE_ICON } from "@/components/Icon";
 import { TYPE_LABEL, type ProgramData, type ProgramType } from "@/lib/fallback";
-import { formatHari, formatJam, rupiah } from "@/lib/format";
+import { formatHariTanggal, formatJam, rupiah } from "@/lib/format";
 
 const TYPE_CLASS: Record<ProgramType, string> = {
   WEBINAR: "type-webinar",
@@ -213,7 +213,7 @@ export default function ProgramListClient({
                     <p style={{ fontSize: "0.84rem", color: "var(--ink-soft)", margin: "0.2rem 0" }}>
                       Mentor: <strong style={{ color: "var(--ink)" }}>{p.mentorName}</strong>
                     </p>
-                    <p className="desc">{formatHari(p.scheduleAt)}, {formatJam(p.scheduleAt)} · {p.durationLabel}</p>
+                    <p className="desc">{formatHariTanggal(p.scheduleAt)}, {formatJam(p.scheduleAt)} · {p.durationLabel}</p>
                     <div className="prg-foot" style={{ marginTop: "auto", paddingTop: "1rem" }}>
                       <div className="prg-price">
                         {p.price === 0 ? (

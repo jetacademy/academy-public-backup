@@ -19,7 +19,7 @@ import { getProgramBySlug } from "@/lib/programs";
 import { TYPE_LABEL, type ProgramType } from "@/lib/fallback";
 import Image from "next/image";
 import { prisma } from "@/lib/prisma";
-import { formatJadwal, formatHari, formatJam, rupiah } from "@/lib/format";
+import { formatJadwal, formatHariTanggal, formatJam, rupiah } from "@/lib/format";
 
 // Halaman ini di-ISR (cache 5 menit) — personalisasi member (prefill profil,
 // cek sudah terdaftar) TIDAK lagi dibaca di sini saat SSR, dipindah ke
@@ -82,7 +82,7 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
   const targetBatchId = nextBatch?.id;
   const displayScheduleAt = nextBatch?.scheduleAt ?? program.scheduleAt;
   const displayJadwal = nextBatch ? formatJadwal(nextBatch.scheduleAt) : jadwal;
-  const displayHari = nextBatch ? formatHari(nextBatch.scheduleAt) : formatHari(program.scheduleAt);
+  const displayHari = nextBatch ? formatHariTanggal(nextBatch.scheduleAt) : formatHariTanggal(program.scheduleAt);
   const displayJam = nextBatch ? formatJam(nextBatch.scheduleAt) : formatJam(program.scheduleAt);
 
   // Early Bird quota logic untuk Zero Human Company (50 orang pertama per batch)
