@@ -52,8 +52,8 @@ export async function GET(req: Request) {
 
     for (const p of payments) {
       const dateStr = (p.paidAt ?? new Date()).toISOString().split("T")[0];
-      const program = p.registration.program.title || "Unknown";
-      const amount = p.amount || 0;
+      const program = p.registration?.program?.title || "Unknown";
+      const amount = Number(p.amount) || 0;
 
       if (!dailyData[dateStr]) {
         dailyData[dateStr] = { date: dateStr, totalRevenue: 0, transactionCount: 0, programRevenues: {} };
