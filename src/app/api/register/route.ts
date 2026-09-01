@@ -213,14 +213,24 @@ export async function POST(req: Request) {
       }
     }
 
-    // ── HARGA / EARLY BIRD: zero-human-company (50 Kuota Pertama) ──
+    // ── HARGA / EARLY BIRD: zero-human-company (50 Kuota Pertama per Batch) ──
     let unitPrice = program.price;
     if (program.slug === "zero-human-company") {
       const EARLY_BIRD_QUOTA = 50;
+      let targetBatchId = batchId;
+      if (!targetBatchId) {
+        const upcomingBatch = await prisma.programBatch.findFirst({
+          where: { programId: program.id, isActive: true, scheduleAt: { gt: new Date() } },
+          orderBy: { scheduleAt: "asc" },
+          select: { id: true },
+        });
+        targetBatchId = upcomingBatch?.id ?? null;
+      }
       const earlyBirdPaidCount = await prisma.registration.count({
         where: {
           programId: program.id,
           status: { in: ["PAID", "PASSED"] },
+          ...(targetBatchId ? { batchId: targetBatchId } : {}),
         },
       });
       unitPrice = earlyBirdPaidCount < EARLY_BIRD_QUOTA ? 225000 : 490000;

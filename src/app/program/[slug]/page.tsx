@@ -77,7 +77,15 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
   const isVibesCoding = program.slug === "vibes-coding";
   const jadwal = formatJadwal(program.scheduleAt);
 
-  // Early Bird quota logic untuk Zero Human Company (50 orang pertama)
+  // Prioritaskan batch aktif mendatang untuk jadwal display
+  const nextBatch = program.batches?.[0];
+  const targetBatchId = nextBatch?.id;
+  const displayScheduleAt = nextBatch?.scheduleAt ?? program.scheduleAt;
+  const displayJadwal = nextBatch ? formatJadwal(nextBatch.scheduleAt) : jadwal;
+  const displayHari = nextBatch ? formatHari(nextBatch.scheduleAt) : formatHari(program.scheduleAt);
+  const displayJam = nextBatch ? formatJam(nextBatch.scheduleAt) : formatJam(program.scheduleAt);
+
+  // Early Bird quota logic untuk Zero Human Company (50 orang pertama per batch)
   let zhcPaidCount = 0;
   if (isZeroHuman) {
     try {
@@ -85,6 +93,7 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
         where: {
           programId: program.id,
           status: { in: ["PAID", "PASSED"] },
+          ...(targetBatchId ? { batchId: targetBatchId } : {}),
         },
       });
     } catch {
@@ -104,12 +113,6 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
     ? (isEarlyBirdActive ? 490000 : null)
     : program.priceOld;
 
-  // Prioritaskan batch aktif mendatang untuk jadwal display
-  const nextBatch = program.batches?.[0];
-  const displayScheduleAt = nextBatch?.scheduleAt ?? program.scheduleAt;
-  const displayJadwal = nextBatch ? formatJadwal(nextBatch.scheduleAt) : jadwal;
-  const displayHari = nextBatch ? formatHari(nextBatch.scheduleAt) : formatHari(program.scheduleAt);
-  const displayJam = nextBatch ? formatJam(nextBatch.scheduleAt) : formatJam(program.scheduleAt);
   const priceLabel = isFree ? "GRATIS" : rupiah(effectivePrice);
   const ebCtaNavLabel = isZeroHuman
     ? (isEarlyBirdActive ? "Early Bird Rp 225.000" : "Daftar — Rp 490.000")
