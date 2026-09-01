@@ -9,6 +9,7 @@ import RegisterForm from "@/components/RegisterForm";
 import ValueStack from "@/components/ValueStack";
 import OfferTimer from "@/components/OfferTimer";
 import Testimonials from "@/components/Testimonials";
+import Countdown from "@/components/Countdown";
 import Icon from "@/components/Icon";
 import ProgramContentBlocks from "@/components/ProgramContentBlocks";
 import VibesLandingSections from "@/components/VibesLandingSections";
@@ -2066,13 +2067,20 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
 
                 {/* Countdown & Pricing Psychology for Zero Human Company */}
                 {isZeroHuman && (
-                  <div style={{ marginBottom: "1.5rem", padding: "1rem", background: "rgba(35,33,118,0.03)", borderRadius: "12px", border: "1px solid rgba(35,33,118,0.08)" }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.75rem", flexWrap: "wrap", gap: "0.5rem" }}>
-                      <span style={{ fontSize: "0.85rem", color: "var(--ink-soft)" }}>Diskon berakhir dalam</span>
-                      <Countdown target="2026-09-08T13:00:00+07:00" />
+                  <div style={{ marginBottom: "1.5rem", padding: "1.1rem 1.25rem", background: "rgba(255, 255, 255, 0.9)", borderRadius: "16px", border: "1px solid var(--border)", boxShadow: "0 4px 20px rgba(0,0,0,0.04)" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.85rem", flexWrap: "wrap", gap: "0.6rem" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "0.45rem" }}>
+                        <span style={{ display: "inline-block", width: "8px", height: "8px", borderRadius: "50%", background: "#ef4444" }} />
+                        <span style={{ fontSize: "0.85rem", fontWeight: 700, color: "var(--ink)" }}>Penawaran Berakhir Dalam:</span>
+                      </div>
+                      <Countdown target={displayScheduleAt.toISOString()} />
                     </div>
-                    <div style={{ fontWeight: 700, color: "#8be9fd", fontSize: "1.1rem" }}>Hanya Rp225.000</div>
-                    <p style={{ fontSize: "0.85rem", color: "var(--ink-soft)", marginTop: "0.25rem", marginBottom: 0 }}>Jangan tunggu hingga harga naik kembali ke Rp490.000.</p>
+                    <div style={{ display: "flex", alignItems: "baseline", gap: "0.6rem", flexWrap: "wrap" }}>
+                      <span style={{ fontWeight: 800, color: "var(--purple)", fontSize: "1.35rem" }}>Rp 225.000</span>
+                      <span style={{ textDecoration: "line-through", color: "var(--ink-faint)", fontSize: "0.95rem", fontWeight: 600 }}>Rp 490.000</span>
+                      <span style={{ background: "rgba(34, 197, 94, 0.12)", color: "#15803d", fontSize: "0.75rem", fontWeight: 700, padding: "0.2rem 0.5rem", borderRadius: "6px" }}>Hemat Rp 265.000</span>
+                    </div>
+                    <p style={{ fontSize: "0.82rem", color: "var(--ink-soft)", marginTop: "0.4rem", marginBottom: 0 }}>Kunci harga ini sekarang sebelum batch dimulai &amp; harga kembali ke Rp 490.000.</p>
                   </div>
                 )}
                 <p style={{ fontWeight: 700, opacity: .85 }}>
