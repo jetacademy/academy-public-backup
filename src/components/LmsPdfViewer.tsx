@@ -5,9 +5,10 @@ import { Document, Page, pdfjs } from "react-pdf";
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
 
-// Setup worker pdf.js. Menggunakan worker lokal yang disinkronkan dengan versi react-pdf (5.4.296)
+// Multi-tier PDF.js Worker Configuration
 if (typeof window !== "undefined" && !pdfjs.GlobalWorkerOptions.workerSrc) {
-  pdfjs.GlobalWorkerOptions.workerSrc = `/pdfjs/pdf.worker.min.mjs?v=${pdfjs.version}`;
+  // Try local synced worker first with fallback to unpkg CDN matching the exact pdfjs version (5.4.296)
+  pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 }
 
 interface LmsPdfViewerProps {
@@ -16,26 +17,62 @@ interface LmsPdfViewerProps {
   allowDownload?: boolean;
 }
 
+type ReaderEngine = "canvas" | "native" | "gdocs";
+
 export default function LmsPdfViewer({ fileUrl, title, allowDownload = false }: LmsPdfViewerProps) {
   const [numPages, setNumPages] = useState<number>(0);
   const [pageNumber, setPageNumber] = useState(1);
   const [jumpPageInput, setJumpPageInput] = useState("1");
   const [loading, setLoading] = useState(true);
+  const [loadingProgress, setLoadingProgress] = useState<number>(0);
   const [error, setError] = useState<string | null>(null);
+  const [errorDetails, setErrorDetails] = useState<string>("");
   const [containerWidth, setContainerWidth] = useState(800);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [zoomScale, setZoomScale] = useState(1.0);
+  const [rotation, setRotation] = useState<number>(0);
   const [viewMode, setViewMode] = useState<"single" | "scroll">("single");
-  const [useFallbackEmbed, setUseFallbackEmbed] = useState(false);
+  const [readerEngine, setReaderEngine] = useState<ReaderEngine>("canvas");
   const [retryCount, setRetryCount] = useState(0);
+  const [useProxy, setUseProxy] = useState(false);
+  const [workerSourceTier, setWorkerSourceTier] = useState<number>(0);
 
   const wrapperRef = useRef<HTMLDivElement>(null);
   const canvasAreaRef = useRef<HTMLDivElement>(null);
 
+  // Worker tier list for progressive fallback on worker failure
+  const workerUrls = useMemo(
+    () => [
+      `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`,
+      `/pdfjs/pdf.worker.min.mjs?v=${pdfjs.version}`,
+      `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.mjs`,
+    ],
+    []
+  );
+
+  // Update worker src when tier changes
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      pdfjs.GlobalWorkerOptions.workerSrc = workerUrls[workerSourceTier % workerUrls.length];
+    }
+  }, [workerSourceTier, workerUrls]);
+
+  // Compute active document URL (direct vs proxied)
+  const activePdfUrl = useMemo(() => {
+    if (!fileUrl) return "";
+    if (useProxy) {
+      return `/api/pdf-proxy?url=${encodeURIComponent(fileUrl)}`;
+    }
+    return fileUrl;
+  }, [fileUrl, useProxy]);
+
+  // Observe container width
   const containerRef = useCallback((node: HTMLDivElement | null) => {
     if (node) {
       const ro = new ResizeObserver(([entry]) => {
-        setContainerWidth(Math.floor(entry.contentRect.width));
+        if (entry?.contentRect?.width) {
+          setContainerWidth(Math.floor(entry.contentRect.width));
+        }
       });
       ro.observe(node);
     }
@@ -47,25 +84,68 @@ export default function LmsPdfViewer({ fileUrl, title, allowDownload = false }: 
       cMapUrl: `https://unpkg.com/pdfjs-dist@${pdfjs.version}/cmaps/`,
       cMapPacked: true,
       standardFontDataUrl: `https://unpkg.com/pdfjs-dist@${pdfjs.version}/standard_fonts/`,
+      withCredentials: false,
     }),
     []
   );
 
-  function onDocumentLoadSuccess({ numPages }: { numPages: number }) {
-    setNumPages(numPages);
+  function onDocumentLoadSuccess({ numPages: loadedPages }: { numPages: number }) {
+    setNumPages(loadedPages);
     setLoading(false);
     setError(null);
+    setErrorDetails("");
+    setLoadingProgress(100);
   }
 
   function onDocumentLoadError(err: Error) {
     console.error("[LMS PDF Load Error]:", err);
     setLoading(false);
-    setError("Gagal memuat dokumen PDF melalui pembaca canvas bawaan.");
+
+    const errMsg = err?.message || String(err);
+    setErrorDetails(errMsg);
+
+    // If fetch failed due to CORS / remote origin, try auto-proxying once
+    const isNetworkOrCors =
+      errMsg.toLowerCase().includes("failed to fetch") ||
+      errMsg.toLowerCase().includes("cors") ||
+      errMsg.toLowerCase().includes("networkerror") ||
+      errMsg.toLowerCase().includes("cross-origin");
+
+    if (isNetworkOrCors && !useProxy) {
+      console.warn("[LMS PDF Viewer] Mencoba memuat ulang melalui Server Proxy anti-CORS...");
+      setUseProxy(true);
+      setError(null);
+      setLoading(true);
+      setRetryCount((c) => c + 1);
+      return;
+    }
+
+    // If worker initialization failed, advance worker fallback tier
+    if (errMsg.toLowerCase().includes("worker") && workerSourceTier < workerUrls.length - 1) {
+      console.warn("[LMS PDF Viewer] Mencoba worker fallback tier berikutnya...");
+      setWorkerSourceTier((t) => t + 1);
+      setError(null);
+      setLoading(true);
+      setRetryCount((c) => c + 1);
+      return;
+    }
+
+    setError("Tidak dapat merender canvas PDF secara langsung.");
   }
 
   function handleRetry() {
     setError(null);
+    setErrorDetails("");
     setLoading(true);
+    setLoadingProgress(0);
+    setRetryCount((c) => c + 1);
+  }
+
+  function handleToggleProxy() {
+    setError(null);
+    setLoading(true);
+    setLoadingProgress(0);
+    setUseProxy((p) => !p);
     setRetryCount((c) => c + 1);
   }
 
@@ -75,7 +155,6 @@ export default function LmsPdfViewer({ fileUrl, title, allowDownload = false }: 
       setJumpPageInput(String(nextP));
       return nextP;
     });
-    // Scroll to top of canvas area
     if (canvasAreaRef.current) {
       canvasAreaRef.current.scrollTop = 0;
     }
@@ -87,7 +166,6 @@ export default function LmsPdfViewer({ fileUrl, title, allowDownload = false }: 
       setJumpPageInput(String(nextP));
       return nextP;
     });
-    // Scroll to top of canvas area
     if (canvasAreaRef.current) {
       canvasAreaRef.current.scrollTop = 0;
     }
@@ -121,7 +199,7 @@ export default function LmsPdfViewer({ fileUrl, title, allowDownload = false }: 
   }
 
   function zoomOut() {
-    setZoomScale((z) => Math.max(0.6, +(z - 0.2).toFixed(2)));
+    setZoomScale((z) => Math.max(0.5, +(z - 0.2).toFixed(2)));
   }
 
   function resetZoom() {
@@ -129,7 +207,11 @@ export default function LmsPdfViewer({ fileUrl, title, allowDownload = false }: 
   }
 
   function fitWidth() {
-    setZoomScale(1.15);
+    setZoomScale(1.2);
+  }
+
+  function rotateClockwise() {
+    setRotation((r) => (r + 90) % 360);
   }
 
   // Keyboard navigation untuk Fullscreen & standar
@@ -140,13 +222,13 @@ export default function LmsPdfViewer({ fileUrl, title, allowDownload = false }: 
       }
       if (e.key === "Escape" && isFullscreen) {
         setIsFullscreen(false);
-      } else if (e.key === "ArrowLeft" && viewMode === "single") {
+      } else if (e.key === "ArrowLeft" && viewMode === "single" && readerEngine === "canvas") {
         setPageNumber((p) => {
           const nextP = Math.max(1, p - 1);
           setJumpPageInput(String(nextP));
           return nextP;
         });
-      } else if (e.key === "ArrowRight" && viewMode === "single" && numPages > 0) {
+      } else if (e.key === "ArrowRight" && viewMode === "single" && readerEngine === "canvas" && numPages > 0) {
         setPageNumber((p) => {
           const nextP = Math.min(numPages, p + 1);
           setJumpPageInput(String(nextP));
@@ -157,7 +239,7 @@ export default function LmsPdfViewer({ fileUrl, title, allowDownload = false }: 
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isFullscreen, numPages, viewMode]);
+  }, [isFullscreen, numPages, viewMode, readerEngine]);
 
   // Lock body scroll saat Fullscreen mode
   useEffect(() => {
@@ -174,9 +256,16 @@ export default function LmsPdfViewer({ fileUrl, title, allowDownload = false }: 
   const effectiveContainerWidth = Math.max(containerWidth, 320);
   const targetWidth = Math.floor(
     (isFullscreen
-      ? Math.min(window.innerWidth - 48, 1200)
+      ? Math.min(typeof window !== "undefined" ? window.innerWidth - 48 : 1200, 1200)
       : Math.min(effectiveContainerWidth - 32, 960)) * zoomScale
   );
+
+  const devicePixelRatio = typeof window !== "undefined" ? Math.min(window.devicePixelRatio || 1, 2) : 1;
+
+  // Google Docs viewer URL for external fallback
+  const gdocsUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(
+    fileUrl.startsWith("http") ? fileUrl : (typeof window !== "undefined" ? `${window.location.origin}${fileUrl}` : fileUrl)
+  )}&embedded=true`;
 
   return (
     <div
@@ -195,19 +284,113 @@ export default function LmsPdfViewer({ fileUrl, title, allowDownload = false }: 
           <span className="lms-pdf-shield">
             {allowDownload ? "📥 Bisa Diunduh" : "🔒 Mode Baca Aman"}
           </span>
+          {useProxy && (
+            <span
+              style={{
+                fontSize: "0.68rem",
+                padding: "0.15rem 0.4rem",
+                borderRadius: "4px",
+                background: "rgba(108, 92, 231, 0.15)",
+                color: "var(--purple)",
+                fontWeight: 700,
+              }}
+              title="Memuat melalui Server Proxy anti-CORS"
+            >
+              🛡️ Proxy Aktif
+            </span>
+          )}
         </div>
 
-        {/* Action Controls: View mode + Zoom + Fullscreen + Download */}
+        {/* Engine Switcher + Action Controls */}
         <div className="lms-pdf-header-actions">
-          {/* Mode Switcher: Single vs Continuous */}
-          {!error && !useFallbackEmbed && numPages > 1 && (
-            <div className="lms-pdf-mode-toggle" style={{ display: "inline-flex", gap: "2px", background: "rgba(0,0,0,0.06)", borderRadius: "var(--r-sm, 6px)", padding: "2px" }}>
+          {/* Reader Engine Switcher (Canvas / Native / GDocs) */}
+          <div
+            className="lms-pdf-engine-selector"
+            style={{
+              display: "inline-flex",
+              background: "rgba(0,0,0,0.06)",
+              borderRadius: "var(--r-sm, 6px)",
+              padding: "2px",
+              gap: "2px",
+            }}
+          >
+            <button
+              type="button"
+              className={`lms-pdf-btn-icon ${readerEngine === "canvas" ? "active" : ""}`}
+              style={{
+                fontSize: "0.72rem",
+                padding: "0.25rem 0.5rem",
+                width: "auto",
+                height: "auto",
+                background: readerEngine === "canvas" ? "var(--white, #fff)" : "transparent",
+                fontWeight: readerEngine === "canvas" ? 700 : 500,
+                boxShadow: readerEngine === "canvas" ? "0 1px 3px rgba(0,0,0,0.1)" : "none",
+                borderRadius: "4px",
+              }}
+              onClick={() => {
+                setReaderEngine("canvas");
+                if (error) handleRetry();
+              }}
+              title="Mode Pembaca Canvas Interaktif (Default)"
+            >
+              🎨 Canvas
+            </button>
+            <button
+              type="button"
+              className={`lms-pdf-btn-icon ${readerEngine === "native" ? "active" : ""}`}
+              style={{
+                fontSize: "0.72rem",
+                padding: "0.25rem 0.5rem",
+                width: "auto",
+                height: "auto",
+                background: readerEngine === "native" ? "var(--white, #fff)" : "transparent",
+                fontWeight: readerEngine === "native" ? 700 : 500,
+                boxShadow: readerEngine === "native" ? "0 1px 3px rgba(0,0,0,0.1)" : "none",
+                borderRadius: "4px",
+              }}
+              onClick={() => setReaderEngine("native")}
+              title="Mode Penampil Bawaan Browser (Iframe / Native)"
+            >
+              🌐 Native
+            </button>
+            <button
+              type="button"
+              className={`lms-pdf-btn-icon ${readerEngine === "gdocs" ? "active" : ""}`}
+              style={{
+                fontSize: "0.72rem",
+                padding: "0.25rem 0.5rem",
+                width: "auto",
+                height: "auto",
+                background: readerEngine === "gdocs" ? "var(--white, #fff)" : "transparent",
+                fontWeight: readerEngine === "gdocs" ? 700 : 500,
+                boxShadow: readerEngine === "gdocs" ? "0 1px 3px rgba(0,0,0,0.1)" : "none",
+                borderRadius: "4px",
+              }}
+              onClick={() => setReaderEngine("gdocs")}
+              title="Mode Penampil Cloud Google Docs"
+            >
+              ☁️ Cloud
+            </button>
+          </div>
+
+          {/* Mode Switcher: Single vs Continuous (Canvas Mode Only) */}
+          {readerEngine === "canvas" && !error && numPages > 1 && (
+            <div
+              className="lms-pdf-mode-toggle"
+              style={{
+                display: "inline-flex",
+                gap: "2px",
+                background: "rgba(0,0,0,0.06)",
+                borderRadius: "var(--r-sm, 6px)",
+                padding: "2px",
+              }}
+            >
               <button
                 type="button"
                 className={`lms-pdf-btn-icon ${viewMode === "single" ? "active" : ""}`}
                 style={{
-                  fontSize: "0.75rem",
-                  padding: "0.25rem 0.55rem",
+                  fontSize: "0.72rem",
+                  padding: "0.25rem 0.5rem",
                   width: "auto",
                   height: "auto",
                   background: viewMode === "single" ? "var(--white, #fff)" : "transparent",
@@ -224,8 +407,8 @@ export default function LmsPdfViewer({ fileUrl, title, allowDownload = false }: 
                 type="button"
                 className={`lms-pdf-btn-icon ${viewMode === "scroll" ? "active" : ""}`}
                 style={{
-                  fontSize: "0.75rem",
-                  padding: "0.25rem 0.55rem",
+                  fontSize: "0.72rem",
+                  padding: "0.25rem 0.5rem",
                   width: "auto",
                   height: "auto",
                   background: viewMode === "scroll" ? "var(--white, #fff)" : "transparent",
@@ -236,37 +419,33 @@ export default function LmsPdfViewer({ fileUrl, title, allowDownload = false }: 
                 onClick={() => setViewMode("scroll")}
                 title="Gulir semua halaman"
               >
-                Gulir Semua
+                Gulir
               </button>
             </div>
           )}
 
-          {/* Unduh button jika diizinkan */}
-          {allowDownload && (
-            <a
-              href={fileUrl}
-              download
-              className="lms-pdf-download-btn"
-              title="Unduh Dokumen PDF"
+          {/* Rotation Button (Canvas Mode Only) */}
+          {readerEngine === "canvas" && !loading && !error && (
+            <button
+              type="button"
+              className="lms-pdf-btn-icon"
+              onClick={rotateClockwise}
+              title="Putar Dokumen 90°"
+              style={{ fontSize: "0.85rem" }}
             >
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width="14" height="14">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                <polyline points="7 10 12 15 17 10" />
-                <line x1="12" y1="15" x2="12" y2="3" />
-              </svg>
-              <span>Unduh</span>
-            </a>
+              ↻
+            </button>
           )}
 
-          {/* Zoom controls (saat dokumen sudah termuat) */}
-          {!loading && !error && !useFallbackEmbed && (
+          {/* Zoom controls (Canvas Mode Only) */}
+          {readerEngine === "canvas" && !loading && !error && (
             <div className="lms-pdf-zoom-group">
               <button
                 type="button"
                 className="lms-pdf-btn-icon"
                 onClick={zoomOut}
                 title="Perkecil (-)"
-                disabled={zoomScale <= 0.6}
+                disabled={zoomScale <= 0.5}
               >
                 −
               </button>
@@ -299,6 +478,23 @@ export default function LmsPdfViewer({ fileUrl, title, allowDownload = false }: 
             </div>
           )}
 
+          {/* Download button if allowed */}
+          {allowDownload && (
+            <a
+              href={fileUrl}
+              download
+              className="lms-pdf-download-btn"
+              title="Unduh Dokumen PDF"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width="14" height="14">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="7 10 12 15 17 10" />
+                <line x1="12" y1="15" x2="12" y2="3" />
+              </svg>
+              <span>Unduh</span>
+            </a>
+          )}
+
           {/* Fullscreen Toggle Button */}
           <button
             type="button"
@@ -325,16 +521,23 @@ export default function LmsPdfViewer({ fileUrl, title, allowDownload = false }: 
         </div>
       </div>
 
-      {/* Loading state */}
-      {loading && !useFallbackEmbed && (
+      {/* Loading state for Canvas Mode */}
+      {readerEngine === "canvas" && loading && (
         <div className="lms-pdf-loading">
           <div className="lms-pdf-spinner" />
-          <span style={{ fontWeight: 600, color: "var(--ink-soft)" }}>Memuat dokumen PDF…</span>
+          <div style={{ textAlign: "center" }}>
+            <span style={{ fontWeight: 600, color: "var(--ink-soft)", display: "block", marginBottom: "0.25rem" }}>
+              Menyiapkan dokumen PDF… {loadingProgress > 0 ? `${loadingProgress}%` : ""}
+            </span>
+            <span style={{ fontSize: "0.78rem", color: "var(--ink-muted)" }}>
+              {useProxy ? "Memuat via Server Proxy..." : "Menginisialisasi canvas viewer..."}
+            </span>
+          </div>
         </div>
       )}
 
-      {/* Error state with fallback options */}
-      {error && !useFallbackEmbed && (
+      {/* Error State with Comprehensive Diagnostics & Recovery Options */}
+      {readerEngine === "canvas" && error && (
         <div
           className="lms-pdf-error"
           style={{
@@ -344,13 +547,15 @@ export default function LmsPdfViewer({ fileUrl, title, allowDownload = false }: 
             textAlign: "center",
           }}
         >
-          <div style={{ fontSize: "2rem", marginBottom: "0.5rem" }}>⚠️</div>
+          <div style={{ fontSize: "2.2rem", marginBottom: "0.5rem" }}>🛡️</div>
           <h4 style={{ fontWeight: 700, color: "var(--red, #e5484d)", marginBottom: "0.4rem" }}>
-            Tidak dapat merender canvas PDF
+            {error}
           </h4>
-          <p style={{ color: "var(--ink-soft)", fontSize: "0.88rem", maxWidth: "28rem", margin: "0 auto 1.25rem" }}>
-            {error} Anda dapat mencoba memuat ulang atau beralih ke penampil alternatif di bawah.
+          <p style={{ color: "var(--ink-soft)", fontSize: "0.88rem", maxWidth: "34rem", margin: "0 auto 1.25rem" }}>
+            {errorDetails ? `Catatan teknis: ${errorDetails}. ` : ""}
+            Anda dapat mencoba memuat ulang dengan Server Proxy atau beralih ke salah satu penampil cadangan berikut:
           </p>
+
           <div style={{ display: "flex", gap: "0.6rem", justifyContent: "center", flexWrap: "wrap" }}>
             <button
               type="button"
@@ -360,14 +565,34 @@ export default function LmsPdfViewer({ fileUrl, title, allowDownload = false }: 
             >
               🔄 Coba Muat Ulang
             </button>
+
             <button
               type="button"
-              onClick={() => setUseFallbackEmbed(true)}
+              onClick={handleToggleProxy}
+              className="btn btn-sm btn-line"
+              style={{ fontWeight: 700, background: useProxy ? "rgba(108,92,231,0.08)" : undefined }}
+            >
+              {useProxy ? "🔓 Coba Jalur Langsung" : "🛡️ Muat via Server Proxy"}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setReaderEngine("native")}
               className="btn btn-sm btn-line"
               style={{ fontWeight: 700 }}
             >
-              📑 Buka Mode Penampil Alternatif
+              🌐 Buka Mode Native Browser
             </button>
+
+            <button
+              type="button"
+              onClick={() => setReaderEngine("gdocs")}
+              className="btn btn-sm btn-line"
+              style={{ fontWeight: 700 }}
+            >
+              ☁️ Buka via Google Docs Cloud
+            </button>
+
             <a
               href={fileUrl}
               target="_blank"
@@ -381,32 +606,104 @@ export default function LmsPdfViewer({ fileUrl, title, allowDownload = false }: 
         </div>
       )}
 
-      {/* Fallback Embed Viewer (Iframe / Native PDF) */}
-      {useFallbackEmbed && (
-        <div style={{ width: "100%", height: isFullscreen ? "calc(100vh - 100px)" : "680px", background: "#333", display: "flex", flexDirection: "column" }}>
-          <div style={{ padding: "0.5rem 1rem", background: "#222", color: "#fff", display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "0.82rem" }}>
-            <span>Menampilkan dokumen via Penampil Web Alternatif</span>
+      {/* Engine 2: Native PDF Viewer (Iframe / Browser Plugin) */}
+      {readerEngine === "native" && (
+        <div
+          style={{
+            width: "100%",
+            height: isFullscreen ? "calc(100vh - 65px)" : "680px",
+            background: "#222",
+            display: "flex",
+            flexDirection: "column",
+          }}
+        >
+          <div
+            style={{
+              padding: "0.45rem 1rem",
+              background: "#18181c",
+              color: "#ccc",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              fontSize: "0.8rem",
+              borderBottom: "1px solid rgba(255,255,255,0.08)",
+            }}
+          >
+            <span>🌐 Mode Penampil Bawaan Browser (Native Iframe)</span>
             <button
               type="button"
-              onClick={() => setUseFallbackEmbed(false)}
+              onClick={() => setReaderEngine("canvas")}
               className="btn btn-sm btn-line"
-              style={{ color: "#fff", borderColor: "rgba(255,255,255,0.3)", padding: "0.2rem 0.6rem", fontSize: "0.75rem" }}
+              style={{
+                color: "#fff",
+                borderColor: "rgba(255,255,255,0.25)",
+                padding: "0.2rem 0.6rem",
+                fontSize: "0.75rem",
+              }}
             >
-              Kembali ke Reader Canvas
+              Kembali ke Reader Canvas 🎨
             </button>
           </div>
           <iframe
-            src={fileUrl}
+            src={activePdfUrl}
             title={title}
             width="100%"
             height="100%"
-            style={{ border: "none", flex: 1 }}
+            style={{ border: "none", flex: 1, background: "#fff" }}
           />
         </div>
       )}
 
-      {/* Main Canvas Scroll Area */}
-      {!useFallbackEmbed && (
+      {/* Engine 3: Google Docs Cloud PDF Viewer */}
+      {readerEngine === "gdocs" && (
+        <div
+          style={{
+            width: "100%",
+            height: isFullscreen ? "calc(100vh - 65px)" : "680px",
+            background: "#222",
+            display: "flex",
+            flexDirection: "column",
+          }}
+        >
+          <div
+            style={{
+              padding: "0.45rem 1rem",
+              background: "#18181c",
+              color: "#ccc",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              fontSize: "0.8rem",
+              borderBottom: "1px solid rgba(255,255,255,0.08)",
+            }}
+          >
+            <span>☁️ Mode Penampil Cloud Google Docs</span>
+            <button
+              type="button"
+              onClick={() => setReaderEngine("canvas")}
+              className="btn btn-sm btn-line"
+              style={{
+                color: "#fff",
+                borderColor: "rgba(255,255,255,0.25)",
+                padding: "0.2rem 0.6rem",
+                fontSize: "0.75rem",
+              }}
+            >
+              Kembali ke Reader Canvas 🎨
+            </button>
+          </div>
+          <iframe
+            src={gdocsUrl}
+            title={title}
+            width="100%"
+            height="100%"
+            style={{ border: "none", flex: 1, background: "#fff" }}
+          />
+        </div>
+      )}
+
+      {/* Engine 1: Main Canvas Scroll Area */}
+      {readerEngine === "canvas" && (
         <div
           ref={(node) => {
             containerRef(node);
@@ -416,21 +713,36 @@ export default function LmsPdfViewer({ fileUrl, title, allowDownload = false }: 
           style={{ display: loading || error ? "none" : "flex" }}
         >
           <Document
-            key={`doc_${fileUrl}_${retryCount}`}
-            file={fileUrl}
+            key={`doc_${activePdfUrl}_${retryCount}_${workerSourceTier}`}
+            file={activePdfUrl}
             options={documentOptions}
             onLoadSuccess={onDocumentLoadSuccess}
             onLoadError={onDocumentLoadError}
+            onLoadProgress={({ loaded, total }: { loaded: number; total: number }) => {
+              if (total > 0) {
+                setLoadingProgress(Math.min(99, Math.round((loaded / total) * 100)));
+              }
+            }}
             loading={null}
-            noData={null}
+            noData={
+              <div style={{ padding: "3rem", textAlign: "center", color: "#aaa" }}>
+                Tidak ada data dokumen ditemukan.
+              </div>
+            }
           >
             {viewMode === "single" ? (
               <Page
-                key={`page_${pageNumber}_zoom_${zoomScale}_fs_${isFullscreen}`}
+                key={`page_${pageNumber}_zoom_${zoomScale}_rot_${rotation}_fs_${isFullscreen}`}
                 pageNumber={pageNumber}
                 width={targetWidth}
+                rotate={rotation}
+                devicePixelRatio={devicePixelRatio}
                 renderTextLayer={false}
                 renderAnnotationLayer={false}
+                onRenderError={(err) => {
+                  // Non-fatal page render error (e.g. rapid zoom cancellation)
+                  console.warn("[PDF Page Render Warning]:", err);
+                }}
                 loading={
                   <div style={{ padding: "3rem", textAlign: "center", color: "#ccc", fontSize: "0.85rem" }}>
                     Menyiapkan halaman {pageNumber}…
@@ -444,8 +756,13 @@ export default function LmsPdfViewer({ fileUrl, title, allowDownload = false }: 
                   <Page
                     pageNumber={index + 1}
                     width={targetWidth}
+                    rotate={rotation}
+                    devicePixelRatio={devicePixelRatio}
                     renderTextLayer={false}
                     renderAnnotationLayer={false}
+                    onRenderError={(err) => {
+                      console.warn(`[PDF Page ${index + 1} Render Warning]:`, err);
+                    }}
                     loading={
                       <div style={{ padding: "2rem", textAlign: "center", color: "#ccc", fontSize: "0.8rem" }}>
                         Halaman {index + 1}…
@@ -462,8 +779,8 @@ export default function LmsPdfViewer({ fileUrl, title, allowDownload = false }: 
         </div>
       )}
 
-      {/* Bottom Navigation Toolbar (Single Mode) */}
-      {!loading && !error && !useFallbackEmbed && viewMode === "single" && numPages > 0 && (
+      {/* Bottom Navigation Toolbar (Single Mode - Canvas Engine) */}
+      {readerEngine === "canvas" && !loading && !error && viewMode === "single" && numPages > 0 && (
         <div className="lms-pdf-footer">
           <button
             type="button"
@@ -545,8 +862,8 @@ export default function LmsPdfViewer({ fileUrl, title, allowDownload = false }: 
         </div>
       )}
 
-      {/* Bottom Floating Indicator (Scroll Mode) */}
-      {!loading && !error && !useFallbackEmbed && viewMode === "scroll" && numPages > 0 && (
+      {/* Bottom Floating Indicator (Scroll Mode - Canvas Engine) */}
+      {readerEngine === "canvas" && !loading && !error && viewMode === "scroll" && numPages > 0 && (
         <div className="lms-pdf-footer">
           <span className="lms-pdf-page-indicator">
             Total {numPages} Halaman (Mode Gulir Penuh)
