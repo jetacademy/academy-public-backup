@@ -50,6 +50,40 @@ export default function Navbar({ minimal = false, ctaHref = "/program", ctaLabel
         )}
 
         <div className="nav-actions" style={{ display: "flex", alignItems: "center", gap: ".8rem" }}>
+          {/* Instagram link */}
+          <a
+            href="https://instagram.com/jetschool.id"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Instagram Jetschool Academy"
+            title="Ikuti kami di Instagram"
+            className="nav-social-btn"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              width: 38,
+              height: 38,
+              borderRadius: 8,
+              color: "var(--purple)",
+              transition: "background 0.18s ease, transform 0.18s ease",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = "rgba(225, 48, 108, 0.08)";
+              e.currentTarget.style.transform = "translateY(-1px)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = "transparent";
+              e.currentTarget.style.transform = "none";
+            }}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
+              <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
+              <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
+            </svg>
+          </a>
+
           {isLoggedIn ? (
             <Link
               href="/member"
