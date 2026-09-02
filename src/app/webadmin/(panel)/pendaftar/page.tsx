@@ -22,7 +22,6 @@ export default async function AdminPendaftar({ searchParams }: {
 
   const currentPage = Number(page ?? "1") || 1;
   const limit = 50;
-  const skip = (currentPage - 1) * limit;
 
   // Dipakai sbg returnTo saat membatalkan sertifikat, supaya admin balik ke halaman+filter ini
   // (bukan selalu dilempar ke /webadmin/sertifikat).

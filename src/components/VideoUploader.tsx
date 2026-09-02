@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { Upload as TusUpload } from "tus-js-client";
 import { createBunnyUploadSession, deleteBunnyVideoAction } from "@/app/webadmin/actions";
 import MediaPicker from "./MediaPicker";
@@ -28,7 +28,6 @@ export default function VideoUploader({ name, defaultValue, programId }: { name:
   const [dragging, setDragging] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const uploadRef = useRef<TusUpload | null>(null);
-  const uid = useId();
 
   const isBunnyVideo = BUNNY_EMBED_RE.test(videoUrl);
 

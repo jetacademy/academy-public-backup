@@ -14,6 +14,7 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
     "ui-ux-pro-max-skill/**",
     "src/__tests__/**",  // Test files use patterns necessary for mocking
+    "public/pdfjs/**",   // Vendor PDF.js (minified) — bukan kode kita, jangan di-lint
   ]),
 ]);
 

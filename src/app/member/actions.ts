@@ -37,9 +37,6 @@ async function loginByIdentifier(cleanVal: string): Promise<{ ok?: boolean; erro
   const whatsapp = user?.whatsapp ?? registrations[0]?.whatsapp ?? "";
   const name = user?.name ?? registrations[0]?.name ?? "";
 
-  // Role HANYA dari DB — tidak ada auto-promote ADMIN berbasis hardcode email.
-  const isAdminEmail = false;
-
   // 3. Jika login via registrasi (belum punya User) — buat User & backfill
   if (!userId && registrations.length > 0) {
     let newUser = await prisma.user.findFirst({

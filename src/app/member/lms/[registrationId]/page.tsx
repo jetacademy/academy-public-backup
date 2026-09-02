@@ -11,8 +11,6 @@ import LessonQuiz, { type LessonQuizQuestion } from "@/components/LessonQuiz";
 import ClaimCertButton from "@/components/ClaimCertButton";
 import MemberPayCertButton from "@/components/MemberPayCertButton";
 import LessonVideoPlayer from "@/components/LessonVideoPlayer";
-import LmsSidebar from "@/components/LmsSidebar";
-import LmsMobileNav from "@/components/LmsMobileNav";
 import LmsViewContainer from "@/components/LmsViewContainer";
 import dynamicImport from "next/dynamic";
 
@@ -280,8 +278,6 @@ export default async function LmsPage({
 
   const isAllDone = status === "selesai" || (completedCount === totalLessons && !lessonId);
   const quizPassingScore = currentLesson.passingScore ?? program.passingScore;
-
-  let modNumber = 0; // penomoran modul global lintas kelompok
 
   // Early return: harus bayar certPrice dulu sebelum akses LMS
   if (hasPendingCertPayment) {

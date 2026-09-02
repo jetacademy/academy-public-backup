@@ -1,4 +1,3 @@
-import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/admin-auth";
 import Link from "next/link";
 

@@ -6,7 +6,8 @@ type VibesProgram = Pick<
 >;
 
 /** Section persuasif khusus Vibes Coding — dirender di halaman program (bukan contentBlocks). */
-export default function VibesLandingSections({ program }: { program: VibesProgram }) {
+export default function VibesLandingSections({ program: _program }: { program: VibesProgram }) {
+  void _program; // prop dipertahankan agar API komponen stabil; tidak dipakai di render
   return (
     <>
       {/* ── PAIN: Adegan sehari-hari ── */}
