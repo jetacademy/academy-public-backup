@@ -44,11 +44,20 @@ export async function GET(
 
   try {
     const buffer = await readFile(/* turbopackIgnore: true */ filePath);
+    const headers: Record<string, string> = {
+      "Content-Type": contentType,
+      "Content-Length": buffer.length.toString(),
+      "Accept-Ranges": "bytes",
+      "Cache-Control": "public, max-age=31536000, immutable",
+      "Access-Control-Allow-Origin": "*",
+    };
+
+    if (ext === "pdf") {
+      headers["Content-Disposition"] = `inline; filename="${filename}"`;
+    }
+
     return new NextResponse(buffer, {
-      headers: {
-        "Content-Type": contentType,
-        "Cache-Control": "public, max-age=31536000, immutable",
-      },
+      headers,
     });
   } catch {
     return new NextResponse("Internal Server Error", { status: 500 });

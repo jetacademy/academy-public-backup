@@ -1,5 +1,23 @@
-#!/usr/bin/env node
-// Build helper — handle Prisma migration for both new and existing databases
+import { copyFileSync, existsSync, mkdirSync } from "fs";
+
+// Step 0: Ensure PDF.js worker is synced to public/pdfjs
+try {
+  const workerSrcCandidates = [
+    "node_modules/react-pdf/node_modules/pdfjs-dist/build/pdf.worker.min.mjs",
+    "node_modules/pdfjs-dist/build/pdf.worker.min.mjs",
+  ];
+  for (const src of workerSrcCandidates) {
+    if (existsSync(src)) {
+      mkdirSync("public/pdfjs", { recursive: true });
+      copyFileSync(src, "public/pdfjs/pdf.worker.min.mjs");
+      console.log(`> Synced PDF.js worker from ${src} to public/pdfjs/pdf.worker.min.mjs`);
+      break;
+    }
+  }
+} catch (e) {
+  console.warn("Notice: Could not sync pdf.worker.min.mjs:", e.message);
+}
+
 import { execSync } from "child_process";
 import { exit } from "process";
 
