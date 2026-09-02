@@ -36,8 +36,6 @@ export default function Footer() {
                 width: "fit-content",
                 transition: "color 0.15s ease"
               }}
-              onMouseEnter={(e) => (e.currentTarget.style.color = "#E1306C")}
-              onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(255, 255, 255, 0.7)")}
             >
               <span>📸</span> Instagram: @jetschool.id
             </a>
