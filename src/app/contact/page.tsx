@@ -138,6 +138,45 @@ export default function ContactPage() {
                   </div>
                 </a>
 
+                {/* Instagram Bento */}
+                <a
+                  href="https://www.instagram.com/jetschool.id/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="bento"
+                  style={{
+                    padding: "1.5rem",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "1.2rem",
+                    textDecoration: "none",
+                    background: "var(--white)",
+                    border: "1px solid var(--line)",
+                    transition: "transform 0.18s ease, border-color 0.18s ease"
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = "translateY(-3px)";
+                    e.currentTarget.style.borderColor = "#E1306C";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = "none";
+                    e.currentTarget.style.borderColor = "var(--line)";
+                  }}
+                >
+                  <div style={{
+                    width: "3.2rem", height: "3.2rem", borderRadius: "50%",
+                    background: "rgba(225, 48, 108, 0.08)", color: "#E1306C",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    fontSize: "1.4rem"
+                  }}>
+                    📸
+                  </div>
+                  <div>
+                    <h3 style={{ fontSize: "1.05rem", fontWeight: 700, margin: 0, color: "var(--ink)" }}>Instagram</h3>
+                    <p style={{ fontSize: "0.85rem", color: "var(--ink-soft)", margin: ".1rem 0 0 0" }}>@jetschool.id</p>
+                  </div>
+                </a>
+
                 {/* Address Bento */}
                 <div
                   className="bento"
