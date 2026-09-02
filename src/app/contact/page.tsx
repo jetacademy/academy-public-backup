@@ -200,7 +200,7 @@ export default function ContactPage() {
                   <div>
                     <h3 style={{ fontSize: "1.05rem", fontWeight: 700, margin: 0, color: "var(--ink)" }}>Alamat Kantor</h3>
                     <p style={{ fontSize: "0.85rem", color: "var(--ink-soft)", margin: ".1rem 0 0 0" }}>
-                      PT Jetschool Academy Indonesia, Bekasi, Jawa Barat.
+PT Jetschool Academy Indonesia, Bekasi, Jawa Barat.
                     </p>
                   </div>
                 </div>

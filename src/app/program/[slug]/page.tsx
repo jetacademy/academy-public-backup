@@ -9,11 +9,9 @@ import RegisterForm from "@/components/RegisterForm";
 import ValueStack from "@/components/ValueStack";
 import OfferTimer from "@/components/OfferTimer";
 import Testimonials from "@/components/Testimonials";
-import Countdown from "@/components/Countdown";
 import Icon from "@/components/Icon";
 import ProgramContentBlocks from "@/components/ProgramContentBlocks";
 import VibesLandingSections from "@/components/VibesLandingSections";
-import RevealStagger from "@/components/RevealStagger";
 import TransformArrow from "@/components/TransformArrow";
 import { getProgramBySlug } from "@/lib/programs";
 import { TYPE_LABEL, type ProgramType } from "@/lib/fallback";
@@ -81,9 +79,7 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
   const nextBatch = program.batches?.[0];
   const targetBatchId = nextBatch?.id;
   const displayScheduleAt = nextBatch?.scheduleAt ?? program.scheduleAt;
-  const displayJadwal = nextBatch ? formatJadwal(nextBatch.scheduleAt) : jadwal;
   const displayHari = nextBatch ? formatHariTanggal(nextBatch.scheduleAt) : formatHariTanggal(program.scheduleAt);
-  const displayJam = nextBatch ? formatJam(nextBatch.scheduleAt) : formatJam(program.scheduleAt);
 
   // Early Bird quota logic untuk Zero Human Company (50 orang pertama per batch)
   let zhcPaidCount = 0;
@@ -103,8 +99,6 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
 
   const EARLY_BIRD_QUOTA = 50;
   const isEarlyBirdActive = isZeroHuman ? zhcPaidCount < EARLY_BIRD_QUOTA : false;
-  const earlyBirdSeatsLeft = isZeroHuman ? Math.max(0, EARLY_BIRD_QUOTA - zhcPaidCount) : 0;
-  const earlyBirdPercent = isZeroHuman ? Math.min(100, Math.round((zhcPaidCount / EARLY_BIRD_QUOTA) * 100)) : 0;
 
   const effectivePrice = isZeroHuman
     ? (isEarlyBirdActive ? 225000 : 490000)

@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { uploadFileAction } from "@/app/webadmin/actions";
 import Icon from "@/components/Icon";
 
@@ -11,7 +11,6 @@ export default function ThumbnailUploader({ name, defaultValue }: { name: string
   const [error, setError] = useState<string | null>(null);
   const [dragging, setDragging] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
-  const uid = useId();
 
   async function handleUpload(file: File) {
     setError(null);

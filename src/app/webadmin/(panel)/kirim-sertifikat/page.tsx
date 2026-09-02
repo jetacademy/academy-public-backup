@@ -1,5 +1,4 @@
 import { prisma } from "@/lib/prisma";
-import Link from "next/link";
 import KirimCertClient from "./KirimCertClient";
 
 export const dynamic = "force-dynamic";

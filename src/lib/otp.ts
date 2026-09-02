@@ -7,7 +7,6 @@ import { rateLimit } from "@/lib/rate-limit";
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const OTP_LENGTH = 6;
 const OTP_EXPIRY_MS = 5 * 60 * 1000; // 5 menit
-const OTP_MAX_ATTEMPTS = 5;
 
 /** Generate kode OTP 6 digit acak — CSPRNG, bukan Math.random() yang prediktabel. */
 function generateOtp(): string {

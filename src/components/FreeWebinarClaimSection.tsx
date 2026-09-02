@@ -16,7 +16,8 @@ interface FreeWebinarClaimSectionProps {
   hasExternalLms: boolean;
   lmsLink?: string | null;
   batchLabel?: string | null;
-  programTitle: string;
+  /** @deprecated tidak dipakai di render — dipertahankan agar pemanggil tetap valid */
+  programTitle?: string;
 }
 
 export default function FreeWebinarClaimSection({
@@ -29,7 +30,6 @@ export default function FreeWebinarClaimSection({
   hasExternalLms,
   lmsLink,
   batchLabel,
-  programTitle,
 }: FreeWebinarClaimSectionProps) {
   const [showBenefits, setShowBenefits] = useState(false);
 

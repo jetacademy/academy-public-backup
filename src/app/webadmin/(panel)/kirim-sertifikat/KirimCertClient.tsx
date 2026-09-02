@@ -20,6 +20,12 @@ type ProgramOption = {
   isActive?: boolean;
 };
 
+/** Props yang diterima komponen editor desain (CertCustomizer) via dynamic import. */
+type CertCustomizerProps = {
+  program: ProgramOption;
+  templates?: unknown[];
+};
+
 type RecentCert = {
   id: string;
   number: string;
@@ -141,7 +147,7 @@ export default function KirimCertClient({
             <div>
               <h2 style={{ margin: 0, fontSize: "1.15rem" }}>🎨 Desain Sertifikat — {selectedProgram.title}</h2>
               <p className="muted" style={{ margin: ".3rem 0 0", fontSize: ".82rem" }}>
-                Atur background, logo, teks, tanda tangan &amp; QR. Klik "Simpan" lalu lanjut ke kontak.
+                Atur background, logo, teks, tanda tangan &amp; QR. Klik &quot;Simpan&quot; lalu lanjut ke kontak.
               </p>
             </div>
             <div style={{ display: "flex", gap: ".5rem" }}>
@@ -327,7 +333,7 @@ export default function KirimCertClient({
 
 /* ─── Embed CertCustomizer — dynamic import biar tidak bikin bundle besar ─── */
 function CertCustomizerEmbed({ program }: { program: ProgramOption }) {
-  const [Loaded, setLoaded] = useState<React.ComponentType<any> | null>(null);
+  const [Loaded, setLoaded] = useState<React.ComponentType<CertCustomizerProps> | null>(null);
   const [err, setErr] = useState<string | null>(null);
 
   const programData = {

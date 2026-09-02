@@ -2,6 +2,7 @@ import { requireAdmin } from "@/lib/admin-auth";
 import { prisma } from "@/lib/prisma";
 import ConfirmButton from "@/components/ConfirmButton";
 import { deleteMasterCertTemplate } from "@/app/webadmin/actions";
+import type { CertConfig } from "@/lib/types";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
@@ -38,7 +39,7 @@ export default async function AdminCertTemplatesPage() {
       ) : (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(340px, 1fr))", gap: "1.5rem" }}>
           {templates.map((tpl) => {
-            const config = (tpl.certConfig as any) || {};
+            const config = (tpl.certConfig as CertConfig) || {};
             return (
               <div key={tpl.id} className="reg-card" style={{ display: "flex", flexDirection: "column", gap: ".8rem", padding: "1.2rem" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: ".5rem" }}>

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { getMediaGallery, deleteMedia, saveToMediaGallery, uploadFileAction } from "@/app/webadmin/actions";
+import { getMediaGallery, saveToMediaGallery, uploadFileAction } from "@/app/webadmin/actions";
 import MediaGrid from "@/components/MediaGrid";
 
 export default async function AdminMediaGallery({

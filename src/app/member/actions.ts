@@ -11,6 +11,7 @@ import { normalizeWa, normalizeIdentifier } from "@/lib/wa";
 import { sendEmail, getWelcomeMemberEmailHtml } from "@/lib/email";
 import { createInvoice, isXenditConfigured } from "@/lib/xendit";
 import { findActiveAffiliateByCode, applyAffiliateDiscount, recordAffiliateConversion, getAffiliateRefCookie } from "@/lib/affiliate";
+import { linkLeadToRegistration } from "@/lib/lead-link";
 
 async function loginByIdentifier(cleanVal: string): Promise<{ ok?: boolean; error?: string; isAdmin?: boolean }> {
   // 1. Cari User record terlebih dahulu — user yang baru daftar akun
@@ -35,9 +36,6 @@ async function loginByIdentifier(cleanVal: string): Promise<{ ok?: boolean; erro
   const email = user?.email ?? registrations[0]?.email ?? cleanVal;
   const whatsapp = user?.whatsapp ?? registrations[0]?.whatsapp ?? "";
   const name = user?.name ?? registrations[0]?.name ?? "";
-
-  // Role HANYA dari DB — tidak ada auto-promote ADMIN berbasis hardcode email.
-  const isAdminEmail = false;
 
   // 3. Jika login via registrasi (belum punya User) — buat User & backfill
   if (!userId && registrations.length > 0) {
@@ -581,6 +579,7 @@ export async function initiateCertificateCheckout(registrationId: string) {
       prisma.registration.update({ where: { id: reg.id }, data: { status: "PAID" } }),
     ]);
     if (affiliateId) await recordAffiliateConversion(payment.id);
+    await linkLeadToRegistration(reg.id, reg.whatsapp, reg.programId, true);
     return { redirectUrl: `${baseUrl}/member` };
   }
 

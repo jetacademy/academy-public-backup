@@ -15,6 +15,21 @@ type DailySale = {
   topProgramRevenue: number;
 };
 
+/** Row mentah dari query raw (kolom sesuai SELECT di atas). */
+type SalesRow = {
+  amount: number | bigint | null;
+  programTitle: string | null;
+  createdAt: Date | string | null;
+};
+
+/** Akumulator per-tanggal di dalam reduce. */
+type DailyAcc = {
+  date: string;
+  totalRevenue: number;
+  transactionCount: number;
+  programRevenues: Record<string, number>;
+};
+
 async function generateReport(targetDate?: string, daysBack = 7) {
   try {
     const whereClause = targetDate
@@ -29,10 +44,10 @@ async function generateReport(targetDate?: string, daysBack = 7) {
       ? await prisma.$queryRawUnsafe(query, targetDate)
       : await prisma.$queryRawUnsafe(query);
 
-    const dailyData = (rows as any[]).reduce((acc: any, row: any) => {
+    const dailyData = (rows as SalesRow[]).reduce<Record<string, DailyAcc>>((acc, row) => {
       const dateStr = row.createdAt ? new Date(row.createdAt).toISOString().split('T')[0] : 'unknown';
       const program = row.programTitle || 'Unknown';
-      const amount = row.amount || 0;
+      const amount = Number(row.amount) || 0;
       if (!acc[dateStr]) {
         acc[dateStr] = { date: dateStr, totalRevenue: 0, transactionCount: 0, programRevenues: {} };
       }
@@ -42,7 +57,7 @@ async function generateReport(targetDate?: string, daysBack = 7) {
       return acc;
     }, {});
 
-    const result: DailySale[] = Object.values(dailyData).map((d: any) => {
+    const result: DailySale[] = Object.values(dailyData).map((d) => {
       const programs = Object.entries(d.programRevenues || {}).map(([p, r]) => ({ p, r: r as number })).sort((a,b) => b.r - a.r);
       const top = programs[0] || null;
       return {
@@ -71,8 +86,8 @@ async function generateReport(targetDate?: string, daysBack = 7) {
     }, null, 2));
 
     return finalResult;
-  } catch (error: any) {
-    console.error("Error:", error?.message);
+  } catch (error: unknown) {
+    console.error("Error:", error instanceof Error ? error.message : String(error));
     process.exit(1);
   } finally {
     await prisma.$disconnect();

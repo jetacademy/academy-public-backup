@@ -8,8 +8,6 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import WaFloat from "@/components/WaFloat";
 import ClaimCertButton from "@/components/ClaimCertButton";
-import MemberPayCertButton from "@/components/MemberPayCertButton";
-import BonusCountdown from "@/components/BonusCountdown";
 import FreeWebinarClaimSection from "@/components/FreeWebinarClaimSection";
 import EditProfileModal from "@/components/EditProfileModal";
 import PurchaseTracker from "@/components/PurchaseTracker";
