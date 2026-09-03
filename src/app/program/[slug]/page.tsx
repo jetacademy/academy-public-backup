@@ -81,7 +81,7 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
   const displayScheduleAt = nextBatch?.scheduleAt ?? program.scheduleAt;
   const displayHari = nextBatch ? formatHariTanggal(nextBatch.scheduleAt) : formatHariTanggal(program.scheduleAt);
 
-  // Early Bird quota logic untuk Zero Human Company (20 orang pertama per batch)
+  // Early Bird quota logic untuk Zero Human Company (50 orang pertama per batch)
   let zhcPaidCount = 0;
   if (isZeroHuman) {
     try {
@@ -97,7 +97,7 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
     }
   }
 
-  const EARLY_BIRD_QUOTA = 20;
+  const EARLY_BIRD_QUOTA = 50;
   const isEarlyBirdActive = isZeroHuman ? zhcPaidCount < EARLY_BIRD_QUOTA : false;
 
   const effectivePrice = isZeroHuman
@@ -1690,7 +1690,7 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
                 {/* Standout Badge */}
                 <div style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem", background: "rgba(247,148,29,0.18)", border: "1px solid rgba(247,148,29,0.5)", color: "var(--orange)", fontWeight: 800, fontSize: "0.82rem", letterSpacing: "0.04em", padding: "0.45rem 1.1rem", borderRadius: "999px", boxShadow: "0 0 20px rgba(247,148,29,0.25)" }}>
                   <span style={{ display: "inline-block", width: "8px", height: "8px", borderRadius: "50%", background: "#f7941d", boxShadow: "0 0 10px #f7941d" }} />
-                  <span>⚡ EARLY BIRD — KHUSUS 20 PENDAFTAR PERTAMA</span>
+                  <span>⚡ EARLY BIRD — KHUSUS 50 PENDAFTAR PERTAMA</span>
                 </div>
 
                 {/* Price Display */}
@@ -1712,7 +1712,7 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
                   </div>
                   <div style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "10px", padding: "0.65rem 0.9rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
                     <span style={{ color: "var(--orange)", fontSize: "1rem" }}>⚡</span>
-                    <span style={{ fontSize: "0.82rem", color: "rgba(255,255,255,0.85)", fontWeight: 600 }}>Kuota Terbatas 20 Kursi</span>
+                    <span style={{ fontSize: "0.82rem", color: "rgba(255,255,255,0.85)", fontWeight: 600 }}>Kuota Terbatas 50 Kursi</span>
                   </div>
                   <div style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "10px", padding: "0.65rem 0.9rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
                     <span style={{ color: "#38bdf8", fontSize: "1rem" }}>🚀</span>
@@ -1729,7 +1729,7 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
                 </a>
 
                 <p style={{ fontSize: "0.78rem", color: "rgba(255,255,255,0.55)", marginTop: "1rem", marginBottom: 0, position: "relative" }}>
-                  {isEarlyBirdActive ? "⚠️ Begitu 20 pendaftar pertama terpenuhi, harga otomatis kembali normal ke Rp490.000. Promo early bird sudah habis saat harga kembali normal." : "*Akses penuh ke sesi workshop & materi rekaman."}
+                  {isEarlyBirdActive ? "⚠️ Begitu 50 pendaftar pertama terpenuhi, harga otomatis kembali normal ke Rp490.000." : "*Akses penuh ke sesi workshop & materi rekaman."}
                 </p>
               </div>
             </div>
@@ -2127,7 +2127,7 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
                       <div style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem", background: isEarlyBirdActive ? "rgba(239, 68, 68, 0.1)" : "rgba(107, 114, 128, 0.1)", border: `1px solid ${isEarlyBirdActive ? "rgba(239, 68, 68, 0.3)" : "rgba(107, 114, 128, 0.2)"}`, padding: "0.3rem 0.75rem", borderRadius: "999px" }}>
                         <span style={{ display: "inline-block", width: "8px", height: "8px", borderRadius: "50%", background: isEarlyBirdActive ? "#ef4444" : "#6b7280" }} />
                         <span style={{ fontSize: "0.82rem", fontWeight: 800, color: isEarlyBirdActive ? "#dc2626" : "var(--ink-soft)", letterSpacing: "0.02em" }}>
-                          {isEarlyBirdActive ? "⚡ EARLY BIRD: 20 PENDAFTAR PERTAMA" : "⚡ EARLY BIRD HABIS — PENDAFTARAN REGULER"}
+                          {isEarlyBirdActive ? "⚡ EARLY BIRD: 50 PENDAFTAR PERTAMA" : "PENDAFTARAN REGULER"}
                         </span>
                       </div>
                       {isEarlyBirdActive && (
@@ -2149,8 +2149,8 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
 
                     <p style={{ fontSize: "0.85rem", color: "var(--ink-soft)", marginTop: "0.5rem", marginBottom: 0, lineHeight: 1.5 }}>
                       {isEarlyBirdActive
-                        ? "Dapatkan potongan harga spesial Rp225.000 (khusus 20 pendaftar pertama). Setelah kuota 20 orang terpenuhi, sistem otomatis mengunci harga kembali ke Rp490.000."
-                        : "Promo early bird sudah habis. Harga kembali normal Rp490.000. Daftar sekarang untuk mengamankan kursi Anda sebelum sesi workshop dimulai."}
+                        ? "Dapatkan potongan harga spesial Rp225.000 (khusus 50 pendaftar pertama). Setelah kuota 50 orang terpenuhi, sistem otomatis mengunci harga kembali ke Rp490.000."
+                        : "Daftar sekarang untuk mengamankan kursi Anda sebelum sesi workshop dimulai."}
                     </p>
                   </div>
                 )}
@@ -2158,7 +2158,7 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
                   {isZeroHuman
                     ? isEarlyBirdActive
                       ? "Mulai dari satu Agent. Bangun enam. Kuota Early Bird Rp225.000 (diskon dari Rp490.000), sekali bayar. Isi data di bawah, konfirmasi melalui WhatsApp."
-                      : "Promo early bird sudah habis. Harga kembali normal Rp490.000 sekali bayar. Isi data di bawah, konfirmasi melalui WhatsApp."
+                      : "Mulai dari satu Agent. Bangun enam. Rp490.000 sekali bayar. Isi data di bawah, konfirmasi melalui WhatsApp."
                     : isVibesCoding
                       ? "Harga spesial — ~~Rp 860.000~~. Isi data di bawah, konfirmasi melalui WhatsApp."
                       : "Pendaftaran satu menit. Akses instan di web &amp; dikirim via WhatsApp."}
