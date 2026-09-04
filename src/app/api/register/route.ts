@@ -214,10 +214,10 @@ export async function POST(req: Request) {
       }
     }
 
-    // ── HARGA / EARLY BIRD: zero-human-company (50 Kuota Pertama per Batch) ──
+    // ── HARGA / EARLY BIRD: zero-human-company (20 Kuota Pertama per Batch) ──
     let unitPrice = program.price;
     if (program.slug === "zero-human-company") {
-      const EARLY_BIRD_QUOTA = 50;
+      const EARLY_BIRD_QUOTA = 20;
       let targetBatchId = batchId;
       if (!targetBatchId) {
         const upcomingBatch = await prisma.programBatch.findFirst({

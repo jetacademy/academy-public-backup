@@ -29,7 +29,7 @@ export async function GET() {
     ["PAID", "PASSED"].includes(r.status)
   ).length;
 
-  const earlyBirdQuota = 50;
+  const earlyBirdQuota = 20;
   const earlyBirdSeatsLeft = Math.max(0, earlyBirdQuota - lunas);
   const isEarlyBirdActive = lunas < earlyBirdQuota;
   const currentPrice = isEarlyBirdActive ? 225000 : (program.price || 490000);

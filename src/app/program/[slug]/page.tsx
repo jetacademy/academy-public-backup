@@ -81,7 +81,7 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
   const displayScheduleAt = nextBatch?.scheduleAt ?? program.scheduleAt;
   const displayHari = nextBatch ? formatHariTanggal(nextBatch.scheduleAt) : formatHariTanggal(program.scheduleAt);
 
-  // Early Bird quota logic untuk Zero Human Company (50 orang pertama per batch)
+  // Early Bird quota logic untuk Zero Human Company (20 orang pertama per batch)
   let zhcPaidCount = 0;
   if (isZeroHuman) {
     try {
@@ -97,8 +97,9 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
     }
   }
 
-  const EARLY_BIRD_QUOTA = 50;
+  const EARLY_BIRD_QUOTA = 20;
   const isEarlyBirdActive = isZeroHuman ? zhcPaidCount < EARLY_BIRD_QUOTA : false;
+  const earlyBirdSeatsLeft = Math.max(0, EARLY_BIRD_QUOTA - zhcPaidCount);
 
   const effectivePrice = isZeroHuman
     ? (isEarlyBirdActive ? 225000 : 490000)
@@ -168,6 +169,12 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
       ]
     : isZeroHuman
     ? [
+        {
+          q: "Berapa biaya pendaftarannya dan kenapa ada harga Rp 490.000?",
+          a: isEarlyBirdActive
+            ? `Harga promo Early Bird adalah Rp 225.000 khusus untuk 20 pendaftar pertama (diskon dari harga normal Rp 490.000). Saat ini sisa kuota Early Bird tersisa ${earlyBirdSeatsLeft} kursi. Jika kuota 20 pendaftar telah terpenuhi, biaya pendaftaran otomatis kembali ke harga normal Rp 490.000.`
+            : "Biaya pendaftaran saat ini adalah Rp 490.000 (Harga Normal). Promo Early Bird Rp 225.000 dialokasikan terbatas untuk 20 pendaftar pertama dan kuota tersebut sudah terisi penuh (sold out).",
+        },
         {
           q: "Apakah workshop ini benar-benar praktik?",
           a: "Ya. Fokus workshop adalah praktik membangun AI Agent, bukan hanya teori.",
@@ -431,6 +438,11 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
               {!isFree && effectivePriceOld && (
                 <span className="prg-hero-strike" style={{ color: "var(--ink-soft)", textDecoration: "line-through", display: "block", textAlign: "center", marginTop: "0.2rem" }}>
                   {rupiah(effectivePriceOld)}
+                </span>
+              )}
+              {isZeroHuman && !isEarlyBirdActive && (
+                <span style={{ display: "block", textAlign: "center", marginTop: "0.4rem", fontSize: "0.78rem", color: "var(--ink-soft)", fontWeight: 600 }}>
+                  (Kuota Early Bird 20 peserta terisi penuh · Harga Normal)
                 </span>
               )}
               <div className="prg-cta-meta-list" style={{ marginTop: "0.5rem" }}>
@@ -1684,36 +1696,72 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
                 </p>
               </div>
 
-              <div className="bento" style={{ padding: "clamp(1.8rem, 4vw, 2.6rem)", textAlign: "center", background: "linear-gradient(150deg, #1e1b4b 0%, #0f172a 100%)", color: "#fff", borderRadius: "var(--r-lg)", position: "relative", overflow: "hidden", maxWidth: "46rem", marginInline: "auto", border: "1px solid rgba(247, 148, 29, 0.35)", boxShadow: "0 10px 40px rgba(247, 148, 29, 0.12)" }}>
-                <div style={{ position: "absolute", width: "350px", height: "350px", borderRadius: "50%", background: "radial-gradient(circle, rgba(247,148,29,0.2) 0%, transparent 70%)", top: "-120px", right: "-80px", pointerEvents: "none" }} />
+              <div className="bento" style={{ padding: "clamp(1.8rem, 4vw, 2.6rem)", textAlign: "center", background: "linear-gradient(150deg, #1e1b4b 0%, #0f172a 100%)", color: "#fff", borderRadius: "var(--r-lg)", position: "relative", overflow: "hidden", maxWidth: "46rem", marginInline: "auto", border: isEarlyBirdActive ? "1px solid rgba(247, 148, 29, 0.35)" : "1px solid rgba(168, 85, 247, 0.35)", boxShadow: isEarlyBirdActive ? "0 10px 40px rgba(247, 148, 29, 0.12)" : "0 10px 40px rgba(108, 92, 231, 0.15)" }}>
+                <div style={{ position: "absolute", width: "350px", height: "350px", borderRadius: "50%", background: isEarlyBirdActive ? "radial-gradient(circle, rgba(247,148,29,0.2) 0%, transparent 70%)" : "radial-gradient(circle, rgba(168,85,247,0.2) 0%, transparent 70%)", top: "-120px", right: "-80px", pointerEvents: "none" }} />
                 
                 {/* Standout Badge */}
-                <div style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem", background: "rgba(247,148,29,0.18)", border: "1px solid rgba(247,148,29,0.5)", color: "var(--orange)", fontWeight: 800, fontSize: "0.82rem", letterSpacing: "0.04em", padding: "0.45rem 1.1rem", borderRadius: "999px", boxShadow: "0 0 20px rgba(247,148,29,0.25)" }}>
-                  <span style={{ display: "inline-block", width: "8px", height: "8px", borderRadius: "50%", background: "#f7941d", boxShadow: "0 0 10px #f7941d" }} />
-                  <span>⚡ EARLY BIRD — KHUSUS 50 PENDAFTAR PERTAMA</span>
-                </div>
+                {isEarlyBirdActive ? (
+                  <div style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem", background: "rgba(247,148,29,0.18)", border: "1px solid rgba(247,148,29,0.5)", color: "var(--orange)", fontWeight: 800, fontSize: "0.82rem", letterSpacing: "0.04em", padding: "0.45rem 1.1rem", borderRadius: "999px", boxShadow: "0 0 20px rgba(247,148,29,0.25)" }}>
+                    <span style={{ display: "inline-block", width: "8px", height: "8px", borderRadius: "50%", background: "#f7941d", boxShadow: "0 0 10px #f7941d" }} />
+                    <span>⚡ EARLY BIRD — KHUSUS 20 PENDAFTAR PERTAMA</span>
+                  </div>
+                ) : (
+                  <div style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem", background: "rgba(239, 68, 68, 0.2)", border: "1px solid rgba(239, 68, 68, 0.55)", color: "#fca5a5", fontWeight: 800, fontSize: "0.82rem", letterSpacing: "0.04em", padding: "0.45rem 1.1rem", borderRadius: "999px" }}>
+                    <span style={{ display: "inline-block", width: "8px", height: "8px", borderRadius: "50%", background: "#ef4444" }} />
+                    <span>KUOTA EARLY BIRD TERPENUHI (20/20) • BERLAKU HARGA NORMAL</span>
+                  </div>
+                )}
 
                 {/* Price Display */}
                 <div style={{ display: "flex", justifyContent: "center", alignItems: "baseline", gap: "0.8rem", marginTop: "1.3rem", flexWrap: "wrap", position: "relative" }}>
-                  <span style={{ fontSize: "clamp(2.3rem, 6vw, 3.2rem)", fontWeight: 900, color: "var(--orange)", letterSpacing: "-0.02em" }}>{rupiah(effectivePrice)}</span>
+                  <span style={{ fontSize: "clamp(2.3rem, 6vw, 3.2rem)", fontWeight: 900, color: isEarlyBirdActive ? "var(--orange)" : "#c084fc", letterSpacing: "-0.02em" }}>{rupiah(effectivePrice)}</span>
                   {effectivePriceOld && (
                     <span className="prg-hero-strike" style={{ fontSize: "1.2rem", color: "rgba(255,255,255,0.45)" }}>{rupiah(effectivePriceOld)}</span>
                   )}
-                  {isEarlyBirdActive && (
+                  {isEarlyBirdActive ? (
                     <span className="eb-save" style={{ background: "#22c55e", color: "#fff", fontWeight: 800, fontSize: "0.85rem", padding: "0.3rem 0.7rem", borderRadius: "8px" }}>Hemat 54%</span>
+                  ) : (
+                    <span style={{ background: "rgba(255,255,255,0.12)", color: "#e2e8f0", fontWeight: 700, fontSize: "0.82rem", padding: "0.3rem 0.7rem", borderRadius: "8px" }}>Harga Normal</span>
                   )}
                 </div>
 
+                {/* Penjelasan Transparan Saat Kuota Early Bird Habis */}
+                {!isEarlyBirdActive && (
+                  <div style={{ background: "rgba(239, 68, 68, 0.12)", border: "1px solid rgba(239, 68, 68, 0.35)", borderRadius: "12px", padding: "0.95rem 1.15rem", margin: "1.2rem auto 0", maxWidth: "38rem", textAlign: "left" }}>
+                    <p style={{ margin: 0, fontWeight: 800, fontSize: "0.88rem", color: "#fca5a5" }}>
+                      📢 Kenapa harganya Rp 490.000?
+                    </p>
+                    <p style={{ margin: "0.35rem 0 0", fontSize: "0.82rem", color: "rgba(255,255,255,0.85)", lineHeight: 1.55 }}>
+                      Promo potongan harga <strong>Early Bird Rp 225.000</strong> khusus untuk <strong>20 pendaftar pertama sudah terpenuhi (penuh)</strong>. Sesuai ketentuan, pendaftaran selanjutnya kembali ke <strong>Harga Normal Rp 490.000</strong>. Anda tetap mendapatkan seluruh 6 AI Agent, live workshop Zoom 3 jam, rekaman seumur hidup, dan e-sertifikat resmi.
+                    </p>
+                  </div>
+                )}
+
                 {/* Highlight Features Box */}
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "0.6rem", margin: "1.3rem auto", maxWidth: "38rem", textAlign: "left", position: "relative" }}>
-                  <div style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "10px", padding: "0.65rem 0.9rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                    <span style={{ color: "#22c55e", fontSize: "1rem" }}>✓</span>
-                    <span style={{ fontSize: "0.82rem", color: "rgba(255,255,255,0.85)", fontWeight: 600 }}>Diskon Langsung Rp265.000</span>
-                  </div>
-                  <div style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "10px", padding: "0.65rem 0.9rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                    <span style={{ color: "var(--orange)", fontSize: "1rem" }}>⚡</span>
-                    <span style={{ fontSize: "0.82rem", color: "rgba(255,255,255,0.85)", fontWeight: 600 }}>Kuota Terbatas 50 Kursi</span>
-                  </div>
+                  {isEarlyBirdActive ? (
+                    <>
+                      <div style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "10px", padding: "0.65rem 0.9rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                        <span style={{ color: "#22c55e", fontSize: "1rem" }}>✓</span>
+                        <span style={{ fontSize: "0.82rem", color: "rgba(255,255,255,0.85)", fontWeight: 600 }}>Diskon Langsung Rp265.000</span>
+                      </div>
+                      <div style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "10px", padding: "0.65rem 0.9rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                        <span style={{ color: "var(--orange)", fontSize: "1rem" }}>⚡</span>
+                        <span style={{ fontSize: "0.82rem", color: "rgba(255,255,255,0.85)", fontWeight: 600 }}>Sisa Kuota: {earlyBirdSeatsLeft} dari 20</span>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "10px", padding: "0.65rem 0.9rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                        <span style={{ color: "#22c55e", fontSize: "1rem" }}>✓</span>
+                        <span style={{ fontSize: "0.82rem", color: "rgba(255,255,255,0.85)", fontWeight: 600 }}>Akses Penuh 6 AI Agent</span>
+                      </div>
+                      <div style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "10px", padding: "0.65rem 0.9rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                        <span style={{ color: "#f87171", fontSize: "1rem" }}>✕</span>
+                        <span style={{ fontSize: "0.82rem", color: "rgba(255,255,255,0.85)", fontWeight: 600 }}>Early Bird: Habis (20/20 Terisi)</span>
+                      </div>
+                    </>
+                  )}
                   <div style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "10px", padding: "0.65rem 0.9rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
                     <span style={{ color: "#38bdf8", fontSize: "1rem" }}>🚀</span>
                     <span style={{ fontSize: "0.82rem", color: "rgba(255,255,255,0.85)", fontWeight: 600 }}>Sekali Bayar &amp; Akses Penuh</span>
@@ -1724,12 +1772,12 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
                   Bangun 6 AI Agent untuk bisnis Anda • Praktik langsung • Tanpa biaya langganan bulanan
                 </p>
 
-                <a href="#daftar" className="btn btn-purple btn-lg" style={{ display: "inline-flex", maxWidth: "100%", position: "relative", background: "linear-gradient(135deg, #f7941d 0%, #e67e22 100%)", whiteSpace: "normal", textAlign: "center", lineHeight: 1.25, fontWeight: 900, fontSize: "1.08rem", padding: "1rem 2rem", boxShadow: "0 8px 25px rgba(247,148,29,0.4)", border: "none" }}>
+                <a href="#daftar" className="btn btn-purple btn-lg" style={{ display: "inline-flex", maxWidth: "100%", position: "relative", background: isEarlyBirdActive ? "linear-gradient(135deg, #f7941d 0%, #e67e22 100%)" : "linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%)", whiteSpace: "normal", textAlign: "center", lineHeight: 1.25, fontWeight: 900, fontSize: "1.08rem", padding: "1rem 2rem", boxShadow: isEarlyBirdActive ? "0 8px 25px rgba(247,148,29,0.4)" : "0 8px 25px rgba(124,58,237,0.35)", border: "none" }}>
                   🚀 {isEarlyBirdActive ? `Amankan Slot Early Bird — ${rupiah(225000)}` : `Daftar Sekarang — ${rupiah(490000)}`}
                 </a>
 
                 <p style={{ fontSize: "0.78rem", color: "rgba(255,255,255,0.55)", marginTop: "1rem", marginBottom: 0, position: "relative" }}>
-                  {isEarlyBirdActive ? "⚠️ Begitu 50 pendaftar pertama terpenuhi, harga otomatis kembali normal ke Rp490.000." : "*Akses penuh ke sesi workshop & materi rekaman."}
+                  {isEarlyBirdActive ? `⚠️ Begitu 20 pendaftar pertama terpenuhi, harga otomatis kembali normal ke Rp490.000.` : "ℹ️ Kuota Early Bird (Rp 225.000) telah terpenuhi. Pendaftaran tetap dibuka dengan harga normal Rp 490.000 mencakup seluruh materi, rekaman, dan e-sertifikat."}
                 </p>
               </div>
             </div>
@@ -2122,17 +2170,29 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
 
                 {/* Standout Early Bird Box for Zero Human Company */}
                 {isZeroHuman && (
-                  <div style={{ marginBottom: "1.5rem", padding: "1.2rem 1.35rem", background: "linear-gradient(135deg, #ffffff 0%, #faf8ff 100%)", borderRadius: "16px", border: "2px solid #a78bfa", boxShadow: "0 8px 25px rgba(108, 92, 231, 0.12)", position: "relative" }}>
+                  <div style={{
+                    marginBottom: "1.5rem",
+                    padding: "1.2rem 1.35rem",
+                    background: isEarlyBirdActive ? "linear-gradient(135deg, #ffffff 0%, #faf8ff 100%)" : "#ffffff",
+                    borderRadius: "16px",
+                    border: isEarlyBirdActive ? "2px solid #a78bfa" : "2px solid #e2e8f0",
+                    boxShadow: isEarlyBirdActive ? "0 8px 25px rgba(108, 92, 231, 0.12)" : "0 4px 16px rgba(0, 0, 0, 0.05)",
+                    position: "relative"
+                  }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.85rem", flexWrap: "wrap", gap: "0.6rem" }}>
-                      <div style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem", background: isEarlyBirdActive ? "rgba(239, 68, 68, 0.1)" : "rgba(107, 114, 128, 0.1)", border: `1px solid ${isEarlyBirdActive ? "rgba(239, 68, 68, 0.3)" : "rgba(107, 114, 128, 0.2)"}`, padding: "0.3rem 0.75rem", borderRadius: "999px" }}>
-                        <span style={{ display: "inline-block", width: "8px", height: "8px", borderRadius: "50%", background: isEarlyBirdActive ? "#ef4444" : "#6b7280" }} />
-                        <span style={{ fontSize: "0.82rem", fontWeight: 800, color: isEarlyBirdActive ? "#dc2626" : "var(--ink-soft)", letterSpacing: "0.02em" }}>
-                          {isEarlyBirdActive ? "⚡ EARLY BIRD: 50 PENDAFTAR PERTAMA" : "PENDAFTARAN REGULER"}
+                      <div style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem", background: isEarlyBirdActive ? "rgba(239, 68, 68, 0.1)" : "rgba(245, 158, 11, 0.1)", border: `1px solid ${isEarlyBirdActive ? "rgba(239, 68, 68, 0.3)" : "rgba(245, 158, 11, 0.3)"}`, padding: "0.3rem 0.75rem", borderRadius: "999px" }}>
+                        <span style={{ display: "inline-block", width: "8px", height: "8px", borderRadius: "50%", background: isEarlyBirdActive ? "#ef4444" : "#d97706" }} />
+                        <span style={{ fontSize: "0.82rem", fontWeight: 800, color: isEarlyBirdActive ? "#dc2626" : "#b45309", letterSpacing: "0.02em" }}>
+                          {isEarlyBirdActive ? `⚡ EARLY BIRD: SISA ${earlyBirdSeatsLeft} DARI 20 KURSI` : "KUOTA EARLY BIRD TELAH HABIS (20/20)"}
                         </span>
                       </div>
-                      {isEarlyBirdActive && (
+                      {isEarlyBirdActive ? (
                         <span style={{ fontSize: "0.78rem", fontWeight: 800, color: "#7c3aed", background: "rgba(124, 58, 237, 0.1)", padding: "0.25rem 0.7rem", borderRadius: "999px", border: "1px solid rgba(124, 58, 237, 0.2)" }}>
                           🔥 Kuota Terbatas
+                        </span>
+                      ) : (
+                        <span style={{ fontSize: "0.78rem", fontWeight: 800, color: "#475569", background: "rgba(100, 116, 139, 0.1)", padding: "0.25rem 0.7rem", borderRadius: "999px", border: "1px solid rgba(100, 116, 139, 0.2)" }}>
+                          Tarif Normal
                         </span>
                       )}
                     </div>
@@ -2147,18 +2207,27 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
                       )}
                     </div>
 
-                    <p style={{ fontSize: "0.85rem", color: "var(--ink-soft)", marginTop: "0.5rem", marginBottom: 0, lineHeight: 1.5 }}>
-                      {isEarlyBirdActive
-                        ? "Dapatkan potongan harga spesial Rp225.000 (khusus 50 pendaftar pertama). Setelah kuota 50 orang terpenuhi, sistem otomatis mengunci harga kembali ke Rp490.000."
-                        : "Daftar sekarang untuk mengamankan kursi Anda sebelum sesi workshop dimulai."}
-                    </p>
+                    {isEarlyBirdActive ? (
+                      <p style={{ fontSize: "0.85rem", color: "var(--ink-soft)", marginTop: "0.5rem", marginBottom: 0, lineHeight: 1.5 }}>
+                        Dapatkan potongan harga spesial Rp225.000 (khusus 20 pendaftar pertama). Setelah kuota 20 orang terpenuhi, sistem otomatis mengunci harga kembali ke Rp490.000.
+                      </p>
+                    ) : (
+                      <div style={{ marginTop: "0.75rem", padding: "0.85rem 1rem", background: "#fff7ed", border: "1px solid #fed7aa", borderRadius: "10px", textAlign: "left" }}>
+                        <p style={{ margin: 0, fontSize: "0.84rem", fontWeight: 800, color: "#c2410c" }}>
+                          ℹ️ Kenapa biayanya Rp 490.000?
+                        </p>
+                        <p style={{ margin: "0.3rem 0 0", fontSize: "0.82rem", color: "#9a3412", lineHeight: 1.5 }}>
+                          Promo harga <strong>Early Bird Rp 225.000</strong> khusus untuk <strong>20 pendaftar pertama sudah terpenuhi</strong>. Oleh karena itu, pendaftaran saat ini otomatis menggunakan <strong>Harga Normal Rp 490.000</strong> (sekali bayar). Anda tetap mendapatkan seluruh hak akses: live workshop 3 jam, 6 AI Agent, rekaman seumur hidup, dan e-sertifikat.
+                        </p>
+                      </div>
+                    )}
                   </div>
                 )}
                 <p style={{ fontWeight: 700, opacity: .85 }}>
                   {isZeroHuman
                     ? isEarlyBirdActive
                       ? "Mulai dari satu Agent. Bangun enam. Kuota Early Bird Rp225.000 (diskon dari Rp490.000), sekali bayar. Isi data di bawah, konfirmasi melalui WhatsApp."
-                      : "Mulai dari satu Agent. Bangun enam. Rp490.000 sekali bayar. Isi data di bawah, konfirmasi melalui WhatsApp."
+                      : "Mulai dari satu Agent. Bangun enam. Kuota Early Bird telah terpenuhi — Harga Normal Rp490.000 sekali bayar. Isi data di bawah untuk mengamankan kursi Anda."
                     : isVibesCoding
                       ? "Harga spesial — ~~Rp 860.000~~. Isi data di bawah, konfirmasi melalui WhatsApp."
                       : "Pendaftaran satu menit. Akses instan di web &amp; dikirim via WhatsApp."}
