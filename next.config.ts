@@ -11,6 +11,12 @@ const nextConfig: NextConfig = {
     },
   },
   images: {
+    // 🔴 KOREKSI 3 Sep: image optimizer (_next/image) hang di prod → semua gambar
+    // di halaman broken/kosong walau file asli ada. Set unoptimized=TRUE supaya
+    // next/image menyajikan gambar asli langsung (tanpa optimizer), memulihkan
+    // tampilan gambar & tidak bergantung pada optimizer yang macet. (Harga: file
+    // tidak di-optimasi ukurannya; tradeoff diterima demi ketersediaan gambar.)
+    unoptimized: true,
     formats: ["image/avif", "image/webp"],
     remotePatterns: [
       // Batasi ke domain yang dikenal — jangan izinkan semua hostname
