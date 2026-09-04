@@ -172,8 +172,8 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
         {
           q: "Berapa biaya pendaftaran workshop ini?",
           a: isEarlyBirdActive
-            ? "Biaya promo Early Bird Rp 225.000 khusus 20 pendaftar pertama. Setelah kuota penuh, harga kembali normal Rp 490.000."
-            : "Biaya pendaftaran saat ini Rp 490.000 (harga normal), karena kuota Early Bird Rp 225.000 sudah penuh.",
+            ? "Biaya promo Early Bird Rp 225.000. Setelah promo berakhir, harga kembali normal Rp 490.000."
+            : "Biaya pendaftaran saat ini Rp 490.000 (harga normal).",
         },
         {
           q: "Apakah workshop ini benar-benar praktik?",
@@ -442,7 +442,7 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
               )}
               {isZeroHuman && !isEarlyBirdActive && (
                 <span style={{ display: "block", textAlign: "center", marginTop: "0.4rem", fontSize: "0.78rem", color: "var(--ink-soft)", fontWeight: 600 }}>
-                  (Kuota Early Bird 20 peserta terisi penuh · Harga Normal)
+                  (Harga Normal)
                 </span>
               )}
               <div className="prg-cta-meta-list" style={{ marginTop: "0.5rem" }}>
@@ -1703,12 +1703,12 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
                 {isEarlyBirdActive ? (
                   <div style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem", background: "rgba(247,148,29,0.18)", border: "1px solid rgba(247,148,29,0.5)", color: "var(--orange)", fontWeight: 800, fontSize: "0.82rem", letterSpacing: "0.04em", padding: "0.45rem 1.1rem", borderRadius: "999px", boxShadow: "0 0 20px rgba(247,148,29,0.25)" }}>
                     <span style={{ display: "inline-block", width: "8px", height: "8px", borderRadius: "50%", background: "#f7941d", boxShadow: "0 0 10px #f7941d" }} />
-                    <span>⚡ EARLY BIRD — KHUSUS 20 PENDAFTAR PERTAMA</span>
+                    <span>⚡ PROMO EARLY BIRD</span>
                   </div>
                 ) : (
                   <div style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem", background: "rgba(239, 68, 68, 0.2)", border: "1px solid rgba(239, 68, 68, 0.55)", color: "#fca5a5", fontWeight: 800, fontSize: "0.82rem", letterSpacing: "0.04em", padding: "0.45rem 1.1rem", borderRadius: "999px" }}>
                     <span style={{ display: "inline-block", width: "8px", height: "8px", borderRadius: "50%", background: "#ef4444" }} />
-                    <span>KUOTA EARLY BIRD TERPENUHI (20/20) • BERLAKU HARGA NORMAL</span>
+                    <span>PROMO EARLY BIRD BERAKHIR • HARGA NORMAL</span>
                   </div>
                 )}
 
@@ -1727,7 +1727,7 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
 
                 {!isEarlyBirdActive && (
                   <p style={{ margin: "0.8rem auto 0", fontSize: "0.84rem", color: "#fca5a5", fontWeight: 600 }}>
-                    Kuota Early Bird (Rp 225.000) sudah penuh. Berlaku harga normal Rp 490.000.
+                    Promo Early Bird telah berakhir. Berlaku harga normal Rp 490.000.
                   </p>
                 )}
 
@@ -1741,7 +1741,7 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
                       </div>
                       <div style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "10px", padding: "0.65rem 0.9rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
                         <span style={{ color: "var(--orange)", fontSize: "1rem" }}>⚡</span>
-                        <span style={{ fontSize: "0.82rem", color: "rgba(255,255,255,0.85)", fontWeight: 600 }}>Kuota 20 Pendaftar Pertama</span>
+                        <span style={{ fontSize: "0.82rem", color: "rgba(255,255,255,0.85)", fontWeight: 600 }}>Harga Promo Terbatas</span>
                       </div>
                     </>
                   ) : (
@@ -1752,7 +1752,7 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
                       </div>
                       <div style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "10px", padding: "0.65rem 0.9rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
                         <span style={{ color: "#f87171", fontSize: "1rem" }}>✕</span>
-                        <span style={{ fontSize: "0.82rem", color: "rgba(255,255,255,0.85)", fontWeight: 600 }}>Early Bird: Habis</span>
+                        <span style={{ fontSize: "0.82rem", color: "rgba(255,255,255,0.85)", fontWeight: 600 }}>Early Bird: Selesai</span>
                       </div>
                     </>
                   )}
@@ -1767,11 +1767,11 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
                 </p>
 
                 <a href="#daftar" className="btn btn-purple btn-lg" style={{ display: "inline-flex", maxWidth: "100%", position: "relative", background: isEarlyBirdActive ? "linear-gradient(135deg, #f7941d 0%, #e67e22 100%)" : "linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%)", whiteSpace: "normal", textAlign: "center", lineHeight: 1.25, fontWeight: 900, fontSize: "1.08rem", padding: "1rem 2rem", boxShadow: isEarlyBirdActive ? "0 8px 25px rgba(247,148,29,0.4)" : "0 8px 25px rgba(124,58,237,0.35)", border: "none" }}>
-                  🚀 {isEarlyBirdActive ? `Amankan Slot Early Bird — ${rupiah(225000)}` : `Daftar Sekarang — ${rupiah(490000)}`}
+                  🚀 {isEarlyBirdActive ? `Daftar Early Bird — ${rupiah(225000)}` : `Daftar Sekarang — ${rupiah(490000)}`}
                 </a>
 
                 <p style={{ fontSize: "0.78rem", color: "rgba(255,255,255,0.55)", marginTop: "1rem", marginBottom: 0, position: "relative" }}>
-                  {isEarlyBirdActive ? "⚠️ Khusus 20 pendaftar pertama. Setelah penuh kembali normal ke Rp490.000." : "ℹ️ Kuota Early Bird telah penuh. Berlaku harga normal Rp490.000."}
+                  {isEarlyBirdActive ? "⚠️ Slot promo terbatas. Setelah promo berakhir kembali ke harga normal Rp490.000." : "ℹ️ Berlaku harga normal Rp490.000."}
                 </p>
               </div>
             </div>
@@ -2177,7 +2177,7 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
                       <div style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem", background: isEarlyBirdActive ? "rgba(239, 68, 68, 0.1)" : "rgba(245, 158, 11, 0.1)", border: `1px solid ${isEarlyBirdActive ? "rgba(239, 68, 68, 0.3)" : "rgba(245, 158, 11, 0.3)"}`, padding: "0.3rem 0.75rem", borderRadius: "999px" }}>
                         <span style={{ display: "inline-block", width: "8px", height: "8px", borderRadius: "50%", background: isEarlyBirdActive ? "#ef4444" : "#d97706" }} />
                         <span style={{ fontSize: "0.82rem", fontWeight: 800, color: isEarlyBirdActive ? "#dc2626" : "#b45309", letterSpacing: "0.02em" }}>
-                          {isEarlyBirdActive ? "⚡ EARLY BIRD: 20 PENDAFTAR PERTAMA" : "KUOTA EARLY BIRD HABIS"}
+                          {isEarlyBirdActive ? "⚡ PROMO EARLY BIRD" : "HARGA NORMAL"}
                         </span>
                       </div>
                       {isEarlyBirdActive ? (
@@ -2203,18 +2203,18 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
 
                     {isEarlyBirdActive ? (
                       <p style={{ fontSize: "0.83rem", color: "var(--ink-soft)", marginTop: "0.45rem", marginBottom: 0 }}>
-                        Khusus 20 pendaftar pertama. Setelah kuota penuh, harga kembali normal Rp490.000.
+                        Potongan harga khusus promo Early Bird. Harga kembali normal Rp490.000 setelah promo berakhir.
                       </p>
                     ) : (
                       <p style={{ fontSize: "0.83rem", color: "#b91c1c", marginTop: "0.45rem", marginBottom: 0, fontWeight: 600 }}>
-                        Kuota Early Bird (Rp225.000) sudah penuh. Saat ini berlaku harga normal Rp490.000.
+                        Promo Early Bird telah berakhir. Saat ini berlaku harga normal Rp490.000.
                       </p>
                     )}
                   </div>
                 )}
                 <p style={{ fontWeight: 600, fontSize: "0.88rem", opacity: .8, marginTop: "0.6rem", marginBottom: "1.2rem" }}>
                   {isZeroHuman
-                    ? "Isi data di bawah untuk amankan kursi. Akses 6 AI Agent seumur hidup."
+                    ? "Isi data di bawah untuk amankan pendaftaran. Akses 6 AI Agent."
                     : isVibesCoding
                       ? "Harga spesial — ~~Rp 860.000~~. Isi data di bawah, konfirmasi melalui WhatsApp."
                       : "Pendaftaran satu menit. Akses instan di web &amp; dikirim via WhatsApp."}
