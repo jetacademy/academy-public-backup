@@ -170,10 +170,10 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
     : isZeroHuman
     ? [
         {
-          q: "Berapa biaya pendaftarannya dan kenapa ada harga Rp 490.000?",
+          q: "Berapa biaya pendaftaran workshop ini?",
           a: isEarlyBirdActive
-            ? `Harga promo Early Bird adalah Rp 225.000 khusus untuk 20 pendaftar pertama (diskon dari harga normal Rp 490.000). Saat ini sisa kuota Early Bird tersisa ${earlyBirdSeatsLeft} kursi. Jika kuota 20 pendaftar telah terpenuhi, biaya pendaftaran otomatis kembali ke harga normal Rp 490.000.`
-            : "Biaya pendaftaran saat ini adalah Rp 490.000 (Harga Normal). Promo Early Bird Rp 225.000 dialokasikan terbatas untuk 20 pendaftar pertama dan kuota tersebut sudah terisi penuh (sold out).",
+            ? "Biaya promo Early Bird Rp 225.000 khusus 20 pendaftar pertama. Setelah kuota penuh, harga kembali normal Rp 490.000."
+            : "Biaya pendaftaran saat ini Rp 490.000 (harga normal), karena kuota Early Bird Rp 225.000 sudah penuh.",
         },
         {
           q: "Apakah workshop ini benar-benar praktik?",
@@ -1725,16 +1725,10 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
                   )}
                 </div>
 
-                {/* Penjelasan Transparan Saat Kuota Early Bird Habis */}
                 {!isEarlyBirdActive && (
-                  <div style={{ background: "rgba(239, 68, 68, 0.12)", border: "1px solid rgba(239, 68, 68, 0.35)", borderRadius: "12px", padding: "0.95rem 1.15rem", margin: "1.2rem auto 0", maxWidth: "38rem", textAlign: "left" }}>
-                    <p style={{ margin: 0, fontWeight: 800, fontSize: "0.88rem", color: "#fca5a5" }}>
-                      📢 Kenapa harganya Rp 490.000?
-                    </p>
-                    <p style={{ margin: "0.35rem 0 0", fontSize: "0.82rem", color: "rgba(255,255,255,0.85)", lineHeight: 1.55 }}>
-                      Promo potongan harga <strong>Early Bird Rp 225.000</strong> khusus untuk <strong>20 pendaftar pertama sudah terpenuhi (penuh)</strong>. Sesuai ketentuan, pendaftaran selanjutnya kembali ke <strong>Harga Normal Rp 490.000</strong>. Anda tetap mendapatkan seluruh 6 AI Agent, live workshop Zoom 3 jam, rekaman seumur hidup, dan e-sertifikat resmi.
-                    </p>
-                  </div>
+                  <p style={{ margin: "0.8rem auto 0", fontSize: "0.84rem", color: "#fca5a5", fontWeight: 600 }}>
+                    Kuota Early Bird (Rp 225.000) sudah penuh. Berlaku harga normal Rp 490.000.
+                  </p>
                 )}
 
                 {/* Highlight Features Box */}
@@ -1747,7 +1741,7 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
                       </div>
                       <div style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "10px", padding: "0.65rem 0.9rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
                         <span style={{ color: "var(--orange)", fontSize: "1rem" }}>⚡</span>
-                        <span style={{ fontSize: "0.82rem", color: "rgba(255,255,255,0.85)", fontWeight: 600 }}>Sisa Kuota: {earlyBirdSeatsLeft} dari 20</span>
+                        <span style={{ fontSize: "0.82rem", color: "rgba(255,255,255,0.85)", fontWeight: 600 }}>Kuota 20 Pendaftar Pertama</span>
                       </div>
                     </>
                   ) : (
@@ -1758,7 +1752,7 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
                       </div>
                       <div style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "10px", padding: "0.65rem 0.9rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
                         <span style={{ color: "#f87171", fontSize: "1rem" }}>✕</span>
-                        <span style={{ fontSize: "0.82rem", color: "rgba(255,255,255,0.85)", fontWeight: 600 }}>Early Bird: Habis (20/20 Terisi)</span>
+                        <span style={{ fontSize: "0.82rem", color: "rgba(255,255,255,0.85)", fontWeight: 600 }}>Early Bird: Habis</span>
                       </div>
                     </>
                   )}
@@ -1777,7 +1771,7 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
                 </a>
 
                 <p style={{ fontSize: "0.78rem", color: "rgba(255,255,255,0.55)", marginTop: "1rem", marginBottom: 0, position: "relative" }}>
-                  {isEarlyBirdActive ? `⚠️ Begitu 20 pendaftar pertama terpenuhi, harga otomatis kembali normal ke Rp490.000.` : "ℹ️ Kuota Early Bird (Rp 225.000) telah terpenuhi. Pendaftaran tetap dibuka dengan harga normal Rp 490.000 mencakup seluruh materi, rekaman, dan e-sertifikat."}
+                  {isEarlyBirdActive ? "⚠️ Khusus 20 pendaftar pertama. Setelah penuh kembali normal ke Rp490.000." : "ℹ️ Kuota Early Bird telah penuh. Berlaku harga normal Rp490.000."}
                 </p>
               </div>
             </div>
@@ -2171,19 +2165,19 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
                 {/* Standout Early Bird Box for Zero Human Company */}
                 {isZeroHuman && (
                   <div style={{
-                    marginBottom: "1.5rem",
-                    padding: "1.2rem 1.35rem",
+                    marginBottom: "1.2rem",
+                    padding: "1.1rem 1.25rem",
                     background: isEarlyBirdActive ? "linear-gradient(135deg, #ffffff 0%, #faf8ff 100%)" : "#ffffff",
                     borderRadius: "16px",
                     border: isEarlyBirdActive ? "2px solid #a78bfa" : "2px solid #e2e8f0",
                     boxShadow: isEarlyBirdActive ? "0 8px 25px rgba(108, 92, 231, 0.12)" : "0 4px 16px rgba(0, 0, 0, 0.05)",
                     position: "relative"
                   }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.85rem", flexWrap: "wrap", gap: "0.6rem" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.75rem", flexWrap: "wrap", gap: "0.5rem" }}>
                       <div style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem", background: isEarlyBirdActive ? "rgba(239, 68, 68, 0.1)" : "rgba(245, 158, 11, 0.1)", border: `1px solid ${isEarlyBirdActive ? "rgba(239, 68, 68, 0.3)" : "rgba(245, 158, 11, 0.3)"}`, padding: "0.3rem 0.75rem", borderRadius: "999px" }}>
                         <span style={{ display: "inline-block", width: "8px", height: "8px", borderRadius: "50%", background: isEarlyBirdActive ? "#ef4444" : "#d97706" }} />
                         <span style={{ fontSize: "0.82rem", fontWeight: 800, color: isEarlyBirdActive ? "#dc2626" : "#b45309", letterSpacing: "0.02em" }}>
-                          {isEarlyBirdActive ? `⚡ EARLY BIRD: SISA ${earlyBirdSeatsLeft} DARI 20 KURSI` : "KUOTA EARLY BIRD TELAH HABIS (20/20)"}
+                          {isEarlyBirdActive ? "⚡ EARLY BIRD: 20 PENDAFTAR PERTAMA" : "KUOTA EARLY BIRD HABIS"}
                         </span>
                       </div>
                       {isEarlyBirdActive ? (
@@ -2208,26 +2202,19 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
                     </div>
 
                     {isEarlyBirdActive ? (
-                      <p style={{ fontSize: "0.85rem", color: "var(--ink-soft)", marginTop: "0.5rem", marginBottom: 0, lineHeight: 1.5 }}>
-                        Dapatkan potongan harga spesial Rp225.000 (khusus 20 pendaftar pertama). Setelah kuota 20 orang terpenuhi, sistem otomatis mengunci harga kembali ke Rp490.000.
+                      <p style={{ fontSize: "0.83rem", color: "var(--ink-soft)", marginTop: "0.45rem", marginBottom: 0 }}>
+                        Khusus 20 pendaftar pertama. Setelah kuota penuh, harga kembali normal Rp490.000.
                       </p>
                     ) : (
-                      <div style={{ marginTop: "0.75rem", padding: "0.85rem 1rem", background: "#fff7ed", border: "1px solid #fed7aa", borderRadius: "10px", textAlign: "left" }}>
-                        <p style={{ margin: 0, fontSize: "0.84rem", fontWeight: 800, color: "#c2410c" }}>
-                          ℹ️ Kenapa biayanya Rp 490.000?
-                        </p>
-                        <p style={{ margin: "0.3rem 0 0", fontSize: "0.82rem", color: "#9a3412", lineHeight: 1.5 }}>
-                          Promo harga <strong>Early Bird Rp 225.000</strong> khusus untuk <strong>20 pendaftar pertama sudah terpenuhi</strong>. Oleh karena itu, pendaftaran saat ini otomatis menggunakan <strong>Harga Normal Rp 490.000</strong> (sekali bayar). Anda tetap mendapatkan seluruh hak akses: live workshop 3 jam, 6 AI Agent, rekaman seumur hidup, dan e-sertifikat.
-                        </p>
-                      </div>
+                      <p style={{ fontSize: "0.83rem", color: "#b91c1c", marginTop: "0.45rem", marginBottom: 0, fontWeight: 600 }}>
+                        Kuota Early Bird (Rp225.000) sudah penuh. Saat ini berlaku harga normal Rp490.000.
+                      </p>
                     )}
                   </div>
                 )}
-                <p style={{ fontWeight: 700, opacity: .85 }}>
+                <p style={{ fontWeight: 600, fontSize: "0.88rem", opacity: .8, marginTop: "0.6rem", marginBottom: "1.2rem" }}>
                   {isZeroHuman
-                    ? isEarlyBirdActive
-                      ? "Mulai dari satu Agent. Bangun enam. Kuota Early Bird Rp225.000 (diskon dari Rp490.000), sekali bayar. Isi data di bawah, konfirmasi melalui WhatsApp."
-                      : "Mulai dari satu Agent. Bangun enam. Kuota Early Bird telah terpenuhi — Harga Normal Rp490.000 sekali bayar. Isi data di bawah untuk mengamankan kursi Anda."
+                    ? "Isi data di bawah untuk amankan kursi. Akses 6 AI Agent seumur hidup."
                     : isVibesCoding
                       ? "Harga spesial — ~~Rp 860.000~~. Isi data di bawah, konfirmasi melalui WhatsApp."
                       : "Pendaftaran satu menit. Akses instan di web &amp; dikirim via WhatsApp."}
