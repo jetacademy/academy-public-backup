@@ -99,7 +99,6 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
 
   const EARLY_BIRD_QUOTA = 20;
   const isEarlyBirdActive = isZeroHuman ? zhcPaidCount < EARLY_BIRD_QUOTA : false;
-  const earlyBirdSeatsLeft = Math.max(0, EARLY_BIRD_QUOTA - zhcPaidCount);
 
   const effectivePrice = isZeroHuman
     ? (isEarlyBirdActive ? 225000 : 490000)
@@ -2182,7 +2181,7 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
                       </div>
                       {isEarlyBirdActive ? (
                         <span style={{ fontSize: "0.78rem", fontWeight: 800, color: "#7c3aed", background: "rgba(124, 58, 237, 0.1)", padding: "0.25rem 0.7rem", borderRadius: "999px", border: "1px solid rgba(124, 58, 237, 0.2)" }}>
-                          🔥 Kuota Terbatas
+                          🔥 Promo Terbatas
                         </span>
                       ) : (
                         <span style={{ fontSize: "0.78rem", fontWeight: 800, color: "#475569", background: "rgba(100, 116, 139, 0.1)", padding: "0.25rem 0.7rem", borderRadius: "999px", border: "1px solid rgba(100, 116, 139, 0.2)" }}>
