@@ -379,7 +379,7 @@ export async function POST(req: Request) {
 
     let reg: any;
     if (existingSameBatchReg) {
-      reg = await prisma.registration.update({
+      reg = await (prisma.registration as any).update({
         where: { id: existingSameBatchReg.id },
         data: {
           name,
@@ -394,7 +394,7 @@ export async function POST(req: Request) {
         include: { payment: true },
       });
     } else {
-      reg = await prisma.registration.create({
+      reg = await (prisma.registration as any).create({
         data: {
           name,
           whatsapp,
@@ -457,31 +457,40 @@ export async function POST(req: Request) {
               data: { name: p.name, email: p.email, whatsapp: p.whatsapp, role: "STUDENT" },
             });
           }
-          const pUpsertWhere: any = batchId
-            ? { whatsapp_programId_batchId: { whatsapp: p.whatsapp, programId: program.id, batchId } }
-            : { whatsapp_programId: { whatsapp: p.whatsapp, programId: program.id } };
-
-          await (prisma.registration as any).upsert({
-            where: pUpsertWhere,
-            create: {
-              name: p.name,
-              whatsapp: p.whatsapp,
-              email: p.email,
-              institution,
+          const pExisting = await prisma.registration.findFirst({
+            where: {
               programId: program.id,
-              userId: pUser.id,
-              batchId,
-              status: "REGISTERED",
-            },
-            update: {
-              name: p.name,
-              email: p.email,
-              institution,
-              userId: pUser.id,
-              status: "REGISTERED",
-              ...(batchId ? { batchId } : {}),
+              batchId: batchId ?? null,
+              OR: [{ whatsapp: p.whatsapp }, { email: p.email }],
             },
           });
+
+          if (pExisting) {
+            await (prisma.registration as any).update({
+              where: { id: pExisting.id },
+              data: {
+                name: p.name,
+                email: p.email,
+                institution,
+                userId: pUser.id,
+                status: "REGISTERED",
+                ...(batchId ? { batchId } : {}),
+              },
+            });
+          } else {
+            await (prisma.registration as any).create({
+              data: {
+                name: p.name,
+                whatsapp: p.whatsapp,
+                email: p.email,
+                institution,
+                programId: program.id,
+                userId: pUser.id,
+                batchId,
+                status: "REGISTERED",
+              },
+            });
+          }
 
           await sendWa(
             p.whatsapp,
@@ -585,31 +594,40 @@ export async function POST(req: Request) {
               data: { name: p.name, email: p.email, whatsapp: p.whatsapp, role: "STUDENT" },
             });
           }
-          const pUpsertWhere: any = batchId
-            ? { whatsapp_programId_batchId: { whatsapp: p.whatsapp, programId: program.id, batchId } }
-            : { whatsapp_programId: { whatsapp: p.whatsapp, programId: program.id } };
-
-          await (prisma.registration as any).upsert({
-            where: pUpsertWhere,
-            create: {
-              name: p.name,
-              whatsapp: p.whatsapp,
-              email: p.email,
-              institution,
+          const pExistingPaid = await prisma.registration.findFirst({
+            where: {
               programId: program.id,
-              userId: pUser.id,
-              batchId,
-              status: "PAID",
-            },
-            update: {
-              name: p.name,
-              email: p.email,
-              institution,
-              userId: pUser.id,
-              status: "PAID",
-              ...(batchId ? { batchId } : {}),
+              batchId: batchId ?? null,
+              OR: [{ whatsapp: p.whatsapp }, { email: p.email }],
             },
           });
+
+          if (pExistingPaid) {
+            await (prisma.registration as any).update({
+              where: { id: pExistingPaid.id },
+              data: {
+                name: p.name,
+                email: p.email,
+                institution,
+                userId: pUser.id,
+                status: "PAID",
+                ...(batchId ? { batchId } : {}),
+              },
+            });
+          } else {
+            await (prisma.registration as any).create({
+              data: {
+                name: p.name,
+                whatsapp: p.whatsapp,
+                email: p.email,
+                institution,
+                programId: program.id,
+                userId: pUser.id,
+                batchId,
+                status: "PAID",
+              },
+            });
+          }
 
           await sendWa(p.whatsapp, msgAccess({
             name: p.name,
