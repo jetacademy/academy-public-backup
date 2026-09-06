@@ -182,7 +182,7 @@ export default function RegisterForm({
         setGoogleSelected(true);
         setNameVal(p.name ?? "");
         setEmailVal(p.email ?? "");
-        setWhatsappVal(p.whatsapp ?? "");
+        setWhatsappVal(cleanPhone(p.whatsapp ?? ""));
         setInstitutionVal(p.institution ?? "");
         setHasCompletedProfile(!!(p.whatsapp?.trim() && p.institution?.trim()));
       }
@@ -237,8 +237,8 @@ export default function RegisterForm({
       setError("Lembaga/Instansi minimal 3 karakter.");
       return;
     }
-    // Validasi: WhatsApp minimal 10 digit
-    const cleanMainWa = activeWa.trim();
+    // Validasi: WhatsApp minimal 10 digit (normalisasi format 08/62/+62)
+    const cleanMainWa = cleanPhone(activeWa);
     if (!/^08[0-9]{8,13}$/.test(cleanMainWa)) {
       setError(isRegisteringForOther ? "Nomor WhatsApp rekan tidak valid (contoh: 081234567890)." : "Nomor WhatsApp utama tidak valid (contoh: 081234567890).");
       return;
@@ -257,7 +257,7 @@ export default function RegisterForm({
       const p = additionalParticipants[i];
       const pName = safeName(p.name).trim();
       const pEmail = p.email.trim().toLowerCase();
-      const pWa = p.whatsapp.trim();
+      const pWa = cleanPhone(p.whatsapp);
 
       if (pName.length < 3) {
         setError(`Nama Peserta ${i + 2} harus minimal 3 karakter.`);
