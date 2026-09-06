@@ -183,7 +183,7 @@ model Registration {
   createdAt    DateTime           @default(now())
   updatedAt    DateTime           @updatedAt
 
-  @@unique([whatsapp, programId]) // satu nomor WA = satu pendaftaran per program
+  @@unique([whatsapp, programId, batchId]) // satu nomor WA = satu pendaftaran per batch program
   @@index([email])
   @@index([email, programId]) // login lookup lebih efisien
   @@index([whatsapp]) // lookup WA saja (OTP login)

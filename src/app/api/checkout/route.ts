@@ -55,9 +55,10 @@ export async function POST(req: Request) {
       );
     }
 
-    const reg = await prisma.registration.findUnique({
-      where: { whatsapp_programId: { whatsapp, programId: program.id } },
+    const reg = await prisma.registration.findFirst({
+      where: { whatsapp, programId: program.id },
       include: { payment: true, certificate: true },
+      orderBy: { createdAt: "desc" },
     });
     if (!reg) {
       return NextResponse.json(

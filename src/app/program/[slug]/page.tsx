@@ -2268,7 +2268,22 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
                   jadwal={jadwal}
                   price={effectivePrice}
                   priceLabel={priceLabel}
-                  batches={program.batches?.map((b) => ({ id: b.id, scheduleAt: b.scheduleAt.toISOString(), seatsLeft: b.seatsLeft }))}
+                  batches={program.batches?.map((b) => ({
+                    id: b.id,
+                    name: b.name ?? null,
+                    batchType: b.batchType ?? "ONLINE",
+                    scheduleAt: b.scheduleAt.toISOString(),
+                    seatsLeft: b.seatsLeft,
+                    priceOnline: b.priceOnline,
+                    priceOffline: b.priceOffline,
+                    priceOnlineEb: b.priceOnlineEb,
+                    priceOfflineEb: b.priceOfflineEb,
+                    quotaOnlineEb: b.quotaOnlineEb,
+                    quotaOfflineEb: b.quotaOfflineEb,
+                    offlineSeatsMax: b.offlineSeatsMax,
+                    offlineVenue: b.offlineVenue,
+                    offlineScheduleAt: b.offlineScheduleAt ? b.offlineScheduleAt.toISOString() : undefined,
+                  }))}
                   attendanceOptions={{
                     hasOffline: true,
                     venueOffline: activeOfflineBatch?.offlineVenue || "Coworking Space Kota Bekasi",
@@ -2310,7 +2325,22 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
                   jadwal={jadwal}
                   price={effectivePrice}
                   priceLabel={priceLabel}
-                  batches={program.batches?.map((b) => ({ id: b.id, scheduleAt: b.scheduleAt.toISOString(), seatsLeft: b.seatsLeft }))}
+                  batches={program.batches?.map((b) => ({
+                    id: b.id,
+                    name: b.name ?? null,
+                    batchType: b.batchType ?? "ONLINE",
+                    scheduleAt: b.scheduleAt.toISOString(),
+                    seatsLeft: b.seatsLeft,
+                    priceOnline: b.priceOnline,
+                    priceOffline: b.priceOffline,
+                    priceOnlineEb: b.priceOnlineEb,
+                    priceOfflineEb: b.priceOfflineEb,
+                    quotaOnlineEb: b.quotaOnlineEb,
+                    quotaOfflineEb: b.quotaOfflineEb,
+                    offlineSeatsMax: b.offlineSeatsMax,
+                    offlineVenue: b.offlineVenue,
+                    offlineScheduleAt: b.offlineScheduleAt ? b.offlineScheduleAt.toISOString() : undefined,
+                  }))}
                 />
               </div>
             </div>

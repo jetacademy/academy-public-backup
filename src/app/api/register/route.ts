@@ -316,37 +316,38 @@ export async function POST(req: Request) {
     const originalAmount = affiliateResult || voucherResult ? totalPrice : null;
     const chargeAmount = affiliateResult ? affiliateResult.finalAmount : voucherResult ? voucherResult.finalAmount : totalPrice;
 
-    // ── [FIX C2] Validasi duplikasi yang lebih ketat ──
-    // Cari registrasi existing dengan kombinasi whatsapp ATAU email
-    const existingReg = await prisma.registration.findFirst({
+    // ── [FIX C2] Validasi duplikasi per batch ──
+    // Cari registrasi existing untuk batch yang sama (atau program tanpa batch)
+    const existingSameBatchReg = await prisma.registration.findFirst({
       where: {
         programId: program.id,
+        batchId: batchId ?? null,
         OR: [{ whatsapp }, { email }],
       },
       include: { payment: true },
     });
 
-    if (existingReg) {
+    if (existingSameBatchReg) {
       // Kasus 1: WA sama tapi email berbeda → tolak (cegah timpa email)
-      if (existingReg.whatsapp === whatsapp && existingReg.email !== email) {
+      if (existingSameBatchReg.whatsapp === whatsapp && existingSameBatchReg.email !== email) {
         return NextResponse.json({
           error: "Nomor WhatsApp ini sudah terdaftar dengan email berbeda. Gunakan email yang sama saat pendaftaran awal.",
         }, { status: 400 });
       }
 
       // Kasus 2: Email sama tapi WA berbeda → tolak (cegah false positive antar user beda)
-      if (existingReg.email === email && existingReg.whatsapp !== whatsapp) {
+      if (existingSameBatchReg.email === email && existingSameBatchReg.whatsapp !== whatsapp) {
         return NextResponse.json({
-          error: "Email ini sudah terdaftar untuk program ini dengan nomor WhatsApp berbeda.",
+          error: "Email ini sudah terdaftar untuk jadwal batch ini dengan nomor WhatsApp berbeda.",
         }, { status: 400 });
       }
 
-      // Kasus 3: WA+Email sama persis → cek apakah masih boleh daftar ulang
-      const isPaidOrFree = program.price === 0 || existingReg.status === "PAID" || existingReg.status === "PASSED" || existingReg.payment?.status === "PAID";
+      // Kasus 3: WA+Email sama persis → cek apakah sudah lunas di batch ini
+      const isPaidOrFree = program.price === 0 || existingSameBatchReg.status === "PAID" || existingSameBatchReg.status === "PASSED" || existingSameBatchReg.payment?.status === "PAID";
       if (isPaidOrFree) {
         const message = program.price === 0
-          ? `Nomor WhatsApp ini sudah terdaftar untuk program ini. Silakan cek WhatsApp/Email Anda.`
-          : `Nomor WhatsApp ini sudah terdaftar dan lunas untuk program ini. Silakan masuk ke menu Member.`;
+          ? `Nomor WhatsApp ini sudah terdaftar untuk jadwal batch ini. Silakan cek WhatsApp/Email Anda.`
+          : `Nomor WhatsApp ini sudah terdaftar dan lunas untuk jadwal batch ini. Anda dapat memilih jadwal batch lain jika ingin mendaftar lagi.`;
         return NextResponse.json({ error: message }, { status: 400 });
       }
     }
@@ -372,22 +373,32 @@ export async function POST(req: Request) {
       });
     }
 
-    // idempoten: daftar dua kali dengan nomor sama = tetap sukses (update data terbaru)
+    // idempoten: daftar dua kali dengan nomor sama pada batch yang sama = update data terbaru
     // Data multi-pendaftar disimpan di field participants (Json array)
     const participantsJson = participants.length > 0 ? JSON.parse(JSON.stringify(participants)) : undefined;
 
+    const upsertWhere: any = batchId
+      ? { whatsapp_programId_batchId: { whatsapp, programId: program.id, batchId } }
+      : { whatsapp_programId: { whatsapp, programId: program.id } };
+
     const reg: any = await (prisma.registration as any).upsert({
-      where: { whatsapp_programId: { whatsapp, programId: program.id } },
+      where: upsertWhere,
       create: {
-        name, whatsapp, email, institution,
-        programId: program.id, userId: user.id, batchId,
+        name,
+        whatsapp,
+        email,
+        institution,
+        programId: program.id,
+        userId: user.id,
+        batchId,
         attendanceType,
         participants: participantsJson,
       },
       update: {
-        name, email, institution, userId: user.id,
-        // Registrasi lama (EXPIRED/FAILED/CANCELLED/REFUNDED) di-reset ke REGISTERED saat coba bayar lagi —
-        // Kasus 3 di atas sudah menolak lebih dulu kalau statusnya benar-benar PAID/PASSED.
+        name,
+        email,
+        institution,
+        userId: user.id,
         status: "REGISTERED",
         attendanceType,
         ...(batchId ? { batchId } : {}),
@@ -443,8 +454,12 @@ export async function POST(req: Request) {
               data: { name: p.name, email: p.email, whatsapp: p.whatsapp, role: "STUDENT" },
             });
           }
-          await prisma.registration.upsert({
-            where: { whatsapp_programId: { whatsapp: p.whatsapp, programId: program.id } },
+          const pUpsertWhere: any = batchId
+            ? { whatsapp_programId_batchId: { whatsapp: p.whatsapp, programId: program.id, batchId } }
+            : { whatsapp_programId: { whatsapp: p.whatsapp, programId: program.id } };
+
+          await (prisma.registration as any).upsert({
+            where: pUpsertWhere,
             create: {
               name: p.name,
               whatsapp: p.whatsapp,
@@ -567,8 +582,12 @@ export async function POST(req: Request) {
               data: { name: p.name, email: p.email, whatsapp: p.whatsapp, role: "STUDENT" },
             });
           }
-          await prisma.registration.upsert({
-            where: { whatsapp_programId: { whatsapp: p.whatsapp, programId: program.id } },
+          const pUpsertWhere: any = batchId
+            ? { whatsapp_programId_batchId: { whatsapp: p.whatsapp, programId: program.id, batchId } }
+            : { whatsapp_programId: { whatsapp: p.whatsapp, programId: program.id } };
+
+          await (prisma.registration as any).upsert({
+            where: pUpsertWhere,
             create: {
               name: p.name,
               whatsapp: p.whatsapp,

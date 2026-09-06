@@ -246,12 +246,14 @@ export async function memberLogout() {
  */
 export async function getProgramRegistrationStatusAction(programId: string): Promise<{
   isAlreadyRegistered: boolean;
+  registeredBatchIds: string[];
+  registeredAttendanceTypes: string[];
   memberProfile: { name: string; email: string; whatsapp: string; institution: string | null } | null;
 }> {
   const sessionVal = await getMemberSession();
-  if (!sessionVal) return { isAlreadyRegistered: false, memberProfile: null };
+  if (!sessionVal) return { isAlreadyRegistered: false, registeredBatchIds: [], registeredAttendanceTypes: [], memberProfile: null };
 
-  const [user, lastReg, existingReg, program] = await Promise.all([
+  const [user, lastReg, existingRegs, program] = await Promise.all([
     prisma.user.findFirst({
       where: { OR: [{ email: sessionVal }, { whatsapp: sessionVal }] },
       select: { name: true, email: true, whatsapp: true },
@@ -261,10 +263,14 @@ export async function getProgramRegistrationStatusAction(programId: string): Pro
       select: { name: true, email: true, whatsapp: true, institution: true },
       orderBy: { createdAt: "desc" },
     }),
-    prisma.registration.findFirst({
+    prisma.registration.findMany({
       where: { programId, OR: [{ email: sessionVal }, { whatsapp: sessionVal }] },
+      select: { id: true, batchId: true, status: true },
     }),
-    prisma.program.findUnique({ where: { id: programId }, select: { price: true } }),
+    prisma.program.findUnique({
+      where: { id: programId },
+      select: { price: true, batches: { where: { isActive: true }, select: { id: true } } },
+    }),
   ]);
 
   let memberProfile = null;
@@ -279,11 +285,18 @@ export async function getProgramRegistrationStatusAction(programId: string): Pro
     memberProfile = { name: lastReg.name, email: lastReg.email, whatsapp: lastReg.whatsapp, institution: lastReg.institution };
   }
 
-  // Samakan dengan gerbang "Kasus 3" di /api/register: webinar gratis (price 0)
-  // selalu dianggap sudah terdaftar, program berbayar hanya kalau BENAR lunas.
-  const isAlreadyRegistered = !!existingReg && (program?.price === 0 || existingReg.status === "PAID" || existingReg.status === "PASSED");
+  // Registrasi aktif/lunas
+  const activeRegs = existingRegs.filter((r) => program?.price === 0 || r.status === "PAID" || r.status === "PASSED");
+  const registeredBatchIds = activeRegs.map((r) => r.batchId).filter(Boolean) as string[];
+  const registeredAttendanceTypes = (activeRegs as any[]).map((r) => r.attendanceType).filter(Boolean) as string[];
 
-  return { isAlreadyRegistered, memberProfile };
+  const hasMultipleBatches = (program?.batches?.length ?? 0) > 1;
+
+  // Jika program memiliki banyak batch atau opsi online/offline, jangan blokir halaman secara global
+  // agar user tetap bisa mendaftar di batch/format lain.
+  const isAlreadyRegistered = !hasMultipleBatches && activeRegs.length > 0;
+
+  return { isAlreadyRegistered, registeredBatchIds, registeredAttendanceTypes, memberProfile };
 }
 
 /** Ambil registrasi + validasi bahwa sesi member saat ini adalah pemiliknya */

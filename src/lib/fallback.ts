@@ -39,7 +39,22 @@ export type ProgramData = {
     isFeatured: boolean;
   } | null;
   isFeatured?: boolean;
-  batches?: { id: string; scheduleAt: Date; seatsLeft: number | null }[];
+  batches?: {
+    id: string;
+    name?: string | null;
+    batchType?: string;
+    scheduleAt: Date;
+    seatsLeft: number | null;
+    offlineVenue?: string | null;
+    offlineScheduleAt?: Date | null;
+    priceOnline?: number | null;
+    priceOnlineEb?: number | null;
+    quotaOnlineEb?: number | null;
+    priceOffline?: number | null;
+    priceOfflineEb?: number | null;
+    quotaOfflineEb?: number | null;
+    offlineSeatsMax?: number | null;
+  }[];
 };
 
 /** Label tipe program untuk tampilan */

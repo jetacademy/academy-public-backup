@@ -9,15 +9,36 @@ import type { ContentBlock } from "@/lib/content-blocks";
 const upcomingBatchesInclude = {
   where: { isActive: true, scheduleAt: { gte: new Date() } },
   orderBy: { scheduleAt: "asc" as const },
-  take: 1,
-  select: { id: true, scheduleAt: true, seatsLeft: true },
+  select: {
+    id: true,
+    name: true,
+    batchType: true,
+    scheduleAt: true,
+    seatsLeft: true,
+    hasOffline: true,
+    offlineVenue: true,
+    offlineScheduleAt: true,
+    offlineSeatsMax: true,
+    priceOnline: true,
+    priceOnlineEb: true,
+    quotaOnlineEb: true,
+    priceOffline: true,
+    priceOfflineEb: true,
+    quotaOfflineEb: true,
+  },
 };
 
 export async function getPrograms(): Promise<{ programs: ProgramData[]; demo: boolean }> {
   try {
     const rows = await prisma.program.findMany({
       where: { isActive: true },
-      include: { category: true, batches: upcomingBatchesInclude },
+      include: {
+        category: true,
+        batches: {
+          ...upcomingBatchesInclude,
+          take: 1,
+        },
+      },
       orderBy: { scheduleAt: "asc" },
     });
     if (rows.length === 0) return { programs: [], demo: false };
@@ -32,7 +53,13 @@ export async function getProgramBySlug(slug: string): Promise<{ program: Program
   try {
     const row = await prisma.program.findUnique({
       where: { slug },
-      include: { category: true, batches: upcomingBatchesInclude },
+      include: {
+        category: true,
+        batches: {
+          ...upcomingBatchesInclude,
+          take: 20,
+        },
+      },
     });
     if (row) return { program: toData(row), demo: false };
     // DB query sukses tapi tidak ditemukan — jangan pakai fallback
@@ -58,7 +85,7 @@ function toData(row: {
     slug: string;
     isFeatured: boolean;
   } | null;
-  batches?: { id: string; scheduleAt: Date; seatsLeft: number | null }[];
+  batches?: ProgramData["batches"];
 }): ProgramData {
   const batches = row.batches ?? [];
   // Batch aktif terdekat menggantikan scheduleAt program sebagai "jadwal berikutnya"

@@ -34,6 +34,24 @@ export interface AttendanceOptions {
   offlineBatchId?: string;
 }
 
+export interface BatchOption {
+  id: string;
+  name?: string | null;
+  batchType?: string;
+  scheduleAt: string;
+  seatsLeft?: number | null;
+  hasOffline?: boolean;
+  offlineVenue?: string | null;
+  offlineScheduleAt?: string | null;
+  offlineSeatsMax?: number | null;
+  priceOnline?: number | null;
+  priceOnlineEb?: number | null;
+  quotaOnlineEb?: number | null;
+  priceOffline?: number | null;
+  priceOfflineEb?: number | null;
+  quotaOfflineEb?: number | null;
+}
+
 export default function RegisterForm({
   programId,
   programSlug,
@@ -50,7 +68,7 @@ export default function RegisterForm({
   jadwal: string;
   price: number; // 0 = gratis
   priceLabel: string;
-  batches?: { id: string; scheduleAt: string; seatsLeft: number | null }[];
+  batches?: BatchOption[];
   attendanceOptions?: AttendanceOptions;
 }) {
   const [state, setState] = useState<"idle" | "loading" | "done">("idle");
@@ -61,7 +79,16 @@ export default function RegisterForm({
   const [isEditing, setIsEditing] = useState(false);
   const router = useRouter();
 
+  // Mode: daftarkan diri sendiri vs belikan untuk rekan/orang lain
+  const [isRegisteringForOther, setIsRegisteringForOther] = useState(false);
+  const [otherName, setOtherName] = useState("");
+  const [otherEmail, setOtherEmail] = useState("");
+  const [otherWhatsapp, setOtherWhatsapp] = useState("");
+  const [otherInstitution, setOtherInstitution] = useState("");
+
   const [isAlreadyRegistered, setIsAlreadyRegistered] = useState(false);
+  const [registeredBatchIds, setRegisteredBatchIds] = useState<string[]>([]);
+  const [registeredAttendanceTypes, setRegisteredAttendanceTypes] = useState<string[]>([]);
   const [nameVal, setNameVal] = useState("");
 
   // Filter auto-fill bug: phone number terselip di field nama
@@ -86,10 +113,25 @@ export default function RegisterForm({
   const [voucherVal, setVoucherVal] = useState("");
   const [hasCompletedProfile, setHasCompletedProfile] = useState(false);
 
-  // Hitung harga dinamis berdasarkan tipe kehadiran yang dipilih
+  // Filter batch berdasarkan tipe kehadiran
+  const onlineBatches = (batches || []).filter((b) => b.batchType === "ONLINE" || !b.batchType);
+  const offlineBatches = (batches || []).filter((b) => b.batchType === "OFFLINE" || b.hasOffline);
+  const activeBatchesList = attendanceType === "ONLINE" ? onlineBatches : offlineBatches;
+  const currentBatch = batches?.find((b) => b.id === batchId) ?? (attendanceType === "ONLINE" ? onlineBatches[0] : offlineBatches[0]);
+
+  // Status pendaftaran per format & per batch
+  const isOnlineRegistered = onlineBatches.some((b) => registeredBatchIds.includes(b.id)) || registeredAttendanceTypes.includes("ONLINE");
+  const isOfflineRegistered = offlineBatches.some((b) => registeredBatchIds.includes(b.id)) || registeredAttendanceTypes.includes("OFFLINE");
+
+  // Batch yang dipilih saat ini apakah sudah pernah didaftarkan oleh akun login
+  const isCurrentBatchRegistered = Boolean(batchId && registeredBatchIds.includes(batchId));
+
+  // Hitung harga dinamis berdasarkan batch dan tipe kehadiran yang dipilih
   const currentUnitPrice = attendanceOptions?.hasOffline
-    ? (attendanceType === "OFFLINE" ? attendanceOptions.priceOffline : attendanceOptions.priceOnline)
-    : price;
+    ? (attendanceType === "OFFLINE"
+        ? (currentBatch?.priceOffline ?? attendanceOptions.priceOffline)
+        : (currentBatch?.priceOnline ?? attendanceOptions.priceOnline))
+    : (currentBatch?.priceOnline ?? price);
   const currentTotalPrice = currentUnitPrice * jumlahPeserta;
   const currentPriceLabel = currentUnitPrice === 0 ? "GRATIS" : rupiah(currentTotalPrice);
   const isPaid = currentUnitPrice > 0;
@@ -104,6 +146,8 @@ export default function RegisterForm({
     getProgramRegistrationStatusAction(programId).then((res) => {
       if (cancelled) return;
       setIsAlreadyRegistered(res.isAlreadyRegistered);
+      setRegisteredBatchIds(res.registeredBatchIds || []);
+      setRegisteredAttendanceTypes(res.registeredAttendanceTypes || []);
       const p = res.memberProfile;
       if (p) {
         setGoogleSelected(true);
@@ -117,7 +161,8 @@ export default function RegisterForm({
     return () => { cancelled = true; };
   }, [programId]);
 
-  if (isAlreadyRegistered) {
+  // Jika user sudah terdaftar di satu-satunya batch tapi ingin daftarkan orang lain, jangan blokir
+  if (isAlreadyRegistered && !isRegisteringForOther && !attendanceOptions?.hasOffline && (!batches || batches.length <= 1)) {
     return (
       <div className="reg-card" style={{ textAlign: "center" }}>
         <span className="dot-btn dot-p" style={{ width: 56, height: 56, margin: "0 auto .9rem" }}>
@@ -127,9 +172,17 @@ export default function RegisterForm({
         <p className="sub" style={{ margin: ".6rem 0 1.4rem" }}>
           Anda sudah terdaftar untuk program <b>{programTitle}</b>. Silakan masuk ke Dashboard Member Anda untuk mengakses materi dan detail kelas.
         </p>
-        <Link href="/member" className="btn btn-purple btn-lg btn-block" style={{ width: "100%", display: "block", textAlign: "center" }}>
+        <Link href="/member" className="btn btn-purple btn-lg btn-block" style={{ width: "100%", display: "block", textAlign: "center", marginBottom: "0.8rem" }}>
           Buka Dashboard Member
         </Link>
+        <button
+          type="button"
+          onClick={() => setIsRegisteringForOther(true)}
+          className="btn btn-line btn-block"
+          style={{ width: "100%", padding: "0.75rem", fontSize: "0.88rem", fontWeight: 700 }}
+        >
+          🎁 Daftarkan Rekan / Beli Tiket untuk Orang Lain
+        </button>
       </div>
     );
   }
@@ -138,27 +191,32 @@ export default function RegisterForm({
     e.preventDefault();
     setError("");
 
+    const activeName = isRegisteringForOther ? otherName : nameVal;
+    const activeEmail = isRegisteringForOther ? otherEmail : emailVal;
+    const activeWa = isRegisteringForOther ? otherWhatsapp : whatsappVal;
+    const activeInst = isRegisteringForOther ? otherInstitution : institutionVal;
+
     // Validasi: semua nama minimal 3 karakter
-    const mainName = safeName(nameVal).trim();
+    const mainName = safeName(activeName).trim();
     if (mainName.length < 3) {
-      setError("Nama utama harus minimal 3 karakter.");
+      setError(isRegisteringForOther ? "Nama lengkap rekan harus minimal 3 karakter." : "Nama utama harus minimal 3 karakter.");
       return;
     }
 
     // Validasi: institution minimal 3 karakter
-    if (institutionVal.trim().length < 3) {
-      setError("Lembaga/Instansi minimal 3 karakter");
+    if (activeInst.trim().length < 3) {
+      setError("Lembaga/Instansi minimal 3 karakter.");
       return;
     }
     // Validasi: WhatsApp minimal 10 digit
-    const cleanMainWa = whatsappVal.trim();
+    const cleanMainWa = activeWa.trim();
     if (!/^08[0-9]{8,13}$/.test(cleanMainWa)) {
-      setError("Nomor WhatsApp utama tidak valid (contoh: 081234567890)");
+      setError(isRegisteringForOther ? "Nomor WhatsApp rekan tidak valid (contoh: 081234567890)." : "Nomor WhatsApp utama tidak valid (contoh: 081234567890).");
       return;
     }
-    const cleanMainEmail = emailVal.trim().toLowerCase();
+    const cleanMainEmail = activeEmail.trim().toLowerCase();
     if (!/^\S+@\S+\.\S+$/.test(cleanMainEmail)) {
-      setError("Email utama tidak valid");
+      setError(isRegisteringForOther ? "Email rekan tidak valid." : "Email utama tidak valid.");
       return;
     }
 
@@ -204,11 +262,11 @@ export default function RegisterForm({
       participants: participantsPayload,
       whatsapp: cleanMainWa,
       email: cleanMainEmail,
-      institution: institutionVal.trim(),
+      institution: activeInst.trim(),
       programSlug,
       attendanceType,
     };
-    if (credentialVal) {
+    if (credentialVal && !isRegisteringForOther) {
       data.credential = credentialVal;
     }
     if (batchId) {
@@ -244,7 +302,9 @@ export default function RegisterForm({
       setState("done");
 
       if (!json.invoiceUrl) {
-        router.push("/member");
+        if (!isRegisteringForOther) {
+          router.push("/member");
+        }
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Terjadi kendala. Silakan coba kembali.");
@@ -491,7 +551,12 @@ export default function RegisterForm({
           type="button"
           onClick={() => {
             setAttendanceType("ONLINE");
-            if (attendanceOptions?.onlineBatchId) {
+            if (onlineBatches.length > 0) {
+              // Jika batch saat ini bukan online, pilih batch online pertama
+              if (!onlineBatches.some((b) => b.id === batchId)) {
+                setBatchId(onlineBatches[0].id);
+              }
+            } else if (attendanceOptions?.onlineBatchId) {
               setBatchId(attendanceOptions.onlineBatchId);
             }
           }}
@@ -509,8 +574,13 @@ export default function RegisterForm({
           }}
         >
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <span style={{ fontWeight: 800, fontSize: "0.95rem", color: attendanceType === "ONLINE" ? "#6c5ce7" : "var(--ink)" }}>
+            <span style={{ fontWeight: 800, fontSize: "0.95rem", color: attendanceType === "ONLINE" ? "#6c5ce7" : "var(--ink)", display: "flex", alignItems: "center", gap: "0.45rem" }}>
               💻 Online via Zoom
+              {isOnlineRegistered && (
+                <span style={{ fontSize: "0.7rem", background: "rgba(34, 197, 94, 0.12)", color: "#15803d", fontWeight: 700, padding: "0.12rem 0.45rem", borderRadius: "999px" }}>
+                  ✓ Terdaftar
+                </span>
+              )}
             </span>
             {attendanceType === "ONLINE" && (
               <span style={{ color: "#6c5ce7", fontSize: "0.85rem", fontWeight: 800 }}>✓ Terpilih</span>
@@ -519,7 +589,7 @@ export default function RegisterForm({
 
           <div style={{ display: "flex", alignItems: "baseline", gap: "0.45rem" }}>
             <strong style={{ fontSize: "1.25rem", color: "var(--ink)", fontWeight: 900 }}>
-              {rupiah(attendanceOptions!.priceOnline)}
+              {rupiah(currentBatch?.priceOnline ?? attendanceOptions!.priceOnline)}
             </strong>
             {attendanceOptions?.priceOnlineOld && (
               <span style={{ fontSize: "0.82rem", textDecoration: "line-through", color: "var(--ink-soft)" }}>
@@ -529,7 +599,7 @@ export default function RegisterForm({
           </div>
 
           <div style={{ fontSize: "0.78rem", color: "var(--ink-soft)", lineHeight: 1.4 }}>
-            <span>{attendanceOptions?.scheduleOnline}</span>
+            <span>{currentBatch ? formatJadwal(new Date(currentBatch.scheduleAt)) : attendanceOptions?.scheduleOnline}</span>
             {attendanceOptions?.daysLeftOnline && (
               <span style={{ color: "#6c5ce7", fontWeight: 700, marginLeft: "0.3rem" }}>
                 ({attendanceOptions.daysLeftOnline})
@@ -544,7 +614,11 @@ export default function RegisterForm({
           onClick={() => {
             if (!attendanceOptions?.isOfflineSoldOut) {
               setAttendanceType("OFFLINE");
-              if (attendanceOptions?.offlineBatchId) {
+              if (offlineBatches.length > 0) {
+                if (!offlineBatches.some((b) => b.id === batchId)) {
+                  setBatchId(offlineBatches[0].id);
+                }
+              } else if (attendanceOptions?.offlineBatchId) {
                 setBatchId(attendanceOptions.offlineBatchId);
               }
             }
@@ -565,8 +639,13 @@ export default function RegisterForm({
           }}
         >
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <span style={{ fontWeight: 800, fontSize: "0.95rem", color: attendanceType === "OFFLINE" ? "#d63031" : "var(--ink)" }}>
+            <span style={{ fontWeight: 800, fontSize: "0.95rem", color: attendanceType === "OFFLINE" ? "#d63031" : "var(--ink)", display: "flex", alignItems: "center", gap: "0.45rem" }}>
               🏢 Offline
+              {isOfflineRegistered && (
+                <span style={{ fontSize: "0.7rem", background: "rgba(34, 197, 94, 0.12)", color: "#15803d", fontWeight: 700, padding: "0.12rem 0.45rem", borderRadius: "999px" }}>
+                  ✓ Terdaftar
+                </span>
+              )}
             </span>
             {attendanceType === "OFFLINE" && (
               <span style={{ color: "#d63031", fontSize: "0.85rem", fontWeight: 800 }}>✓ Terpilih</span>
@@ -575,7 +654,7 @@ export default function RegisterForm({
 
           <div style={{ display: "flex", alignItems: "baseline", gap: "0.45rem" }}>
             <strong style={{ fontSize: "1.25rem", color: "var(--ink)", fontWeight: 900 }}>
-              {rupiah(attendanceOptions!.priceOffline)}
+              {rupiah(currentBatch?.priceOffline ?? attendanceOptions!.priceOffline)}
             </strong>
             {attendanceOptions?.priceOfflineOld && (
               <span style={{ fontSize: "0.82rem", textDecoration: "line-through", color: "var(--ink-soft)" }}>
@@ -589,7 +668,7 @@ export default function RegisterForm({
               <span style={{ color: "#dc2626", fontWeight: 700 }}>Kuota Penuh (20/20)</span>
             ) : (
               <>
-                <span>{attendanceOptions?.venueOffline || "Coworking Space Kota Bekasi"} • {attendanceOptions?.scheduleOffline}</span>
+                <span>{currentBatch?.offlineVenue || attendanceOptions?.venueOffline || "Coworking Space Kota Bekasi"} • {currentBatch ? formatJadwal(new Date(currentBatch.scheduleAt)) : attendanceOptions?.scheduleOffline}</span>
                 {attendanceOptions?.daysLeftOffline && (
                   <span style={{ color: "#d63031", fontWeight: 700, marginLeft: "0.3rem" }}>
                     ({attendanceOptions.daysLeftOffline})
@@ -600,6 +679,62 @@ export default function RegisterForm({
           </div>
         </button>
       </div>
+
+      {/* Pilihan Jadwal Batch / Angkatan jika tersedia lebih dari 1 batch */}
+      {activeBatchesList.length > 1 && (
+        <div style={{ marginBottom: "1.3rem", background: "rgba(0,0,0,0.02)", border: "1px solid var(--line)", borderRadius: "12px", padding: "0.85rem" }}>
+          <span style={{ fontSize: "0.82rem", fontWeight: 800, color: "var(--ink)", display: "block", marginBottom: "0.55rem" }}>
+            📅 Pilih Angkatan / Batch {attendanceType === "ONLINE" ? "Online" : "Offline"}:
+          </span>
+          <div style={{ display: "flex", flexDirection: "column", gap: "0.45rem" }}>
+            {activeBatchesList.map((b) => {
+              const isSelected = (batchId === b.id) || (!batchId && activeBatchesList[0]?.id === b.id);
+              const isEnrolled = registeredBatchIds.includes(b.id);
+              const bDate = new Date(b.scheduleAt);
+              return (
+                <button
+                  key={b.id}
+                  type="button"
+                  onClick={() => setBatchId(b.id)}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    padding: "0.65rem 0.85rem",
+                    borderRadius: "10px",
+                    border: isSelected ? "2px solid #6c5ce7" : "1px solid var(--line)",
+                    background: isSelected ? "rgba(108, 92, 231, 0.08)" : "#fff",
+                    cursor: "pointer",
+                    textAlign: "left",
+                    transition: "all 0.15s ease",
+                  }}
+                >
+                  <div>
+                    <strong style={{ fontSize: "0.86rem", color: isSelected ? "#6c5ce7" : "var(--ink)", display: "block" }}>
+                      {b.name || `Batch ${formatJadwal(bDate)}`}
+                    </strong>
+                    <span style={{ fontSize: "0.75rem", color: "var(--ink-soft)" }}>
+                      {formatJadwal(bDate)}
+                    </span>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
+                    {isEnrolled && (
+                      <span style={{ fontSize: "0.68rem", background: "rgba(34, 197, 94, 0.12)", color: "#15803d", fontWeight: 700, padding: "0.12rem 0.45rem", borderRadius: "999px" }}>
+                        ✓ Terdaftar
+                      </span>
+                    )}
+                    {isSelected && (
+                      <span style={{ fontSize: "0.74rem", color: "#6c5ce7", fontWeight: 800 }}>
+                        ● Dipilih
+                      </span>
+                    )}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Fasilitas Pelatihan */}
       <div style={{
@@ -631,8 +766,173 @@ export default function RegisterForm({
       {googleSelected ? (
         /* CASE 1: Akun sudah terhubung / User sudah Login */
         <form onSubmit={onSubmit}>
-          {hasCompletedProfile && !isEditing ? (
-            /* State 1: User memiliki profil lengkap - 1-Click Registration */
+          {/* Toggle: Untuk Saya Sendiri vs Belikan untuk Rekan */}
+          <div style={{
+            display: "flex",
+            background: "rgba(0,0,0,0.05)",
+            borderRadius: "10px",
+            padding: "0.25rem",
+            marginBottom: "1.2rem",
+            gap: "0.25rem",
+          }}>
+            <button
+              type="button"
+              onClick={() => setIsRegisteringForOther(false)}
+              style={{
+                flex: 1,
+                padding: "0.5rem 0.6rem",
+                borderRadius: "8px",
+                border: "none",
+                background: !isRegisteringForOther ? "#fff" : "transparent",
+                boxShadow: !isRegisteringForOther ? "0 1px 4px rgba(0,0,0,0.08)" : "none",
+                color: !isRegisteringForOther ? "var(--ink)" : "var(--ink-soft)",
+                fontWeight: !isRegisteringForOther ? 800 : 600,
+                fontSize: "0.8rem",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "0.35rem",
+                transition: "all 0.15s ease",
+              }}
+            >
+              <span>👤</span> Untuk Saya Sendiri
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsRegisteringForOther(true)}
+              style={{
+                flex: 1,
+                padding: "0.5rem 0.6rem",
+                borderRadius: "8px",
+                border: "none",
+                background: isRegisteringForOther ? "#fff" : "transparent",
+                boxShadow: isRegisteringForOther ? "0 1px 4px rgba(0,0,0,0.08)" : "none",
+                color: isRegisteringForOther ? "#6c5ce7" : "var(--ink-soft)",
+                fontWeight: isRegisteringForOther ? 800 : 600,
+                fontSize: "0.8rem",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "0.35rem",
+                transition: "all 0.15s ease",
+              }}
+            >
+              <span>🎁</span> Belikan untuk Rekan
+            </button>
+          </div>
+
+          {error && <div className="form-error" role="alert" style={{ marginBottom: "1rem" }}>{error}</div>}
+
+          {isRegisteringForOther ? (
+            /* Mode: Belikan untuk Rekan */
+            <div style={{ textAlign: "left" }}>
+              <div style={{
+                background: "rgba(108, 92, 231, 0.06)",
+                border: "1px solid rgba(108, 92, 231, 0.18)",
+                borderRadius: "10px",
+                padding: "0.6rem 0.85rem",
+                marginBottom: "1.1rem",
+                fontSize: "0.78rem",
+                color: "#6c5ce7",
+                lineHeight: 1.4,
+              }}>
+                🎁 <b>Mendaftarkan Rekan:</b> Sertifikat kelulusan, akun LMS, dan akses grup WhatsApp akan diterbitkan atas nama rekan Anda di bawah ini:
+              </div>
+
+              <div className="field" style={{ marginBottom: "0.8rem" }}>
+                <label htmlFor="fOtherName">Nama Lengkap Rekan (untuk sertifikat)</label>
+                <input
+                  id="fOtherName"
+                  type="text"
+                  placeholder="Contoh: Siti Rahmawati, S.Kom."
+                  required
+                  minLength={3}
+                  value={otherName}
+                  onChange={(e) => setOtherName(e.target.value)}
+                />
+              </div>
+
+              <div className="field" style={{ marginBottom: "0.8rem" }}>
+                <label htmlFor="fOtherWa">Nomor WhatsApp Rekan (untuk link grup &amp; materi)</label>
+                <input
+                  id="fOtherWa"
+                  type="tel"
+                  placeholder="Contoh: 081234567890"
+                  required
+                  pattern="^08[0-9]{8,13}$"
+                  title="Format: 08xxxxxxxxx (min 10 digit, max 15 digit)"
+                  value={otherWhatsapp}
+                  onChange={(e) => setOtherWhatsapp(e.target.value)}
+                />
+              </div>
+
+              <div className="field" style={{ marginBottom: "0.8rem" }}>
+                <label htmlFor="fOtherEmail">Email Aktif Rekan (untuk login LMS)</label>
+                <input
+                  id="fOtherEmail"
+                  type="email"
+                  placeholder="Contoh: siti@gmail.com"
+                  required
+                  value={otherEmail}
+                  onChange={(e) => setOtherEmail(e.target.value)}
+                />
+              </div>
+
+              <div className="field" style={{ marginBottom: "1rem" }}>
+                <label htmlFor="fOtherInst">Asal Lembaga / Instansi Rekan</label>
+                <input
+                  id="fOtherInst"
+                  type="text"
+                  placeholder="Contoh: PT Teknologi Maju / Umum"
+                  required
+                  minLength={3}
+                  value={otherInstitution}
+                  onChange={(e) => setOtherInstitution(e.target.value)}
+                />
+              </div>
+
+              {renderAdditionalParticipantFields()}
+              {renderVoucherField()}
+
+              {/* Total Investasi Box */}
+              <div style={{
+                background: "#ffffff",
+                borderRadius: "12px",
+                padding: "0.85rem 1rem",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: "1rem",
+                border: "1px solid var(--line)"
+              }}>
+                <div style={{ textAlign: "left" }}>
+                  <span style={{ fontSize: "0.75rem", color: "var(--ink-soft)", display: "block" }}>
+                    Total Tagihan ({jumlahPeserta} Orang)
+                  </span>
+                  <strong style={{ fontSize: "1.2rem", color: "var(--ink)", fontWeight: 900 }}>
+                    {currentPriceLabel}
+                  </strong>
+                </div>
+                <span style={{ fontSize: "0.74rem", background: "rgba(108, 92, 231, 0.1)", color: "#6c5ce7", fontWeight: 700, padding: "0.2rem 0.5rem", borderRadius: "6px" }}>
+                  {attendanceType === "OFFLINE" ? "🏢 Offline" : "💻 Online"}
+                </span>
+              </div>
+
+              <button
+                type="submit"
+                className="btn btn-purple btn-lg btn-block"
+                disabled={state === "loading"}
+                style={{ width: "100%", padding: "0.95rem", fontSize: "1.02rem" }}
+              >
+                {state === "loading"
+                  ? "Memproses..."
+                  : isPaid ? `Konfirmasi & Bayar untuk Rekan — ${currentPriceLabel}` : "Konfirmasi & Daftarkan Rekan"}
+              </button>
+            </div>
+          ) : hasCompletedProfile && !isEditing ? (
+            /* State 1: User memiliki profil lengkap - 1-Click Registration untuk diri sendiri */
             <div style={{ textAlign: "center" }}>
               <div style={{
                 display: "inline-flex",
@@ -656,8 +956,6 @@ export default function RegisterForm({
               <p className="sub" style={{ marginBottom: "1.2rem", fontSize: "0.85rem" }}>
                 Satu langkah lagi untuk mendaftar menggunakan profil Anda:
               </p>
-
-              {error && <div className="form-error" role="alert" style={{ marginBottom: "1rem" }}>{error}</div>}
 
               <div style={{
                 background: "var(--white, #fff)",
@@ -684,7 +982,7 @@ export default function RegisterForm({
                     <div>
                       <span style={{ color: "var(--ink-soft)", display: "block", fontSize: "0.72rem", fontWeight: 700 }}>FORMAT &amp; JADWAL</span>
                       <strong style={{ color: "var(--ink)", wordBreak: "break-word" }}>
-                        {attendanceType === "OFFLINE" ? "🏢 Tatap Muka Offline Bekasi (4 Jam)" : "💻 Online (Live Zoom)"} — {currentPriceLabel}
+                        {attendanceType === "OFFLINE" ? "🏢 Tatap Muka Offline Bekasi" : "💻 Online via Zoom"} — {currentBatch?.name || (attendanceType === "OFFLINE" ? "Offline" : "Online")}
                       </strong>
                     </div>
                   )}
@@ -718,11 +1016,49 @@ export default function RegisterForm({
                 </span>
               </div>
 
-              <button type="submit" className="btn btn-purple btn-lg btn-block" disabled={state === "loading"} style={{ width: "100%", padding: "0.95rem", fontSize: "1.02rem" }}>
-                {state === "loading"
-                  ? "Memproses..."
-                  : isPaid ? `Konfirmasi & Bayar Sekarang →` : "Konfirmasi & Daftar Sekarang"}
-              </button>
+              {isCurrentBatchRegistered ? (
+                <>
+                  <div style={{
+                    background: "rgba(34, 197, 94, 0.08)",
+                    border: "1px solid rgba(34, 197, 94, 0.25)",
+                    borderRadius: "12px",
+                    padding: "0.85rem 1rem",
+                    marginBottom: "1rem",
+                    textAlign: "center"
+                  }}>
+                    <div style={{ color: "#16a34a", fontWeight: 800, fontSize: "0.9rem", marginBottom: "0.2rem" }}>
+                      ✓ Anda sudah terdaftar di {currentBatch?.name || (attendanceType === "OFFLINE" ? "sesi Offline" : "sesi Online")}
+                    </div>
+                    <p style={{ margin: 0, fontSize: "0.78rem", color: "var(--ink-soft)", lineHeight: 1.4 }}>
+                      Materi &amp; akses kelas dapat dibuka di dashboard member Anda.
+                      {activeBatchesList.length > 1 && " Ingin ikut batch/angkatan lain? Pilih angkatan berikutnya di atas."}
+                    </p>
+                  </div>
+
+                  <Link
+                    href="/member"
+                    className="btn btn-purple btn-lg btn-block"
+                    style={{ width: "100%", display: "block", textAlign: "center", padding: "0.95rem", fontSize: "1.02rem", marginBottom: "0.75rem" }}
+                  >
+                    Buka Materi di Dashboard Member →
+                  </Link>
+
+                  <button
+                    type="button"
+                    onClick={() => setIsRegisteringForOther(true)}
+                    className="btn btn-line btn-block"
+                    style={{ width: "100%", padding: "0.75rem", fontSize: "0.85rem", fontWeight: 700 }}
+                  >
+                    🎁 Belikan Tiket untuk Rekan di Jadwal Ini
+                  </button>
+                </>
+              ) : (
+                <button type="submit" className="btn btn-purple btn-lg btn-block" disabled={state === "loading"} style={{ width: "100%", padding: "0.95rem", fontSize: "1.02rem" }}>
+                  {state === "loading"
+                    ? "Memproses..."
+                    : isPaid ? `Konfirmasi & Bayar Sekarang →` : "Konfirmasi & Daftar Sekarang"}
+                </button>
+              )}
 
               <div style={{ display: "flex", justifyContent: "center", gap: "0.8rem", marginTop: "1rem" }}>
                 <button
@@ -806,8 +1142,6 @@ export default function RegisterForm({
               <h3 style={{ marginBottom: "0.2rem", fontSize: "1.15rem" }}>Lengkapi Data Profil</h3>
               <p className="sub" style={{ marginBottom: "1.2rem", fontSize: "0.85rem" }}>Silakan masukkan WhatsApp &amp; Instansi untuk menyelesaikan pendaftaran.</p>
 
-              {error && <div className="form-error" role="alert" style={{ marginBottom: "1rem" }}>{error}</div>}
-
               {/* Tampilkan field Nama hanya jika user menekan tombol Edit Data Profil */}
               {isEditing && (
                 <div className="field">
@@ -881,11 +1215,48 @@ export default function RegisterForm({
                 </span>
               </div>
 
-              <button type="submit" className="btn btn-purple btn-lg btn-block" disabled={state === "loading"} style={{ width: "100%", padding: "0.95rem" }}>
-                {state === "loading"
-                  ? "Memproses..."
-                  : isPaid ? `Konfirmasi & Bayar — ${currentPriceLabel}` : "Konfirmasi & Daftar"}
-              </button>
+              {isCurrentBatchRegistered ? (
+                <>
+                  <div style={{
+                    background: "rgba(34, 197, 94, 0.08)",
+                    border: "1px solid rgba(34, 197, 94, 0.25)",
+                    borderRadius: "12px",
+                    padding: "0.85rem 1rem",
+                    marginBottom: "1rem",
+                    textAlign: "center"
+                  }}>
+                    <div style={{ color: "#16a34a", fontWeight: 800, fontSize: "0.9rem", marginBottom: "0.2rem" }}>
+                      ✓ Anda sudah terdaftar di {currentBatch?.name || (attendanceType === "OFFLINE" ? "sesi Offline" : "sesi Online")}
+                    </div>
+                    <p style={{ margin: 0, fontSize: "0.78rem", color: "var(--ink-soft)", lineHeight: 1.4 }}>
+                      Materi &amp; akses kelas dapat dibuka di dashboard member Anda.
+                    </p>
+                  </div>
+
+                  <Link
+                    href="/member"
+                    className="btn btn-purple btn-lg btn-block"
+                    style={{ width: "100%", display: "block", textAlign: "center", padding: "0.95rem", marginBottom: "0.75rem" }}
+                  >
+                    Buka Materi di Dashboard Member →
+                  </Link>
+
+                  <button
+                    type="button"
+                    onClick={() => setIsRegisteringForOther(true)}
+                    className="btn btn-line btn-block"
+                    style={{ width: "100%", padding: "0.75rem", fontSize: "0.85rem", fontWeight: 700 }}
+                  >
+                    🎁 Belikan Tiket untuk Rekan di Jadwal Ini
+                  </button>
+                </>
+              ) : (
+                <button type="submit" className="btn btn-purple btn-lg btn-block" disabled={state === "loading"} style={{ width: "100%", padding: "0.95rem" }}>
+                  {state === "loading"
+                    ? "Memproses..."
+                    : isPaid ? `Konfirmasi & Bayar — ${currentPriceLabel}` : "Konfirmasi & Daftar"}
+                </button>
+              )}
             </>
           )}
         </form>
@@ -1017,11 +1388,14 @@ export default function RegisterForm({
             <div className="field" style={{ marginBottom: "1.2rem" }}>
               <label htmlFor="fBatch">Pilih Jadwal</label>
               <select id="fBatch" value={batchId} onChange={(e) => setBatchId(e.target.value)}>
-                {batches.map((b) => (
-                  <option key={b.id} value={b.id}>
-                    {formatJadwal(new Date(b.scheduleAt))}
-                  </option>
-                ))}
+                {batches.map((b) => {
+                  const isEnrolled = registeredBatchIds.includes(b.id);
+                  return (
+                    <option key={b.id} value={b.id}>
+                      {formatJadwal(new Date(b.scheduleAt))} {isEnrolled ? "✓ (Sudah Terdaftar)" : ""}
+                    </option>
+                  );
+                })}
               </select>
             </div>
           )}

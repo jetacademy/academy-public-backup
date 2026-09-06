@@ -190,27 +190,34 @@ export async function POST(req: Request) {
                 });
               }
 
-              await prisma.registration.upsert({
-                where: { whatsapp_programId: { whatsapp: pWa, programId: reg.programId } },
-                create: {
-                  name: p.name,
-                  whatsapp: pWa,
-                  email: pEmail,
-                  institution: reg.institution,
-                  programId: reg.programId,
-                  userId: pUser.id,
-                  batchId: reg.batchId,
-                  status: "PAID",
-                },
-                update: {
-                  name: p.name,
-                  email: pEmail,
-                  institution: reg.institution,
-                  userId: pUser.id,
-                  status: "PAID",
-                  ...(reg.batchId ? { batchId: reg.batchId } : {}),
-                },
+              let pReg = await prisma.registration.findFirst({
+                where: { whatsapp: pWa, programId: reg.programId, batchId: reg.batchId ?? null },
               });
+              if (pReg) {
+                await (prisma.registration as any).update({
+                  where: { id: pReg.id },
+                  data: {
+                    name: p.name,
+                    email: pEmail,
+                    institution: reg.institution,
+                    userId: pUser.id,
+                    status: "PAID",
+                  },
+                });
+              } else {
+                await (prisma.registration as any).create({
+                  data: {
+                    name: p.name,
+                    whatsapp: pWa,
+                    email: pEmail,
+                    institution: reg.institution,
+                    programId: reg.programId,
+                    userId: pUser.id,
+                    batchId: reg.batchId,
+                    status: "PAID",
+                  },
+                });
+              }
 
               if (reg.program.price > 0) {
                 await sendWa(pWa, msgAccess({
