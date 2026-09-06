@@ -316,34 +316,41 @@ export async function POST(req: Request) {
     const originalAmount = affiliateResult || voucherResult ? totalPrice : null;
     const chargeAmount = affiliateResult ? affiliateResult.finalAmount : voucherResult ? voucherResult.finalAmount : totalPrice;
 
-    // ── [FIX C2] Validasi duplikasi per batch ──
-    // Cari registrasi existing untuk batch yang sama (atau program tanpa batch)
+    // ── [FIX C2] Idempotency: cari registrasi existing HANYA berdasarkan WA di batch ini ──
+    // WA adalah identitas utama. Satu WA/email boleh daftar di batch BERBEDA (multi-batch).
+    // Yang tidak boleh: satu WA di batch yang sama dua kali (harusnya update, bukan create baru).
     const existingSameBatchReg = await prisma.registration.findFirst({
       where: {
         programId: program.id,
         batchId: batchId ?? null,
-        OR: [{ whatsapp }, { email }],
+        whatsapp,
       },
       include: { payment: true },
     });
 
-    if (existingSameBatchReg) {
-      // Kasus 1: WA sama tapi email berbeda → tolak (cegah timpa email)
-      if (existingSameBatchReg.whatsapp === whatsapp && existingSameBatchReg.email !== email) {
-        return NextResponse.json({
-          error: "Nomor WhatsApp ini sudah terdaftar dengan email berbeda. Gunakan email yang sama saat pendaftaran awal.",
-        }, { status: 400 });
-      }
-
-      // Kasus 2: Email sama tapi WA berbeda → tolak (cegah false positive antar user beda)
-      if (existingSameBatchReg.email === email && existingSameBatchReg.whatsapp !== whatsapp) {
+    // Cegah orang lain mengklaim email yang sama di batch yang sama dengan WA berbeda
+    if (!existingSameBatchReg) {
+      const emailConflict = await prisma.registration.findFirst({
+        where: {
+          programId: program.id,
+          batchId: batchId ?? null,
+          email,
+          NOT: { whatsapp },
+        },
+      });
+      if (emailConflict) {
         return NextResponse.json({
           error: "Email ini sudah terdaftar untuk jadwal batch ini dengan nomor WhatsApp berbeda.",
         }, { status: 400 });
       }
+    }
 
-      // Kasus 3: WA+Email sama persis → cek apakah sudah lunas di batch ini
-      const isPaidOrFree = program.price === 0 || existingSameBatchReg.status === "PAID" || existingSameBatchReg.status === "PASSED" || existingSameBatchReg.payment?.status === "PAID";
+    if (existingSameBatchReg) {
+      // Sudah lunas (PAID/PASSED) di batch ini → beri akses langsung, tidak perlu bayar ulang
+      const isPaidOrFree = program.price === 0
+        || existingSameBatchReg.status === "PAID"
+        || existingSameBatchReg.status === "PASSED"
+        || existingSameBatchReg.payment?.status === "PAID";
       if (isPaidOrFree) {
         const message = program.price === 0
           ? `Nomor WhatsApp ini sudah terdaftar untuk jadwal batch ini. Silakan cek WhatsApp/Email Anda.`
