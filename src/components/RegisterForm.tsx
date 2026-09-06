@@ -103,6 +103,17 @@ export default function RegisterForm({
     if (/^P\d{6,}/.test(clean)) return clean.replace(/^P/, "");
     return clean;
   };
+
+  // Normalisasi nomor WhatsApp ke format baku Indonesia (08...)
+  const cleanPhone = (v: string) => {
+    let digits = (v || "").replace(/\D/g, "");
+    if (digits.startsWith("62")) {
+      digits = "0" + digits.slice(2);
+    } else if (digits.startsWith("8")) {
+      digits = "0" + digits;
+    }
+    return digits;
+  };
   const [emailVal, setEmailVal] = useState("");
   const [whatsappVal, setWhatsappVal] = useState("");
   const [institutionVal, setInstitutionVal] = useState("");
