@@ -377,35 +377,38 @@ export async function POST(req: Request) {
     // Data multi-pendaftar disimpan di field participants (Json array)
     const participantsJson = participants.length > 0 ? JSON.parse(JSON.stringify(participants)) : undefined;
 
-    const upsertWhere: any = batchId
-      ? { whatsapp_programId_batchId: { whatsapp, programId: program.id, batchId } }
-      : { whatsapp_programId: { whatsapp, programId: program.id } };
-
-    const reg: any = await (prisma.registration as any).upsert({
-      where: upsertWhere,
-      create: {
-        name,
-        whatsapp,
-        email,
-        institution,
-        programId: program.id,
-        userId: user.id,
-        batchId,
-        attendanceType,
-        participants: participantsJson,
-      },
-      update: {
-        name,
-        email,
-        institution,
-        userId: user.id,
-        status: "REGISTERED",
-        attendanceType,
-        ...(batchId ? { batchId } : {}),
-        ...(participantsJson ? { participants: participantsJson } : {}),
-      },
-      include: { payment: true },
-    });
+    let reg: any;
+    if (existingSameBatchReg) {
+      reg = await prisma.registration.update({
+        where: { id: existingSameBatchReg.id },
+        data: {
+          name,
+          email,
+          institution,
+          userId: user.id,
+          status: "REGISTERED",
+          attendanceType,
+          ...(batchId ? { batchId } : {}),
+          ...(participantsJson ? { participants: participantsJson } : {}),
+        },
+        include: { payment: true },
+      });
+    } else {
+      reg = await prisma.registration.create({
+        data: {
+          name,
+          whatsapp,
+          email,
+          institution,
+          programId: program.id,
+          userId: user.id,
+          batchId,
+          attendanceType,
+          participants: participantsJson,
+        },
+        include: { payment: true },
+      });
+    }
 
     // Buat session member secara otomatis setelah pendaftaran berhasil
     await createMemberSession(email);
