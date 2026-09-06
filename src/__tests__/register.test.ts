@@ -367,17 +367,12 @@ describe('POST /api/register — free webinar flow', () => {
       },
     });
 
-    expect(mockPrisma.registration.upsert).toHaveBeenCalledWith({
-      where: { whatsapp_programId: { whatsapp: '6281234567890', programId: program.id } },
-      create: expect.objectContaining({
+    expect(mockPrisma.registration.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
         name: 'Budi Santoso',
         whatsapp: '6281234567890',
         email: 'budi@example.com',
         programId: program.id,
-      }),
-      update: expect.objectContaining({
-        name: 'Budi Santoso',
-        email: 'budi@example.com',
       }),
       include: { payment: true },
     });
@@ -847,9 +842,9 @@ describe('POST /api/register — multi-participant flow', () => {
       });
 
       expect(res.status).toBe(200);
-      expect(mockPrisma.registration.upsert).toHaveBeenCalledWith(
+      expect(mockPrisma.registration.create).toHaveBeenCalledWith(
         expect.objectContaining({
-          create: expect.objectContaining({
+          data: expect.objectContaining({
             batchId: 'batch-offline-1',
             attendanceType: 'OFFLINE',
           }),
