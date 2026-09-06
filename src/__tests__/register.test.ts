@@ -177,6 +177,14 @@ function resetMocks() {
       }
     }
   }
+  mockPrisma.registration.create.mockImplementation(async (args: any) => {
+    const res = await mockPrisma.registration.upsert(args);
+    return res || makeRegistration(args?.data);
+  });
+  mockPrisma.registration.update.mockImplementation(async (args: any) => {
+    const res = await mockPrisma.registration.upsert(args);
+    return res || makeRegistration(args?.data);
+  });
 }
 
 // ─── Tests ─────────────────────────────────────────────────────────

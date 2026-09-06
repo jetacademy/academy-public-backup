@@ -472,8 +472,8 @@ export default function RegisterForm({
                 id={`fWaPeserta${i + 2}`}
                 name={`participantWa${i + 2}`}
                 type="tel"
-                pattern="^08[0-9]{8,13}$"
-                title="Format: 08xxxxxxxxx (min 10 digit, max 15 digit)"
+                pattern="^(\+?62|0|8)[0-9\s\-]{8,18}$"
+                title="Format: 08xxxxxxxxx atau +628xxxxxxxxx (min 10 digit)"
                 placeholder="Contoh: 081234567890"
                 required
                 value={p.whatsapp}
@@ -936,8 +936,8 @@ export default function RegisterForm({
                   type="tel"
                   placeholder="Contoh: 081234567890"
                   required
-                  pattern="^08[0-9]{8,13}$"
-                  title="Format: 08xxxxxxxxx (min 10 digit, max 15 digit)"
+                  pattern="^(\+?62|0|8)[0-9\s\-]{8,18}$"
+                  title="Format: 08xxxxxxxxx atau +628xxxxxxxxx (min 10 digit)"
                   value={otherWhatsapp}
                   onChange={(e) => setOtherWhatsapp(e.target.value)}
                 />
@@ -1242,8 +1242,8 @@ export default function RegisterForm({
                   type="tel"
                   placeholder="Contoh: 081234567890"
                   required
-                  pattern="^08[0-9]{8,13}$"
-                  title="Format: 08xxxxxxxxx (min 10 digit, max 15 digit)"
+                  pattern="^(\+?62|0|8)[0-9\s\-]{8,18}$"
+                  title="Format: 08xxxxxxxxx atau +628xxxxxxxxx (min 10 digit)"
                   value={whatsappVal}
                   onChange={(e) => setWhatsappVal(e.target.value)}
                 />
