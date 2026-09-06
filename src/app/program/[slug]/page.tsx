@@ -79,6 +79,26 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
   let activeOfflineBatch: any = null;
   let zhcOnlineCount = 0;
   let zhcOfflineCount = 0;
+  const batchPaidMap = new Map<string, number>();
+
+  try {
+    const paidGroup = await prisma.registration.groupBy({
+      by: ["batchId"],
+      where: {
+        programId: program.id,
+        batchId: { not: null },
+        status: { in: ["PAID", "PASSED"] },
+      },
+      _count: { id: true },
+    });
+    for (const item of paidGroup) {
+      if (item.batchId) {
+        batchPaidMap.set(item.batchId, item._count.id);
+      }
+    }
+  } catch {
+    // Abaikan jika prisma belum siap
+  }
 
   if (isZeroHuman) {
     const now = new Date();
@@ -105,21 +125,10 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
       ]);
 
       if (activeOnlineBatch) {
-        zhcOnlineCount = await prisma.registration.count({
-          where: {
-            batchId: activeOnlineBatch.id,
-            status: { in: ["PAID", "PASSED"] },
-          },
-        });
+        zhcOnlineCount = batchPaidMap.get(activeOnlineBatch.id) ?? 0;
       }
-
       if (activeOfflineBatch) {
-        zhcOfflineCount = await prisma.registration.count({
-          where: {
-            batchId: activeOfflineBatch.id,
-            status: { in: ["PAID", "PASSED"] },
-          },
-        });
+        zhcOfflineCount = batchPaidMap.get(activeOfflineBatch.id) ?? 0;
       }
     } catch {
       zhcOnlineCount = 0;
@@ -163,6 +172,42 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
   const effectivePriceOld = isZeroHuman
     ? (isOnlineEbActive ? onlineNormalPrice : null)
     : program.priceOld;
+
+  // Kuota dan harga Early Bird dihitung spesifik per batch, bukan global
+  const mappedBatches = (program.batches || []).map((b) => {
+    const paidCount = batchPaidMap.get(b.id) ?? 0;
+    const isOffline = b.batchType === "OFFLINE" || Boolean((b as any).hasOffline);
+    const ebQuota = isOffline ? (b.quotaOfflineEb ?? 10) : (b.quotaOnlineEb ?? 20);
+    const isEbActive = isZeroHuman ? paidCount < ebQuota : false;
+    const priceEb = isOffline ? (b.priceOfflineEb ?? 750000) : (b.priceOnlineEb ?? 225000);
+    const priceNormal = isOffline ? (b.priceOffline ?? 1400000) : (b.priceOnline ?? 490000);
+    const bEffectivePrice = isZeroHuman ? (isEbActive ? priceEb : priceNormal) : (b.priceOnline ?? program.price);
+    const bEffectivePriceOld = isZeroHuman ? (isEbActive ? priceNormal : null) : program.priceOld;
+    const maxSeats = isOffline ? (b.seatsLeft ?? b.offlineSeatsMax ?? 20) : null;
+    const isSoldOut = isOffline && maxSeats !== null ? paidCount >= maxSeats : false;
+
+    return {
+      id: b.id,
+      name: b.name ?? null,
+      batchType: b.batchType ?? "ONLINE",
+      scheduleAt: b.scheduleAt.toISOString(),
+      seatsLeft: b.seatsLeft,
+      priceOnline: b.priceOnline,
+      priceOffline: b.priceOffline,
+      priceOnlineEb: b.priceOnlineEb,
+      priceOfflineEb: b.priceOfflineEb,
+      quotaOnlineEb: b.quotaOnlineEb,
+      quotaOfflineEb: b.quotaOfflineEb,
+      offlineSeatsMax: b.offlineSeatsMax,
+      offlineVenue: b.offlineVenue,
+      offlineScheduleAt: b.offlineScheduleAt ? b.offlineScheduleAt.toISOString() : undefined,
+      paidCount,
+      isEbActive,
+      effectivePrice: bEffectivePrice,
+      effectivePriceOld: bEffectivePriceOld,
+      isSoldOut,
+    };
+  });
 
   const priceLabel = isFree ? "GRATIS" : rupiah(effectivePrice);
   const ebCtaNavLabel = isFree ? "Daftar Gratis" : "Daftar";
@@ -2268,22 +2313,7 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
                   jadwal={jadwal}
                   price={effectivePrice}
                   priceLabel={priceLabel}
-                  batches={program.batches?.map((b) => ({
-                    id: b.id,
-                    name: b.name ?? null,
-                    batchType: b.batchType ?? "ONLINE",
-                    scheduleAt: b.scheduleAt.toISOString(),
-                    seatsLeft: b.seatsLeft,
-                    priceOnline: b.priceOnline,
-                    priceOffline: b.priceOffline,
-                    priceOnlineEb: b.priceOnlineEb,
-                    priceOfflineEb: b.priceOfflineEb,
-                    quotaOnlineEb: b.quotaOnlineEb,
-                    quotaOfflineEb: b.quotaOfflineEb,
-                    offlineSeatsMax: b.offlineSeatsMax,
-                    offlineVenue: b.offlineVenue,
-                    offlineScheduleAt: b.offlineScheduleAt ? b.offlineScheduleAt.toISOString() : undefined,
-                  }))}
+                  batches={mappedBatches}
                   attendanceOptions={{
                     hasOffline: true,
                     venueOffline: activeOfflineBatch?.offlineVenue || "Coworking Space Kota Bekasi",
@@ -2325,22 +2355,7 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
                   jadwal={jadwal}
                   price={effectivePrice}
                   priceLabel={priceLabel}
-                  batches={program.batches?.map((b) => ({
-                    id: b.id,
-                    name: b.name ?? null,
-                    batchType: b.batchType ?? "ONLINE",
-                    scheduleAt: b.scheduleAt.toISOString(),
-                    seatsLeft: b.seatsLeft,
-                    priceOnline: b.priceOnline,
-                    priceOffline: b.priceOffline,
-                    priceOnlineEb: b.priceOnlineEb,
-                    priceOfflineEb: b.priceOfflineEb,
-                    quotaOnlineEb: b.quotaOnlineEb,
-                    quotaOfflineEb: b.quotaOfflineEb,
-                    offlineSeatsMax: b.offlineSeatsMax,
-                    offlineVenue: b.offlineVenue,
-                    offlineScheduleAt: b.offlineScheduleAt ? b.offlineScheduleAt.toISOString() : undefined,
-                  }))}
+                  batches={mappedBatches}
                 />
               </div>
             </div>

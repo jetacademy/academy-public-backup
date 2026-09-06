@@ -848,6 +848,65 @@ describe('POST /api/register — multi-participant flow', () => {
         })
       );
     });
+
+    it('calculates Early Bird quota strictly PER BATCH (Batch 7 gets Early Bird even if other batches are full)', async () => {
+      const program = makeProgram({ slug: 'zero-human-company', price: 490000 });
+      mockPrisma.program.findUnique.mockResolvedValue(program);
+      mockPrisma.registration.findFirst.mockResolvedValue(null);
+      mockPrisma.user.findFirst.mockResolvedValue({ id: 'user-1' });
+
+      mockPrisma.programBatch.findFirst.mockResolvedValue({
+        id: 'batch-7-online',
+        programId: program.id,
+        isActive: true,
+        batchType: 'ONLINE',
+        name: 'Batch 7 (Online)',
+        scheduleAt: new Date(Date.now() + 86400000 * 5),
+        quotaOnlineEb: 20,
+        priceOnlineEb: 225000,
+        priceOnline: 490000,
+      });
+
+      mockPrisma.programBatch.findUnique.mockResolvedValue({
+        id: 'batch-7-online',
+        programId: program.id,
+        isActive: true,
+        batchType: 'ONLINE',
+        name: 'Batch 7 (Online)',
+        scheduleAt: new Date(Date.now() + 86400000 * 5),
+        quotaOnlineEb: 20,
+        priceOnlineEb: 225000,
+        priceOnline: 490000,
+      });
+
+      // Count untuk batch 7 adalah 0 (Early Bird aktif)
+      mockPrisma.registration.count.mockImplementation(async (args: any) => {
+        if (args?.where?.batchId === 'batch-7-online') {
+          return 0;
+        }
+        return 50; // Batch lain sudah penuh
+      });
+
+      mockPrisma.registration.upsert.mockResolvedValue(
+        makeRegistration({ programId: program.id, batchId: 'batch-7-online', status: 'REGISTERED', attendanceType: 'ONLINE' })
+      );
+
+      const res = await makePostRequest({
+        name: 'Peserta Batch 7',
+        whatsapp: '081234567899',
+        email: 'batch7@example.com',
+        programSlug: 'zero-human-company',
+        batchId: 'batch-7-online',
+        attendanceType: 'ONLINE',
+      });
+
+      expect(res.status).toBe(200);
+      expect(createInvoice).toHaveBeenCalledWith(
+        expect.objectContaining({
+          amount: 225000,
+        })
+      );
+    });
   });
 });
 
