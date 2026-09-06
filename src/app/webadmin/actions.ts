@@ -1227,6 +1227,8 @@ export async function createBatch(formData: FormData) {
   const programId = String(formData.get("programId") ?? "").trim();
   const scheduleAtRaw = String(formData.get("scheduleAt") ?? "").trim();
   const seatsLeftRaw = optStr(formData, "seatsLeft");
+  const batchType = String(formData.get("batchType") ?? "ONLINE") === "OFFLINE" ? "OFFLINE" : "ONLINE";
+  const name = optStr(formData, "name");
 
   if (!programId) redirect("/webadmin/program");
   if (!scheduleAtRaw) redirect(`/webadmin/program/${programId}/batch?e=lengkapi`);
@@ -1234,12 +1236,39 @@ export async function createBatch(formData: FormData) {
   const scheduleAt = parseWIB(scheduleAtRaw);
   if (isNaN(scheduleAt.getTime())) redirect(`/webadmin/program/${programId}/batch?e=tanggal`);
 
+  const offlineVenue = optStr(formData, "offlineVenue");
+  const hasOffline = batchType === "OFFLINE";
+
+  // Pengaturan harga per batch (Online vs Offline)
+  const normalPriceRaw = optStr(formData, "normalPrice");
+  const ebPriceRaw = optStr(formData, "ebPrice");
+  const ebQuotaRaw = optStr(formData, "ebQuota");
+
+  const priceOnlineRaw = optStr(formData, "priceOnline") ?? (batchType === "ONLINE" ? normalPriceRaw : null);
+  const priceOnlineEbRaw = optStr(formData, "priceOnlineEb") ?? (batchType === "ONLINE" ? ebPriceRaw : null);
+  const quotaOnlineEbRaw = optStr(formData, "quotaOnlineEb") ?? (batchType === "ONLINE" ? ebQuotaRaw : null);
+
+  const priceOfflineRaw = optStr(formData, "priceOffline") ?? (batchType === "OFFLINE" ? normalPriceRaw : null);
+  const priceOfflineEbRaw = optStr(formData, "priceOfflineEb") ?? (batchType === "OFFLINE" ? ebPriceRaw : null);
+  const quotaOfflineEbRaw = optStr(formData, "quotaOfflineEb") ?? (batchType === "OFFLINE" ? ebQuotaRaw : null);
+
   await prisma.programBatch.create({
     data: {
       programId,
+      batchType,
+      name: name ?? null,
       scheduleAt,
-      seatsLeft: seatsLeftRaw ? parseInt(seatsLeftRaw, 10) : null,
-    },
+      seatsLeft: seatsLeftRaw ? parseInt(seatsLeftRaw, 10) : (batchType === "OFFLINE" ? 20 : null),
+      hasOffline,
+      offlineVenue: hasOffline ? (offlineVenue || "Coworking Space Kota Bekasi") : null,
+      offlineSeatsMax: hasOffline ? (seatsLeftRaw ? parseInt(seatsLeftRaw, 10) : 20) : 20,
+      priceOnline: priceOnlineRaw ? parseInt(priceOnlineRaw, 10) : null,
+      priceOnlineEb: priceOnlineEbRaw ? parseInt(priceOnlineEbRaw, 10) : null,
+      quotaOnlineEb: quotaOnlineEbRaw ? parseInt(quotaOnlineEbRaw, 10) : null,
+      priceOffline: priceOfflineRaw ? parseInt(priceOfflineRaw, 10) : null,
+      priceOfflineEb: priceOfflineEbRaw ? parseInt(priceOfflineEbRaw, 10) : null,
+      quotaOfflineEb: quotaOfflineEbRaw ? parseInt(quotaOfflineEbRaw, 10) : null,
+    } as any,
   });
 
   revalidatePath(`/webadmin/program/${programId}/batch`);
@@ -1453,17 +1482,37 @@ export async function updateBatchLinks(formData: FormData) {
   await requireAdmin();
   const id = String(formData.get("id") ?? "");
   const programId = String(formData.get("programId") ?? "");
+  const name = optStr(formData, "name");
   const zoomLink = String(formData.get("zoomLink") ?? "").trim();
   const waGroupLink = String(formData.get("waGroupLink") ?? "").trim();
   const recordingLink = String(formData.get("recordingLink") ?? "").trim();
+  const offlineVenue = String(formData.get("offlineVenue") ?? "").trim();
+  const seatsLeftRaw = optStr(formData, "seatsLeft");
+  const priceOnlineRaw = optStr(formData, "priceOnline");
+  const priceOnlineEbRaw = optStr(formData, "priceOnlineEb");
+  const quotaOnlineEbRaw = optStr(formData, "quotaOnlineEb");
+  const priceOfflineRaw = optStr(formData, "priceOffline");
+  const priceOfflineEbRaw = optStr(formData, "priceOfflineEb");
+  const quotaOfflineEbRaw = optStr(formData, "quotaOfflineEb");
+
   if (!id) redirect(`/webadmin/program/${programId}/batch?e=id`);
   await prisma.programBatch.update({
     where: { id },
     data: {
+      ...(name !== undefined ? { name } : {}),
+      ...(seatsLeftRaw !== undefined ? { seatsLeft: seatsLeftRaw ? parseInt(seatsLeftRaw, 10) : null } : {}),
+      ...(priceOnlineRaw !== undefined ? { priceOnline: priceOnlineRaw ? parseInt(priceOnlineRaw, 10) : null } : {}),
+      ...(priceOnlineEbRaw !== undefined ? { priceOnlineEb: priceOnlineEbRaw ? parseInt(priceOnlineEbRaw, 10) : null } : {}),
+      ...(quotaOnlineEbRaw !== undefined ? { quotaOnlineEb: quotaOnlineEbRaw ? parseInt(quotaOnlineEbRaw, 10) : null } : {}),
+      ...(priceOfflineRaw !== undefined ? { priceOffline: priceOfflineRaw ? parseInt(priceOfflineRaw, 10) : null } : {}),
+      ...(priceOfflineEbRaw !== undefined ? { priceOfflineEb: priceOfflineEbRaw ? parseInt(priceOfflineEbRaw, 10) : null } : {}),
+      ...(quotaOfflineEbRaw !== undefined ? { quotaOfflineEb: quotaOfflineEbRaw ? parseInt(quotaOfflineEbRaw, 10) : null } : {}),
       zoomLink: zoomLink || null,
       waGroupLink: waGroupLink || null,
       recordingLink: recordingLink || null,
-    },
+      offlineVenue: offlineVenue || null,
+    } as any,
   });
+  revalidatePath(`/webadmin/program/${programId}/batch`);
   redirect(`/webadmin/program/${programId}/batch?ok=1`);
 }

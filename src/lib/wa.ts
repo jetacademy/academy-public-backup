@@ -95,15 +95,25 @@ export function msgAccess(params: {
   waGroupLink?: string | null;
   lmsLink?: string | null;
   memberUrl: string;
+  attendanceType?: "ONLINE" | "OFFLINE" | string;
+  venue?: string | null;
 }) {
+  const isOffline = params.attendanceType === "OFFLINE";
   return [
     `Halo ${params.name},`,
     ``,
     `Terima kasih. Pembayaran Anda untuk *${params.programTitle}* telah kami terima dan terkonfirmasi.`,
     ``,
+    isOffline
+      ? `*Format: Sesi Tatap Muka (Offline) - Durasi 4 Jam*`
+      : `*Format: Sesi Online (Live Zoom)*`,
     params.schedule ? `Jadwal Pelatihan: ${params.schedule}` : null,
+    isOffline ? `Lokasi: ${params.venue || "Coworking Space Kota Bekasi"}` : null,
+    isOffline ? `Catatan: Mohon hadir 15 menit sebelum acara dan membawa laptop serta charger pribadi.` : null,
     ``,
-    `Silakan masuk ke dashboard belajar Anda untuk mengakses materi pembelajaran, tautan Zoom Live, dan bergabung ke grup WhatsApp peserta:`,
+    isOffline
+      ? `Silakan masuk ke dashboard belajar Anda untuk mengakses materi modul, grup WhatsApp khusus peserta, dan informasi lengkap lokasi:`
+      : `Silakan masuk ke dashboard belajar Anda untuk mengakses materi pembelajaran, tautan Zoom Live, dan bergabung ke grup WhatsApp peserta:`,
     params.memberUrl,
     ``,
     `Salam,`,

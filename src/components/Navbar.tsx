@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 /**
  * Navbar 2 mode:
@@ -15,14 +15,16 @@ export default function Navbar({ minimal = false, ctaHref = "/program", ctaLabel
   ctaLabel?: string;
 }) {
   const [open, setOpen] = useState(false);
-  // Sync read — cegah re-render & hydration delay dari useEffect + setTimeout.
-  // [FIX] jsa_member itu httpOnly (sengaja, demi keamanan) jadi TIDAK PERNAH
-  // kebaca lewat document.cookie — makanya dulu isLoggedIn selalu false walau
-  // user sudah login. jsa_member_ui adalah cookie pendamping non-httpOnly yang
-  // cuma berisi flag boolean, dipasang/dihapus bareng session asli.
-  const [isLoggedIn] = useState(() =>
-    typeof document !== "undefined" && document.cookie.includes("jsa_member_ui=")
-  );
+  // jsa_member_ui adalah cookie pendamping non-httpOnly.
+  // Inisialisasi false untuk mencegah hydration mismatch antara SSR & Client render,
+  // lalu sinkronkan di useEffect saat komponen mount.
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  useEffect(() => {
+    if (typeof document !== "undefined" && document.cookie.includes("jsa_member_ui=")) {
+      setIsLoggedIn(true);
+    }
+  }, []);
 
   return (
     <header className="nav">

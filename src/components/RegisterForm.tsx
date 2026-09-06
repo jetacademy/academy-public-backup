@@ -1,18 +1,49 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { motion } from "framer-motion";
 import Icon from "@/components/Icon";
 import GoogleAuthModal from "@/components/GoogleAuthModal";
 import { useRouter } from "next/navigation";
 import { memberLogout, getProgramRegistrationStatusAction } from "@/app/member/actions";
-import { formatJadwal } from "@/lib/format";
+import { formatJadwal, rupiah } from "@/lib/format";
 import Link from "next/link";
 
 declare global {
   interface Window { fbq?: (...args: unknown[]) => void }
 }
 
-export default function RegisterForm({ programId, programSlug, programTitle, jadwal, price, priceLabel, batches }: {
+export interface AttendanceOptions {
+  hasOffline: boolean;
+  venueOffline?: string;
+  durationOffline?: string;
+  scheduleOnline?: string;
+  scheduleOffline?: string;
+  daysLeftOnline?: string;
+  daysLeftOffline?: string;
+  priceOnline: number;
+  priceOnlineOld?: number | null;
+  onlineSeatsLeft?: number | null;
+  isOnlineEbActive?: boolean;
+  priceOffline: number;
+  priceOfflineOld?: number | null;
+  offlineSeatsLeft?: number | null;
+  isOfflineEbActive?: boolean;
+  isOfflineSoldOut?: boolean;
+  onlineBatchId?: string;
+  offlineBatchId?: string;
+}
+
+export default function RegisterForm({
+  programId,
+  programSlug,
+  programTitle,
+  jadwal,
+  price,
+  priceLabel,
+  batches,
+  attendanceOptions,
+}: {
   programId: string;
   programSlug: string;
   programTitle: string;
@@ -20,6 +51,7 @@ export default function RegisterForm({ programId, programSlug, programTitle, jad
   price: number; // 0 = gratis
   priceLabel: string;
   batches?: { id: string; scheduleAt: string; seatsLeft: number | null }[];
+  attendanceOptions?: AttendanceOptions;
 }) {
   const [state, setState] = useState<"idle" | "loading" | "done">("idle");
   const [error, setError] = useState("");
@@ -43,13 +75,24 @@ export default function RegisterForm({ programId, programSlug, programTitle, jad
   const [whatsappVal, setWhatsappVal] = useState("");
   const [institutionVal, setInstitutionVal] = useState("");
   const [credentialVal, setCredentialVal] = useState<string | undefined>(undefined);
-  const [batchId, setBatchId] = useState<string | undefined>(batches?.[0]?.id);
+  const [attendanceType, setAttendanceType] = useState<"ONLINE" | "OFFLINE">("ONLINE");
+  const [batchId, setBatchId] = useState<string | undefined>(
+    attendanceOptions?.hasOffline
+      ? (attendanceOptions.onlineBatchId ?? batches?.[0]?.id)
+      : batches?.[0]?.id
+  );
   const [jumlahPeserta, setJumlahPeserta] = useState(1);
   const [additionalParticipants, setAdditionalParticipants] = useState<{ name: string; email: string; whatsapp: string }[]>([]);
   const [voucherVal, setVoucherVal] = useState("");
   const [hasCompletedProfile, setHasCompletedProfile] = useState(false);
 
-  const isPaid = price > 0;
+  // Hitung harga dinamis berdasarkan tipe kehadiran yang dipilih
+  const currentUnitPrice = attendanceOptions?.hasOffline
+    ? (attendanceType === "OFFLINE" ? attendanceOptions.priceOffline : attendanceOptions.priceOnline)
+    : price;
+  const currentTotalPrice = currentUnitPrice * jumlahPeserta;
+  const currentPriceLabel = currentUnitPrice === 0 ? "GRATIS" : rupiah(currentTotalPrice);
+  const isPaid = currentUnitPrice > 0;
 
   // Halaman /program/[slug] di-cache (ISR) demi hemat resource server, jadi
   // status login/profil member TIDAK dibaca saat SSR — dicek di sini saja,
@@ -163,6 +206,7 @@ export default function RegisterForm({ programId, programSlug, programTitle, jad
       email: cleanMainEmail,
       institution: institutionVal.trim(),
       programSlug,
+      attendanceType,
     };
     if (credentialVal) {
       data.credential = credentialVal;
@@ -378,294 +422,636 @@ export default function RegisterForm({ programId, programSlug, programTitle, jad
     );
   }
 
+  const renderTicketSelector = () => (
+    <div>
+      <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", marginBottom: "1.1rem" }}>
+        <span style={{
+          width: 28,
+          height: 28,
+          borderRadius: "50%",
+          background: "var(--purple)",
+          color: "#fff",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          fontWeight: 800,
+          fontSize: "0.85rem"
+        }}>1</span>
+        <h3 style={{ fontSize: "1.15rem", fontWeight: 800, margin: 0, color: "var(--ink)" }}>
+          Pilih Tiket &amp; Format
+        </h3>
+      </div>
+
+      {/* Jumlah Peserta */}
+      <div className="field" style={{ marginBottom: "1rem" }}>
+        <label htmlFor="fJumlahPeserta">Jumlah Peserta</label>
+        <select
+          id="fJumlahPeserta"
+          value={jumlahPeserta}
+          onChange={(e) => handleJumlahPesertaChange(Number(e.target.value))}
+          style={{ background: "var(--chip)", border: "1px solid var(--border)" }}
+        >
+          {[1, 2, 3, 4, 5].map((n) => (
+            <option key={n} value={n}>
+              {n} Orang
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {/* Banner Promo Early Bird */}
+      {(attendanceOptions?.isOnlineEbActive || attendanceOptions?.isOfflineEbActive) && (
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            background: "rgba(34, 197, 94, 0.08)",
+            border: "1px solid rgba(34, 197, 94, 0.22)",
+            borderRadius: "8px",
+            padding: "0.5rem 0.8rem",
+            marginBottom: "1rem",
+            fontSize: "0.8rem",
+          }}
+        >
+          <span style={{ display: "inline-flex", alignItems: "center", gap: "0.4rem", color: "#15803d", fontWeight: 700 }}>
+            <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#22c55e", display: "inline-block" }} />
+            Promo Early Bird Aktif Hari Ini
+          </span>
+          <span style={{ color: "#16a34a", fontWeight: 800, background: "rgba(34, 197, 94, 0.15)", padding: "0.15rem 0.5rem", borderRadius: "4px", fontSize: "0.72rem" }}>
+            Hemat s/d 54%
+          </span>
+        </div>
+      )}
+
+      {/* Format Selection Buttons */}
+      <div style={{ display: "flex", flexDirection: "column", gap: "0.8rem", marginBottom: "1.4rem" }}>
+        {/* Tiket Online */}
+        <button
+          type="button"
+          onClick={() => {
+            setAttendanceType("ONLINE");
+            if (attendanceOptions?.onlineBatchId) {
+              setBatchId(attendanceOptions.onlineBatchId);
+            }
+          }}
+          style={{
+            textAlign: "left",
+            padding: "1rem 1.1rem",
+            borderRadius: "14px",
+            cursor: "pointer",
+            border: attendanceType === "ONLINE" ? "2px solid #6c5ce7" : "1px solid var(--line)",
+            background: attendanceType === "ONLINE" ? "rgba(108, 92, 231, 0.05)" : "#fff",
+            transition: "all 0.15s ease",
+            display: "flex",
+            flexDirection: "column",
+            gap: "0.35rem",
+          }}
+        >
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <span style={{ fontWeight: 800, fontSize: "0.95rem", color: attendanceType === "ONLINE" ? "#6c5ce7" : "var(--ink)" }}>
+              💻 Online via Zoom
+            </span>
+            {attendanceType === "ONLINE" && (
+              <span style={{ color: "#6c5ce7", fontSize: "0.85rem", fontWeight: 800 }}>✓ Terpilih</span>
+            )}
+          </div>
+
+          <div style={{ display: "flex", alignItems: "baseline", gap: "0.45rem" }}>
+            <strong style={{ fontSize: "1.25rem", color: "var(--ink)", fontWeight: 900 }}>
+              {rupiah(attendanceOptions!.priceOnline)}
+            </strong>
+            {attendanceOptions?.priceOnlineOld && (
+              <span style={{ fontSize: "0.82rem", textDecoration: "line-through", color: "var(--ink-soft)" }}>
+                {rupiah(attendanceOptions.priceOnlineOld)}
+              </span>
+            )}
+          </div>
+
+          <div style={{ fontSize: "0.78rem", color: "var(--ink-soft)", lineHeight: 1.4 }}>
+            <span>{attendanceOptions?.scheduleOnline}</span>
+            {attendanceOptions?.daysLeftOnline && (
+              <span style={{ color: "#6c5ce7", fontWeight: 700, marginLeft: "0.3rem" }}>
+                ({attendanceOptions.daysLeftOnline})
+              </span>
+            )}
+          </div>
+        </button>
+
+        {/* Tiket Offline */}
+        <button
+          type="button"
+          onClick={() => {
+            if (!attendanceOptions?.isOfflineSoldOut) {
+              setAttendanceType("OFFLINE");
+              if (attendanceOptions?.offlineBatchId) {
+                setBatchId(attendanceOptions.offlineBatchId);
+              }
+            }
+          }}
+          disabled={attendanceOptions?.isOfflineSoldOut}
+          style={{
+            textAlign: "left",
+            padding: "1rem 1.1rem",
+            borderRadius: "14px",
+            cursor: attendanceOptions?.isOfflineSoldOut ? "not-allowed" : "pointer",
+            opacity: attendanceOptions?.isOfflineSoldOut ? 0.6 : 1,
+            border: attendanceType === "OFFLINE" ? "2px solid #e17055" : "1px solid var(--line)",
+            background: attendanceType === "OFFLINE" ? "rgba(225, 112, 85, 0.05)" : "#fff",
+            transition: "all 0.15s ease",
+            display: "flex",
+            flexDirection: "column",
+            gap: "0.35rem",
+          }}
+        >
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <span style={{ fontWeight: 800, fontSize: "0.95rem", color: attendanceType === "OFFLINE" ? "#d63031" : "var(--ink)" }}>
+              🏢 Offline
+            </span>
+            {attendanceType === "OFFLINE" && (
+              <span style={{ color: "#d63031", fontSize: "0.85rem", fontWeight: 800 }}>✓ Terpilih</span>
+            )}
+          </div>
+
+          <div style={{ display: "flex", alignItems: "baseline", gap: "0.45rem" }}>
+            <strong style={{ fontSize: "1.25rem", color: "var(--ink)", fontWeight: 900 }}>
+              {rupiah(attendanceOptions!.priceOffline)}
+            </strong>
+            {attendanceOptions?.priceOfflineOld && (
+              <span style={{ fontSize: "0.82rem", textDecoration: "line-through", color: "var(--ink-soft)" }}>
+                {rupiah(attendanceOptions.priceOfflineOld)}
+              </span>
+            )}
+          </div>
+
+          <div style={{ fontSize: "0.78rem", color: "var(--ink-soft)", lineHeight: 1.4 }}>
+            {attendanceOptions?.isOfflineSoldOut ? (
+              <span style={{ color: "#dc2626", fontWeight: 700 }}>Kuota Penuh (20/20)</span>
+            ) : (
+              <>
+                <span>{attendanceOptions?.venueOffline || "Coworking Space Kota Bekasi"} • {attendanceOptions?.scheduleOffline}</span>
+                {attendanceOptions?.daysLeftOffline && (
+                  <span style={{ color: "#d63031", fontWeight: 700, marginLeft: "0.3rem" }}>
+                    ({attendanceOptions.daysLeftOffline})
+                  </span>
+                )}
+              </>
+            )}
+          </div>
+        </button>
+      </div>
+
+      {/* Fasilitas Pelatihan */}
+      <div style={{
+        background: "rgba(0,0,0,0.02)",
+        border: "1px solid var(--line)",
+        borderRadius: "12px",
+        padding: "0.85rem 1rem",
+        fontSize: "0.82rem",
+        color: "var(--ink-soft)",
+        display: "flex",
+        flexDirection: "column",
+        gap: "0.4rem",
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+          <span style={{ color: "#22c55e", fontWeight: 800 }}>✓</span> Praktik langsung 6 AI Agent siap pakai
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+          <span style={{ color: "#22c55e", fontWeight: 800 }}>✓</span> Termasuk rekaman sesi &amp; materi modul LMS
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+          <span style={{ color: "#22c55e", fontWeight: 800 }}>✓</span> E-Sertifikat kelulusan resmi terverifikasi
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderCheckoutForm = () => (
+    <>
+      {googleSelected ? (
+        /* CASE 1: Akun sudah terhubung / User sudah Login */
+        <form onSubmit={onSubmit}>
+          {hasCompletedProfile && !isEditing ? (
+            /* State 1: User memiliki profil lengkap - 1-Click Registration */
+            <div style={{ textAlign: "center" }}>
+              <div style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "0.5rem",
+                background: "rgba(46, 204, 113, 0.08)",
+                border: "1px solid rgba(46, 204, 113, 0.15)",
+                padding: "0.4rem 0.8rem",
+                borderRadius: "20px",
+                marginBottom: "1.2rem",
+                maxWidth: "100%",
+                boxSizing: "border-box"
+              }}>
+                <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#2ecc71", display: "inline-block", flexShrink: 0 }}></span>
+                <span style={{ fontSize: "0.75rem", color: "#27ae60", fontWeight: 700, wordBreak: "break-all", whiteSpace: "normal", textAlign: "left" }}>
+                  Sudah Login: {emailVal}
+                </span>
+              </div>
+
+              <h3 style={{ marginBottom: "0.4rem", fontSize: "1.2rem" }}>Konfirmasi Pendaftaran</h3>
+              <p className="sub" style={{ marginBottom: "1.2rem", fontSize: "0.85rem" }}>
+                Satu langkah lagi untuk mendaftar menggunakan profil Anda:
+              </p>
+
+              {error && <div className="form-error" role="alert" style={{ marginBottom: "1rem" }}>{error}</div>}
+
+              <div style={{
+                background: "var(--white, #fff)",
+                borderRadius: "12px",
+                padding: "clamp(0.8rem, 3vw, 1.1rem)",
+                textAlign: "left",
+                marginBottom: "1.2rem",
+                border: "1px solid var(--line)"
+              }}>
+                <div style={{ display: "grid", gap: "0.6rem", fontSize: "0.88rem" }}>
+                  <div>
+                    <span style={{ color: "var(--ink-soft)", display: "block", fontSize: "0.72rem", fontWeight: 700 }}>NAMA LENGKAP</span>
+                    <strong style={{ color: "var(--ink)", wordBreak: "break-word" }}>{nameVal}</strong>
+                  </div>
+                  <div>
+                    <span style={{ color: "var(--ink-soft)", display: "block", fontSize: "0.72rem", fontWeight: 700 }}>WHATSAPP</span>
+                    <strong style={{ color: "var(--ink)", wordBreak: "break-word" }}>{whatsappVal}</strong>
+                  </div>
+                  <div>
+                    <span style={{ color: "var(--ink-soft)", display: "block", fontSize: "0.72rem", fontWeight: 700 }}>INSTANSI / LEMBAGA</span>
+                    <strong style={{ color: "var(--ink)", wordBreak: "break-word" }}>{institutionVal}</strong>
+                  </div>
+                  {attendanceOptions?.hasOffline && (
+                    <div>
+                      <span style={{ color: "var(--ink-soft)", display: "block", fontSize: "0.72rem", fontWeight: 700 }}>FORMAT &amp; JADWAL</span>
+                      <strong style={{ color: "var(--ink)", wordBreak: "break-word" }}>
+                        {attendanceType === "OFFLINE" ? "🏢 Tatap Muka Offline Bekasi (4 Jam)" : "💻 Online (Live Zoom)"} — {currentPriceLabel}
+                      </strong>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {renderAdditionalParticipantFields()}
+              {renderVoucherField()}
+
+              {/* Total Investasi Box */}
+              <div style={{
+                background: "#ffffff",
+                borderRadius: "12px",
+                padding: "0.85rem 1rem",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: "1rem",
+                border: "1px solid var(--line)"
+              }}>
+                <div style={{ textAlign: "left" }}>
+                  <span style={{ fontSize: "0.75rem", color: "var(--ink-soft)", display: "block" }}>
+                    Total Tagihan ({jumlahPeserta} Orang)
+                  </span>
+                  <strong style={{ fontSize: "1.2rem", color: "var(--ink)", fontWeight: 900 }}>
+                    {currentPriceLabel}
+                  </strong>
+                </div>
+                <span style={{ fontSize: "0.74rem", background: "rgba(108, 92, 231, 0.1)", color: "#6c5ce7", fontWeight: 700, padding: "0.2rem 0.5rem", borderRadius: "6px" }}>
+                  {attendanceType === "OFFLINE" ? "🏢 Offline" : "💻 Online via Zoom"}
+                </span>
+              </div>
+
+              <button type="submit" className="btn btn-purple btn-lg btn-block" disabled={state === "loading"} style={{ width: "100%", padding: "0.95rem", fontSize: "1.02rem" }}>
+                {state === "loading"
+                  ? "Memproses..."
+                  : isPaid ? `Konfirmasi & Bayar Sekarang →` : "Konfirmasi & Daftar Sekarang"}
+              </button>
+
+              <div style={{ display: "flex", justifyContent: "center", gap: "0.8rem", marginTop: "1rem" }}>
+                <button
+                  type="button"
+                  onClick={() => setIsEditing(true)}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    color: "var(--purple)",
+                    fontSize: "0.78rem",
+                    fontWeight: 700,
+                    cursor: "pointer",
+                    textDecoration: "underline"
+                  }}
+                >
+                  Edit Data Profil
+                </button>
+                <span style={{ color: "var(--line)" }}>|</span>
+                <button
+                  type="button"
+                  onClick={handleResetGoogle}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    color: "var(--ink-soft)",
+                    fontSize: "0.78rem",
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    textDecoration: "underline"
+                  }}
+                >
+                  Ganti Akun
+                </button>
+              </div>
+            </div>
+          ) : (
+            /* State 2: Onboarding Mode (hanya mengisi WhatsApp & Instansi) */
+            <>
+              <div style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                marginBottom: "1rem",
+                background: "rgba(108, 92, 231, 0.05)",
+                padding: "0.6rem 0.8rem",
+                borderRadius: "8px",
+                border: "1px solid rgba(108, 92, 231, 0.1)"
+              }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", minWidth: 0 }}>
+                  <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#2ecc71", flexShrink: 0 }}></div>
+                  <span style={{
+                    fontSize: "0.75rem",
+                    color: "var(--purple)",
+                    fontWeight: 700,
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    maxWidth: "14rem"
+                  }}>
+                    Terhubung: {emailVal}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleResetGoogle}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    color: "var(--ink-soft)",
+                    fontSize: "0.72rem",
+                    textDecoration: "underline",
+                    cursor: "pointer",
+                    padding: 0,
+                    flexShrink: 0
+                  }}
+                >
+                  Ganti Akun
+                </button>
+              </div>
+
+              <h3 style={{ marginBottom: "0.2rem", fontSize: "1.15rem" }}>Lengkapi Data Profil</h3>
+              <p className="sub" style={{ marginBottom: "1.2rem", fontSize: "0.85rem" }}>Silakan masukkan WhatsApp &amp; Instansi untuk menyelesaikan pendaftaran.</p>
+
+              {error && <div className="form-error" role="alert" style={{ marginBottom: "1rem" }}>{error}</div>}
+
+              {/* Tampilkan field Nama hanya jika user menekan tombol Edit Data Profil */}
+              {isEditing && (
+                <div className="field">
+                  <label htmlFor="fNama">Nama Lengkap (untuk di sertifikat)</label>
+                  <input
+                    id="fNama"
+                    name="name"
+                    type="text"
+                    placeholder="Contoh: Budi Santoso, S.Pd."
+                    required
+                    minLength={3}
+                    value={nameVal}
+                    onChange={(e) => setNameVal(e.target.value)}
+                  />
+                </div>
+              )}
+
+              <div className="field">
+                <label htmlFor="fWa">Nomor WhatsApp Aktif</label>
+                <input
+                  id="fWa"
+                  name="whatsapp"
+                  type="tel"
+                  placeholder="Contoh: 081234567890"
+                  required
+                  pattern="^08[0-9]{8,13}$"
+                  title="Format: 08xxxxxxxxx (min 10 digit, max 15 digit)"
+                  value={whatsappVal}
+                  onChange={(e) => setWhatsappVal(e.target.value)}
+                />
+              </div>
+
+              <div className="field">
+                <label htmlFor="fInst">Asal Lembaga / Instansi</label>
+                <input
+                  id="fInst"
+                  name="institution"
+                  type="text"
+                  placeholder="Contoh: SDN 1 Bandung / Umum"
+                  required
+                  minLength={3}
+                  value={institutionVal}
+                  onChange={(e) => setInstitutionVal(e.target.value)}
+                />
+              </div>
+
+              {renderAdditionalParticipantFields()}
+              {renderVoucherField()}
+
+              {/* Total Investasi Box */}
+              <div style={{
+                background: "#ffffff",
+                borderRadius: "12px",
+                padding: "0.85rem 1rem",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: "1rem",
+                border: "1px solid var(--line)"
+              }}>
+                <div style={{ textAlign: "left" }}>
+                  <span style={{ fontSize: "0.75rem", color: "var(--ink-soft)", display: "block" }}>
+                    Total Tagihan ({jumlahPeserta} Orang)
+                  </span>
+                  <strong style={{ fontSize: "1.2rem", color: "var(--ink)", fontWeight: 900 }}>
+                    {currentPriceLabel}
+                  </strong>
+                </div>
+                <span style={{ fontSize: "0.74rem", background: "rgba(108, 92, 231, 0.1)", color: "#6c5ce7", fontWeight: 700, padding: "0.2rem 0.5rem", borderRadius: "6px" }}>
+                  {attendanceType === "OFFLINE" ? "🏢 Offline" : "💻 Online via Zoom"}
+                </span>
+              </div>
+
+              <button type="submit" className="btn btn-purple btn-lg btn-block" disabled={state === "loading"} style={{ width: "100%", padding: "0.95rem" }}>
+                {state === "loading"
+                  ? "Memproses..."
+                  : isPaid ? `Konfirmasi & Bayar — ${currentPriceLabel}` : "Konfirmasi & Daftar"}
+              </button>
+            </>
+          )}
+        </form>
+      ) : (
+        /* CASE 2: Guest / Belum Login — Tombol daftar via Google */
+        <div>
+          <div style={{
+            background: "#ffffff",
+            borderRadius: "12px",
+            padding: "0.9rem 1rem",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            marginBottom: "1.2rem",
+            border: "1px solid var(--line)"
+          }}>
+            <div>
+              <span style={{ fontSize: "0.78rem", color: "var(--ink-soft)", display: "block" }}>
+                Total Investasi ({jumlahPeserta} Orang)
+              </span>
+              <strong style={{ fontSize: "1.25rem", color: "var(--ink)", fontWeight: 900 }}>
+                {currentPriceLabel}
+              </strong>
+            </div>
+            <span style={{ fontSize: "0.75rem", background: "rgba(108, 92, 231, 0.1)", color: "#6c5ce7", fontWeight: 700, padding: "0.25rem 0.6rem", borderRadius: "6px" }}>
+              {attendanceType === "OFFLINE" ? "🏢 Offline" : "💻 Online via Zoom"}
+            </span>
+          </div>
+
+          <button
+            type="button"
+            className="btn btn-purple btn-lg btn-block"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "0.6rem",
+              fontWeight: 700,
+              width: "100%",
+              padding: "1rem",
+              borderRadius: "12px",
+              fontSize: "1.05rem",
+              boxShadow: "0 4px 14px var(--purple-soft)"
+            }}
+            onClick={() => setGoogleOpen(true)}
+          >
+            <svg width="20" height="20" viewBox="0 0 18 18" style={{ filter: "brightness(0) invert(1)" }}>
+              <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z" fill="#4285F4"/>
+              <path d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.258c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.938 5.48 18 9 18z" fill="#34A853"/>
+              <path d="M3.964 10.707c-.18-.54-.282-1.117-.282-1.707s.102-1.167.282-1.707V4.96H.957C.347 6.173 0 7.549 0 9s.347 2.827.957 4.04l3.007-2.333z" fill="#FBBC05"/>
+              <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.844 11.426 0 9 0 5.48 0 2.438 2.062.957 4.96l3.007 2.333C4.672 5.164 6.656 3.58 9 3.58z" fill="#EA4335"/>
+            </svg>
+            Daftar Cepat dengan Google
+          </button>
+
+          <p style={{
+            textAlign: "center",
+            fontSize: "0.78rem",
+            color: "var(--ink-faint)",
+            marginTop: "1.1rem",
+            lineHeight: 1.4
+          }}>
+            🔒 Pendaftaran aman &amp; instan via Google OAuth.
+          </p>
+        </div>
+      )}
+    </>
+  );
+
   return (
     <>
-      <div className="reg-card">
-        {batches && batches.length > 1 && (
+      {attendanceOptions?.hasOffline ? (
+        <div
+          className="reg-card"
+          style={{
+            maxWidth: "1000px",
+            width: "100%",
+            padding: "clamp(1.5rem, 3.5vw, 2.5rem)",
+            boxShadow: "0 20px 45px -15px rgba(0,0,0,0.08)",
+            border: "1px solid var(--border)",
+            background: "#ffffff",
+          }}
+        >
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
+              gap: "2.5rem",
+              alignItems: "start",
+            }}
+          >
+            {/* KOLOM 1: TIKET & FORMAT */}
+            {renderTicketSelector()}
+
+            {/* KOLOM 2: DATA PENDAFTAR & PEMBAYARAN */}
+            <div
+              style={{
+                background: "var(--chip)",
+                borderRadius: "18px",
+                padding: "clamp(1.2rem, 2.5vw, 1.8rem)",
+                border: "1px solid var(--line)",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", marginBottom: "1.2rem" }}>
+                <span style={{
+                  width: 28,
+                  height: 28,
+                  borderRadius: "50%",
+                  background: "var(--ink)",
+                  color: "#fff",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontWeight: 800,
+                  fontSize: "0.85rem"
+                }}>2</span>
+                <h3 style={{ fontSize: "1.15rem", fontWeight: 800, margin: 0, color: "var(--ink)" }}>
+                  Data Peserta &amp; Checkout
+                </h3>
+              </div>
+
+              {renderCheckoutForm()}
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="reg-card">
+          {batches && batches.length > 1 && (
+            <div className="field" style={{ marginBottom: "1.2rem" }}>
+              <label htmlFor="fBatch">Pilih Jadwal</label>
+              <select id="fBatch" value={batchId} onChange={(e) => setBatchId(e.target.value)}>
+                {batches.map((b) => (
+                  <option key={b.id} value={b.id}>
+                    {formatJadwal(new Date(b.scheduleAt))}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {/* Jumlah Peserta — dipilih sebelum form */}
           <div className="field" style={{ marginBottom: "1.2rem" }}>
-            <label htmlFor="fBatch">Pilih Jadwal</label>
-            <select id="fBatch" value={batchId} onChange={(e) => setBatchId(e.target.value)}>
-              {batches.map((b) => (
-                <option key={b.id} value={b.id}>
-                  {formatJadwal(new Date(b.scheduleAt))}
+            <label htmlFor="fJumlahPeserta">Jumlah Peserta</label>
+            <select
+              id="fJumlahPeserta"
+              value={jumlahPeserta}
+              onChange={(e) => handleJumlahPesertaChange(Number(e.target.value))}
+            >
+              {[1, 2, 3, 4, 5].map((n) => (
+                <option key={n} value={n}>
+                  {n} Orang
                 </option>
               ))}
             </select>
           </div>
-        )}
 
-        {/* Jumlah Peserta — dipilih sebelum form */}
-        <div className="field" style={{ marginBottom: "1.2rem" }}>
-          <label htmlFor="fJumlahPeserta">Jumlah Peserta</label>
-          <select
-            id="fJumlahPeserta"
-            value={jumlahPeserta}
-            onChange={(e) => handleJumlahPesertaChange(Number(e.target.value))}
-          >
-            {[1, 2, 3, 4, 5].map((n) => (
-              <option key={n} value={n}>
-                {n} Orang
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {googleSelected ? (
-          /* CASE 1: Akun sudah terhubung / User sudah Login */
-          <form onSubmit={onSubmit}>
-            {hasCompletedProfile && !isEditing ? (
-              /* State 1: User memiliki profil lengkap - 1-Click Registration */
-              <div style={{ textAlign: "center" }}>
-                <div style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "0.5rem",
-                  background: "rgba(46, 204, 113, 0.08)",
-                  border: "1px solid rgba(46, 204, 113, 0.15)",
-                  padding: "0.4rem 0.8rem",
-                  borderRadius: "20px",
-                  marginBottom: "1.2rem",
-                  maxWidth: "100%",
-                  boxSizing: "border-box"
-                }}>
-                  <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#2ecc71", display: "inline-block", flexShrink: 0 }}></span>
-                  <span style={{ fontSize: "0.75rem", color: "#27ae60", fontWeight: 700, wordBreak: "break-all", whiteSpace: "normal", textAlign: "left" }}>
-                    Sudah Login: {emailVal}
-                  </span>
-                </div>
-
-                <h3 style={{ marginBottom: "0.4rem" }}>Konfirmasi Pendaftaran</h3>
-                <p className="sub" style={{ marginBottom: "1.5rem" }}>
-                  Satu langkah lagi untuk mendaftar menggunakan profil Anda:
-                </p>
-
-                {error && <div className="form-error" role="alert" style={{ marginBottom: "1rem" }}>{error}</div>}
-
-                <div style={{
-                  background: "var(--chip)",
-                  borderRadius: "10px",
-                  padding: "clamp(0.8rem, 3.5vw, 1.2rem)",
-                  textAlign: "left",
-                  marginBottom: "1.5rem",
-                  border: "1px solid var(--line)"
-                }}>
-                  <div style={{ display: "grid", gap: "0.6rem", fontSize: "0.88rem" }}>
-                    <div>
-                      <span style={{ color: "var(--ink-soft)", display: "block", fontSize: "0.75rem", fontWeight: 700 }}>NAMA LENGKAP</span>
-                      <strong style={{ color: "var(--ink)", wordBreak: "break-word" }}>{nameVal}</strong>
-                    </div>
-                    <div>
-                      <span style={{ color: "var(--ink-soft)", display: "block", fontSize: "0.75rem", fontWeight: 700 }}>WHATSAPP</span>
-                      <strong style={{ color: "var(--ink)", wordBreak: "break-word" }}>{whatsappVal}</strong>
-                    </div>
-                    <div>
-                      <span style={{ color: "var(--ink-soft)", display: "block", fontSize: "0.75rem", fontWeight: 700 }}>INSTANSI / LEMBAGA</span>
-                      <strong style={{ color: "var(--ink)", wordBreak: "break-word" }}>{institutionVal}</strong>
-                    </div>
-                  </div>
-                </div>
-
-                {renderAdditionalParticipantFields()}
-                {renderVoucherField()}
-
-                <button type="submit" className="btn btn-purple btn-lg btn-block" disabled={state === "loading"} style={{ width: "100%" }}>
-                  {state === "loading"
-                    ? "Memproses..."
-                    : isPaid ? `Konfirmasi & Bayar — ${priceLabel}` : "Konfirmasi & Daftar Sekarang"}
-                </button>
-
-                <div style={{ display: "flex", justifyContent: "center", gap: "0.8rem", marginTop: "1.2rem" }}>
-                  <button
-                    type="button"
-                    onClick={() => setIsEditing(true)}
-                    style={{
-                      background: "none",
-                      border: "none",
-                      color: "var(--purple)",
-                      fontSize: "0.78rem",
-                      fontWeight: 700,
-                      cursor: "pointer",
-                      textDecoration: "underline"
-                    }}
-                  >
-                    Edit Data Profil
-                  </button>
-                  <span style={{ color: "var(--line)" }}>|</span>
-                  <button
-                    type="button"
-                    onClick={handleResetGoogle}
-                    style={{
-                      background: "none",
-                      border: "none",
-                      color: "var(--ink-soft)",
-                      fontSize: "0.78rem",
-                      fontWeight: 600,
-                      cursor: "pointer",
-                      textDecoration: "underline"
-                    }}
-                  >
-                    Ganti Akun
-                  </button>
-                </div>
-              </div>
-            ) : (
-              /* State 2: Onboarding Mode (hanya mengisi WhatsApp & Instansi) */
-              <>
-                <div style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  marginBottom: "1rem",
-                  background: "rgba(108, 92, 231, 0.05)",
-                  padding: "0.6rem 0.8rem",
-                  borderRadius: "8px",
-                  border: "1px solid rgba(108, 92, 231, 0.1)"
-                }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", minWidth: 0 }}>
-                    <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#2ecc71", flexShrink: 0 }}></div>
-                    <span style={{
-                      fontSize: "0.75rem",
-                      color: "var(--purple)",
-                      fontWeight: 700,
-                      whiteSpace: "nowrap",
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      maxWidth: "14rem"
-                    }}>
-                      Terhubung: {emailVal}
-                    </span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={handleResetGoogle}
-                    style={{
-                      background: "none",
-                      border: "none",
-                      color: "var(--ink-soft)",
-                      fontSize: "0.72rem",
-                      textDecoration: "underline",
-                      cursor: "pointer",
-                      padding: 0,
-                      flexShrink: 0
-                    }}
-                  >
-                    Ganti Akun
-                  </button>
-                </div>
-
-                <h3 style={{ marginBottom: "0.2rem" }}>Lengkapi Data Profil</h3>
-                <p className="sub" style={{ marginBottom: "1.2rem" }}>Silakan masukkan WhatsApp & Instansi untuk menyelesaikan pendaftaran.</p>
-
-                {error && <div className="form-error" role="alert" style={{ marginBottom: "1rem" }}>{error}</div>}
-
-                {/* Tampilkan field Nama hanya jika user menekan tombol Edit Data Profil */}
-                {isEditing && (
-                  <div className="field">
-                    <label htmlFor="fNama">Nama Lengkap (untuk di sertifikat)</label>
-                    <input
-                      id="fNama"
-                      name="name"
-                      type="text"
-                      placeholder="Contoh: Budi Santoso, S.Pd."
-                      required
-                      minLength={3}
-                      value={nameVal}
-                      onChange={(e) => setNameVal(e.target.value)}
-                    />
-                  </div>
-                )}
-
-                <div className="field">
-                  <label htmlFor="fWa">Nomor WhatsApp Aktif</label>
-                  <input
-                    id="fWa"
-                    name="whatsapp"
-                    type="tel"
-                    placeholder="Contoh: 081234567890"
-                    required
-                    // [FIX C6] Tambah pattern validation WhatsApp — konsisten dengan /daftar
-                    pattern="^08[0-9]{8,13}$"
-                    title="Format: 08xxxxxxxxx (min 10 digit, max 15 digit)"
-                    value={whatsappVal}
-                    onChange={(e) => setWhatsappVal(e.target.value)}
-                  />
-                </div>
-
-                <div className="field">
-                  <label htmlFor="fInst">Asal Lembaga / Instansi</label>
-                  <input
-                    id="fInst"
-                    name="institution"
-                    type="text"
-                    placeholder="Contoh: SDN 1 Bandung / Umum"
-                    required
-                    minLength={3}
-                    value={institutionVal}
-                    onChange={(e) => setInstitutionVal(e.target.value)}
-                  />
-                </div>
-
-                {renderAdditionalParticipantFields()}
-                {renderVoucherField()}
-
-                <button type="submit" className="btn btn-purple btn-lg btn-block" disabled={state === "loading"} style={{ width: "100%" }}>
-                  {state === "loading"
-                    ? "Memproses..."
-                    : isPaid ? `Konfirmasi & Bayar — ${priceLabel}` : "Konfirmasi & Daftar"}
-                </button>
-              </>
-            )}
-          </form>
-        ) : (
-          /* CASE 2: Guest / Belum Login — Hanya ada tombol daftar via Google */
-          <div>
-            <div style={{ textAlign: "center", marginBottom: "1.8rem" }}>
-              <h3 style={{ marginBottom: "0.4rem" }}>Amankan Kursi Anda</h3>
-              <p className="sub" style={{ fontSize: "0.9rem", color: "var(--ink-soft)" }}>
-                {programTitle}<br />
-                <span style={{ fontSize: "0.82rem", opacity: 0.9 }}>📅 {jadwal}</span>
-              </p>
-            </div>
-
-            {/* Tombol Google saja */}
-            <button
-              type="button"
-              className="btn btn-purple btn-lg btn-block"
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: "0.6rem",
-                fontWeight: 700,
-                width: "100%",
-                padding: "1rem",
-                borderRadius: "var(--r-md)",
-                fontSize: "1.05rem",
-                boxShadow: "0 4px 14px var(--purple-soft)"
-              }}
-              onClick={() => setGoogleOpen(true)}
-            >
-              <svg width="20" height="20" viewBox="0 0 18 18" style={{ filter: "brightness(0) invert(1)" }}>
-                <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z" fill="#4285F4"/>
-                <path d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.258c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.938 5.48 18 9 18z" fill="#34A853"/>
-                <path d="M3.964 10.707c-.18-.54-.282-1.117-.282-1.707s.102-1.167.282-1.707V4.96H.957C.347 6.173 0 7.549 0 9s.347 2.827.957 4.04l3.007-2.333z" fill="#FBBC05"/>
-                <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.844 11.426 0 9 0 5.48 0 2.438 2.062.957 4.96l3.007 2.333C4.672 5.164 6.656 3.58 9 3.58z" fill="#EA4335"/>
-              </svg>
-              Daftar Cepat dengan Google
-            </button>
-
-            <p style={{
-              textAlign: "center",
-              fontSize: "0.8rem",
-              color: "var(--ink-faint)",
-              marginTop: "1.5rem",
-              lineHeight: 1.4
-            }}>
-              Pendaftaran aman & instan via Google. Data profil Anda akan otomatis tersimpan.
+          <div style={{ textAlign: "center", marginBottom: "1.2rem" }}>
+            <h3 style={{ marginBottom: "0.3rem" }}>Amankan Kursi Anda</h3>
+            <p className="sub" style={{ fontSize: "0.85rem", color: "var(--ink-soft)", margin: 0 }}>
+              {programTitle} · 📅 {jadwal}
             </p>
           </div>
-        )}
-      </div>
+
+          {renderCheckoutForm()}
+        </div>
+      )}
 
       <GoogleAuthModal
         isOpen={googleOpen}

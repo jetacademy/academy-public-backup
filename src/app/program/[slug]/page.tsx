@@ -17,7 +17,7 @@ import { getProgramBySlug } from "@/lib/programs";
 import { TYPE_LABEL, type ProgramType } from "@/lib/fallback";
 import Image from "next/image";
 import { prisma } from "@/lib/prisma";
-import { formatJadwal, formatHariTanggal, formatJam, rupiah } from "@/lib/format";
+import { formatJadwal, formatHariTanggal, formatJam, rupiah, formatDaysLeftLabel } from "@/lib/format";
 
 // Halaman ini di-ISR (cache 5 menit) — personalisasi member (prefill profil,
 // cek sudah terdaftar) TIDAK lagi dibaca di sini saat SSR, dipindah ke
@@ -75,42 +75,97 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
   const isVibesCoding = program.slug === "vibes-coding";
   const jadwal = formatJadwal(program.scheduleAt);
 
-  // Prioritaskan batch aktif mendatang untuk jadwal display
-  const nextBatch = program.batches?.[0];
+  let activeOnlineBatch: any = null;
+  let activeOfflineBatch: any = null;
+  let zhcOnlineCount = 0;
+  let zhcOfflineCount = 0;
+
+  if (isZeroHuman) {
+    const now = new Date();
+    try {
+      [activeOnlineBatch, activeOfflineBatch] = await Promise.all([
+        prisma.programBatch.findFirst({
+          where: {
+            programId: program.id,
+            isActive: true,
+            scheduleAt: { gte: now },
+            ...({ batchType: "ONLINE" } as any),
+          },
+          orderBy: { scheduleAt: "asc" },
+        }),
+        prisma.programBatch.findFirst({
+          where: {
+            programId: program.id,
+            isActive: true,
+            scheduleAt: { gte: now },
+            ...({ batchType: "OFFLINE" } as any),
+          },
+          orderBy: { scheduleAt: "asc" },
+        }),
+      ]);
+
+      if (activeOnlineBatch) {
+        zhcOnlineCount = await prisma.registration.count({
+          where: {
+            batchId: activeOnlineBatch.id,
+            status: { in: ["PAID", "PASSED"] },
+          },
+        });
+      }
+
+      if (activeOfflineBatch) {
+        zhcOfflineCount = await prisma.registration.count({
+          where: {
+            batchId: activeOfflineBatch.id,
+            status: { in: ["PAID", "PASSED"] },
+          },
+        });
+      }
+    } catch {
+      zhcOnlineCount = 0;
+      zhcOfflineCount = 0;
+    }
+  }
+
+  // Prioritaskan batch online terdekat untuk display utama
+  const nextBatch = isZeroHuman ? (activeOnlineBatch ?? program.batches?.[0]) : program.batches?.[0];
   const targetBatchId = nextBatch?.id;
   const displayScheduleAt = nextBatch?.scheduleAt ?? program.scheduleAt;
   const displayHari = nextBatch ? formatHariTanggal(nextBatch.scheduleAt) : formatHariTanggal(program.scheduleAt);
 
-  // Early Bird quota logic untuk Zero Human Company (20 orang pertama per batch)
-  let zhcPaidCount = 0;
-  if (isZeroHuman) {
-    try {
-      zhcPaidCount = await prisma.registration.count({
-        where: {
-          programId: program.id,
-          status: { in: ["PAID", "PASSED"] },
-          ...(targetBatchId ? { batchId: targetBatchId } : {}),
-        },
-      });
-    } catch {
-      zhcPaidCount = 0;
-    }
-  }
+  // Jadwal khusus Online vs Offline (masing-masing mandiri)
+  const onlineScheduleDate = activeOnlineBatch?.scheduleAt ?? displayScheduleAt;
+  const offlineScheduleDate = activeOfflineBatch?.scheduleAt ?? new Date(onlineScheduleDate.getTime() + 2 * 86400000);
 
-  const EARLY_BIRD_QUOTA = 20;
-  const isEarlyBirdActive = isZeroHuman ? zhcPaidCount < EARLY_BIRD_QUOTA : false;
+  const scheduleOnlineFormatted = `${formatHariTanggal(onlineScheduleDate)}, ${formatJam(onlineScheduleDate)}`;
+  const daysLeftOnline = formatDaysLeftLabel(onlineScheduleDate);
+
+  const scheduleOfflineFormatted = `${formatHariTanggal(offlineScheduleDate)}, ${formatJam(offlineScheduleDate)}`;
+  const daysLeftOffline = formatDaysLeftLabel(offlineScheduleDate);
+
+  const EARLY_BIRD_ONLINE_QUOTA = activeOnlineBatch?.quotaOnlineEb ?? 20;
+  const EARLY_BIRD_OFFLINE_QUOTA = activeOfflineBatch?.quotaOfflineEb ?? 10;
+  const OFFLINE_MAX_SEATS = activeOfflineBatch?.offlineSeatsMax ?? 20;
+
+  const onlineEbPrice = activeOnlineBatch?.priceOnlineEb ?? 225000;
+  const onlineNormalPrice = activeOnlineBatch?.priceOnline ?? 490000;
+  const offlineEbPrice = activeOfflineBatch?.priceOfflineEb ?? 750000;
+  const offlineNormalPrice = activeOfflineBatch?.priceOffline ?? 1400000;
+
+  const isOnlineEbActive = isZeroHuman ? zhcOnlineCount < EARLY_BIRD_ONLINE_QUOTA : false;
+  const isOfflineEbActive = isZeroHuman ? zhcOfflineCount < EARLY_BIRD_OFFLINE_QUOTA : false;
+  const isOfflineSoldOut = isZeroHuman ? (zhcOfflineCount >= OFFLINE_MAX_SEATS || !activeOfflineBatch) : false;
+  const isEarlyBirdActive = isOnlineEbActive;
 
   const effectivePrice = isZeroHuman
-    ? (isEarlyBirdActive ? 225000 : 490000)
+    ? (isOnlineEbActive ? onlineEbPrice : onlineNormalPrice)
     : program.price;
   const effectivePriceOld = isZeroHuman
-    ? (isEarlyBirdActive ? 490000 : null)
+    ? (isOnlineEbActive ? onlineNormalPrice : null)
     : program.priceOld;
 
   const priceLabel = isFree ? "GRATIS" : rupiah(effectivePrice);
-  const ebCtaNavLabel = isZeroHuman
-    ? (isEarlyBirdActive ? "Early Bird Rp 225.000" : "Daftar — Rp 490.000")
-    : (isFree ? "Daftar Gratis" : "Daftar");
+  const ebCtaNavLabel = isFree ? "Daftar Gratis" : "Daftar";
 
   const faqItems = isAiForTeachers
     ? [
@@ -2152,84 +2207,114 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
       )}
 
       {/* ===== FORM DAFTAR ===== */}
-      <section className="section" id="daftar">
+      <section className="section" id="daftar" style={{ paddingTop: "3rem", paddingBottom: "5rem", background: "rgba(241, 242, 246, 0.5)" }}>
         <div className="container">
-          <div className="bento bento-purple reveal" style={{ padding: "clamp(1rem, 5vw, 3rem)" }}>
-            <div className="hero-card" style={{ alignItems: "center" }}>
-              <div>
-                <h2 style={{ fontSize: "clamp(1.9rem, 4.5vw, 3rem)", marginBottom: ".8rem" }}>
-                  {isZeroHuman ? "Siap Membangun Perusahaan Anda dengan AI?" : "Daftar Sekarang"}
+          {isZeroHuman ? (
+            <div>
+              {/* CTA Header Terpusat di Atas */}
+              <div style={{ textAlign: "center", maxWidth: "720px", margin: "0 auto 2.5rem" }}>
+                <div
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "0.5rem",
+                    padding: "0.35rem 0.95rem",
+                    borderRadius: "999px",
+                    background: "rgba(108, 92, 231, 0.1)",
+                    border: "1px solid rgba(108, 92, 231, 0.25)",
+                    fontSize: "0.78rem",
+                    fontWeight: 700,
+                    letterSpacing: "0.04em",
+                    color: "#6c5ce7",
+                    textTransform: "uppercase",
+                    marginBottom: "0.85rem",
+                  }}
+                >
+                  <span>⚡</span> Pendaftaran Batch Resmi Dibuka
+                </div>
+
+                <h2
+                  style={{
+                    fontSize: "clamp(2rem, 4.5vw, 2.9rem)",
+                    fontWeight: 900,
+                    color: "var(--ink)",
+                    lineHeight: 1.2,
+                    letterSpacing: "-0.03em",
+                    marginBottom: "0.85rem",
+                  }}
+                >
+                  Siap Membangun Perusahaan Anda dengan AI?
                 </h2>
 
-                {/* Standout Early Bird Box for Zero Human Company */}
-                {isZeroHuman && (
-                  <div style={{
-                    marginBottom: "1.2rem",
-                    padding: "1.1rem 1.25rem",
-                    background: isEarlyBirdActive ? "linear-gradient(135deg, #ffffff 0%, #faf8ff 100%)" : "#ffffff",
-                    borderRadius: "16px",
-                    border: isEarlyBirdActive ? "2px solid #a78bfa" : "2px solid #e2e8f0",
-                    boxShadow: isEarlyBirdActive ? "0 8px 25px rgba(108, 92, 231, 0.12)" : "0 4px 16px rgba(0, 0, 0, 0.05)",
-                    position: "relative"
-                  }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.75rem", flexWrap: "wrap", gap: "0.5rem" }}>
-                      <div style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem", background: isEarlyBirdActive ? "rgba(239, 68, 68, 0.1)" : "rgba(245, 158, 11, 0.1)", border: `1px solid ${isEarlyBirdActive ? "rgba(239, 68, 68, 0.3)" : "rgba(245, 158, 11, 0.3)"}`, padding: "0.3rem 0.75rem", borderRadius: "999px" }}>
-                        <span style={{ display: "inline-block", width: "8px", height: "8px", borderRadius: "50%", background: isEarlyBirdActive ? "#ef4444" : "#d97706" }} />
-                        <span style={{ fontSize: "0.82rem", fontWeight: 800, color: isEarlyBirdActive ? "#dc2626" : "#b45309", letterSpacing: "0.02em" }}>
-                          {isEarlyBirdActive ? "⚡ PROMO EARLY BIRD" : "HARGA NORMAL"}
-                        </span>
-                      </div>
-                      {isEarlyBirdActive ? (
-                        <span style={{ fontSize: "0.78rem", fontWeight: 800, color: "#7c3aed", background: "rgba(124, 58, 237, 0.1)", padding: "0.25rem 0.7rem", borderRadius: "999px", border: "1px solid rgba(124, 58, 237, 0.2)" }}>
-                          🔥 Promo Terbatas
-                        </span>
-                      ) : (
-                        <span style={{ fontSize: "0.78rem", fontWeight: 800, color: "#475569", background: "rgba(100, 116, 139, 0.1)", padding: "0.25rem 0.7rem", borderRadius: "999px", border: "1px solid rgba(100, 116, 139, 0.2)" }}>
-                          Tarif Normal
-                        </span>
-                      )}
-                    </div>
-
-                    <div style={{ display: "flex", alignItems: "baseline", gap: "0.7rem", flexWrap: "wrap" }}>
-                      <span style={{ fontWeight: 900, color: "var(--purple)", fontSize: "1.5rem" }}>{rupiah(effectivePrice)}</span>
-                      {effectivePriceOld && (
-                        <span style={{ textDecoration: "line-through", color: "var(--ink-faint)", fontSize: "1.05rem", fontWeight: 600 }}>{rupiah(effectivePriceOld)}</span>
-                      )}
-                      {isEarlyBirdActive && (
-                        <span style={{ background: "rgba(34, 197, 94, 0.15)", color: "#15803d", fontSize: "0.78rem", fontWeight: 800, padding: "0.25rem 0.6rem", borderRadius: "6px", border: "1px solid rgba(34, 197, 94, 0.3)" }}>Hemat Rp 265.000</span>
-                      )}
-                    </div>
-
-                    {isEarlyBirdActive ? (
-                      <p style={{ fontSize: "0.83rem", color: "var(--ink-soft)", marginTop: "0.45rem", marginBottom: 0 }}>
-                        Potongan harga khusus promo Early Bird. Harga kembali normal Rp490.000 setelah promo berakhir.
-                      </p>
-                    ) : (
-                      <p style={{ fontSize: "0.83rem", color: "#b91c1c", marginTop: "0.45rem", marginBottom: 0, fontWeight: 600 }}>
-                        Promo Early Bird telah berakhir. Saat ini berlaku harga normal Rp490.000.
-                      </p>
-                    )}
-                  </div>
-                )}
-                <p style={{ fontWeight: 600, fontSize: "0.88rem", opacity: .8, marginTop: "0.6rem", marginBottom: "1.2rem" }}>
-                  {isZeroHuman
-                    ? "Isi data di bawah untuk amankan pendaftaran. Akses 6 AI Agent."
-                    : isVibesCoding
-                      ? "Harga spesial — ~~Rp 860.000~~. Isi data di bawah, konfirmasi melalui WhatsApp."
-                      : "Pendaftaran satu menit. Akses instan di web &amp; dikirim via WhatsApp."}
+                <p
+                  style={{
+                    fontSize: "clamp(0.95rem, 1.8vw, 1.1rem)",
+                    color: "var(--ink-soft)",
+                    lineHeight: 1.55,
+                    margin: "0 auto",
+                    maxWidth: "580px",
+                  }}
+                >
+                  Pilih format pelatihan (Online Zoom atau Tatap Muka di Bekasi) dan amankan kuota Anda sekarang.
                 </p>
               </div>
-              <RegisterForm
-                programId={program.id}
-                programSlug={program.slug}
-                programTitle={program.title}
-                jadwal={jadwal}
-                price={effectivePrice}
-                priceLabel={priceLabel}
-                batches={program.batches?.map((b) => ({ id: b.id, scheduleAt: b.scheduleAt.toISOString(), seatsLeft: b.seatsLeft }))}
-              />
+
+              {/* Form Card Terpusat Penuh */}
+              <div style={{ maxWidth: "1020px", margin: "0 auto" }}>
+                <RegisterForm
+                  programId={program.id}
+                  programSlug={program.slug}
+                  programTitle={program.title}
+                  jadwal={jadwal}
+                  price={effectivePrice}
+                  priceLabel={priceLabel}
+                  batches={program.batches?.map((b) => ({ id: b.id, scheduleAt: b.scheduleAt.toISOString(), seatsLeft: b.seatsLeft }))}
+                  attendanceOptions={{
+                    hasOffline: true,
+                    venueOffline: activeOfflineBatch?.offlineVenue || "Coworking Space Kota Bekasi",
+                    durationOffline: "4 Jam Tatap Muka",
+                    scheduleOnline: scheduleOnlineFormatted,
+                    scheduleOffline: scheduleOfflineFormatted,
+                    daysLeftOnline,
+                    daysLeftOffline,
+                    priceOnline: isOnlineEbActive ? onlineEbPrice : onlineNormalPrice,
+                    priceOnlineOld: isOnlineEbActive ? onlineNormalPrice : null,
+                    isOnlineEbActive,
+                    priceOffline: isOfflineEbActive ? offlineEbPrice : offlineNormalPrice,
+                    priceOfflineOld: isOfflineEbActive ? offlineNormalPrice : null,
+                    isOfflineEbActive,
+                    isOfflineSoldOut,
+                    onlineBatchId: activeOnlineBatch?.id,
+                    offlineBatchId: activeOfflineBatch?.id,
+                  }}
+                />
+              </div>
             </div>
-          </div>
+          ) : (
+            <div className="bento bento-purple reveal" style={{ padding: "clamp(1rem, 5vw, 3rem)" }}>
+              <div className="hero-card" style={{ alignItems: "center" }}>
+                <div>
+                  <h2 style={{ fontSize: "clamp(1.9rem, 4.5vw, 3rem)", marginBottom: ".8rem" }}>
+                    Daftar Sekarang
+                  </h2>
+                  <p style={{ fontWeight: 600, fontSize: "0.88rem", opacity: .8, marginTop: "0.6rem", marginBottom: "1.2rem" }}>
+                    {isVibesCoding
+                      ? "Harga spesial — ~~Rp 860.000~~. Isi data di bawah, konfirmasi melalui WhatsApp."
+                      : "Pendaftaran satu menit. Akses instan di web & dikirim via WhatsApp."}
+                  </p>
+                </div>
+                <RegisterForm
+                  programId={program.id}
+                  programSlug={program.slug}
+                  programTitle={program.title}
+                  jadwal={jadwal}
+                  price={effectivePrice}
+                  priceLabel={priceLabel}
+                  batches={program.batches?.map((b) => ({ id: b.id, scheduleAt: b.scheduleAt.toISOString(), seatsLeft: b.seatsLeft }))}
+                />
+              </div>
+            </div>
+          )}
         </div>
       </section>
 

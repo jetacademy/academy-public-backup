@@ -50,6 +50,7 @@ export async function POST(req: Request) {
     credential?: string;
     participants?: (string | ParticipantPayload)[];
     voucherCode?: string;
+    attendanceType?: string;
   };
   try {
     body = await req.json();
@@ -69,6 +70,8 @@ export async function POST(req: Request) {
   const batchIdInput = (body.batchId ?? "").trim();
   const credential = (body.credential ?? "").trim();
   const voucherCode = (body.voucherCode ?? "").trim();
+  const rawAttendanceType = (body.attendanceType ?? "ONLINE").trim().toUpperCase();
+  const attendanceType = rawAttendanceType === "OFFLINE" ? "OFFLINE" : "ONLINE";
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? "http://localhost:3000";
 
   if (name.length < 3) return NextResponse.json({ error: "Nama minimal 3 huruf." }, { status: 400 });
@@ -214,27 +217,82 @@ export async function POST(req: Request) {
       }
     }
 
-    // ── HARGA / EARLY BIRD: zero-human-company (20 Kuota Pertama per Batch) ──
+    // ── HARGA / EARLY BIRD: zero-human-company (Kuota Early Bird Terpisah Online vs Offline Bekasi) ──
     let unitPrice = program.price;
+    let selectedVenue: string | null = null;
+
     if (program.slug === "zero-human-company") {
-      const EARLY_BIRD_QUOTA = 20;
       let targetBatchId = batchId;
-      if (!targetBatchId) {
-        const upcomingBatch = await prisma.programBatch.findFirst({
-          where: { programId: program.id, isActive: true, scheduleAt: { gt: new Date() } },
-          orderBy: { scheduleAt: "asc" },
-          select: { id: true },
-        });
-        targetBatchId = upcomingBatch?.id ?? null;
+      let targetBatch: any = null;
+
+      // Jika batchId disediakan, pastikan batch-nya sesuai dengan attendanceType
+      if (targetBatchId) {
+        targetBatch = await prisma.programBatch.findUnique({ where: { id: targetBatchId } });
+        // Jika batch yang dikirim tidak sesuai tipe (mis. batch online padahal pilih offline), cari ulang
+        if (targetBatch && attendanceType === "OFFLINE" && (targetBatch as any).batchType !== "OFFLINE" && !(targetBatch as any).hasOffline) {
+          targetBatch = null;
+          targetBatchId = null;
+        }
       }
-      const earlyBirdPaidCount = await prisma.registration.count({
-        where: {
-          programId: program.id,
-          status: { in: ["PAID", "PASSED"] },
-          ...(targetBatchId ? { batchId: targetBatchId } : {}),
-        },
-      });
-      unitPrice = earlyBirdPaidCount < EARLY_BIRD_QUOTA ? 225000 : 490000;
+
+      if (!targetBatchId || !targetBatch) {
+        targetBatch = await prisma.programBatch.findFirst({
+          where: {
+            programId: program.id,
+            isActive: true,
+            scheduleAt: { gt: new Date() },
+            ...(attendanceType === "OFFLINE"
+              ? { OR: [{ batchType: "OFFLINE" }, { hasOffline: true }] }
+              : { batchType: "ONLINE" }) as any,
+          },
+          orderBy: { scheduleAt: "asc" },
+        });
+        targetBatchId = targetBatch?.id ?? null;
+      }
+
+      // Pastikan batchId pada registrasi menunjuk ke batch yang tepat
+      if (targetBatchId) {
+        batchId = targetBatchId;
+      }
+
+      selectedVenue = targetBatch?.offlineVenue || "Coworking Space Kota Bekasi";
+
+      // Kuota early bird dihitung spesifik per batch yang bersangkutan
+      const paidCountForType = targetBatchId
+        ? await prisma.registration.count({
+            where: {
+              batchId: targetBatchId,
+              status: { in: ["PAID", "PASSED"] },
+            },
+          })
+        : await prisma.registration.count({
+            where: {
+              programId: program.id,
+              status: { in: ["PAID", "PASSED"] },
+              ...(attendanceType ? { attendanceType: attendanceType as any } : {}),
+            },
+          });
+
+      if (attendanceType === "OFFLINE") {
+        const OFFLINE_EB_QUOTA = targetBatch?.quotaOfflineEb ?? 10;
+        const OFFLINE_SEATS_MAX = targetBatch?.seatsLeft ?? targetBatch?.offlineSeatsMax ?? 20;
+        const priceOfflineEb = targetBatch?.priceOfflineEb ?? 750000;
+        const priceOffline = targetBatch?.priceOffline ?? 1400000;
+
+        // Cegah pendaftaran jika kuota kursi ruangan sudah penuh
+        if (paidCountForType >= OFFLINE_SEATS_MAX) {
+          return NextResponse.json(
+            { error: "Mohon maaf, tiket Offline (tatap muka 4 jam) di Coworking Space Kota Bekasi untuk batch ini sudah penuh. Silakan pilih tiket Online." },
+            { status: 400 }
+          );
+        }
+        unitPrice = paidCountForType < OFFLINE_EB_QUOTA ? priceOfflineEb : priceOffline;
+      } else {
+        const ONLINE_EB_QUOTA = targetBatch?.quotaOnlineEb ?? 20;
+        const priceOnlineEb = targetBatch?.priceOnlineEb ?? 225000;
+        const priceOnline = targetBatch?.priceOnline ?? 490000;
+        unitPrice = paidCountForType < ONLINE_EB_QUOTA ? priceOnlineEb : priceOnline;
+      }
     }
 
     // Total harga = harga per peserta × jumlah peserta
@@ -318,11 +376,12 @@ export async function POST(req: Request) {
     // Data multi-pendaftar disimpan di field participants (Json array)
     const participantsJson = participants.length > 0 ? JSON.parse(JSON.stringify(participants)) : undefined;
 
-    const reg = await prisma.registration.upsert({
+    const reg: any = await (prisma.registration as any).upsert({
       where: { whatsapp_programId: { whatsapp, programId: program.id } },
       create: {
         name, whatsapp, email, institution,
         programId: program.id, userId: user.id, batchId,
+        attendanceType,
         participants: participantsJson,
       },
       update: {
@@ -330,6 +389,7 @@ export async function POST(req: Request) {
         // Registrasi lama (EXPIRED/FAILED/CANCELLED/REFUNDED) di-reset ke REGISTERED saat coba bayar lagi —
         // Kasus 3 di atas sudah menolak lebih dulu kalau statusnya benar-benar PAID/PASSED.
         status: "REGISTERED",
+        attendanceType,
         ...(batchId ? { batchId } : {}),
         ...(participantsJson ? { participants: participantsJson } : {}),
       },
@@ -447,8 +507,8 @@ export async function POST(req: Request) {
       });
     }
 
-    // invoice pending masih berlaku → pakai ulang
-    if (reg.payment?.status === "PENDING" && reg.payment.invoiceUrl) {
+    // invoice pending masih berlaku dengan nominal yang sama persis → pakai ulang
+    if (reg.payment?.status === "PENDING" && reg.payment.invoiceUrl && (!reg.payment.amount || reg.payment.amount === chargeAmount)) {
       return NextResponse.json({
         ok: true,
         invoiceUrl: reg.payment.invoiceUrl,
@@ -558,10 +618,11 @@ export async function POST(req: Request) {
       });
     }
 
-    // Deskripsi invoice: cantumkan jumlah peserta + kode voucher jika dipakai
+    // Deskripsi invoice: cantumkan jenis tiket (Online/Offline Bekasi), jumlah peserta + kode voucher jika dipakai
+    const typeLabel = attendanceType === "OFFLINE" ? " [Offline Bekasi]" : " [Online]";
     const pesertaDesc = participantCount > 1
-      ? `${program.title} × ${participantCount} peserta (${name} dkk.)`
-      : `${program.title} (${name})`;
+      ? `${program.title}${typeLabel} × ${participantCount} peserta (${name} dkk.)`
+      : `${program.title}${typeLabel} (${name})`;
     const invoiceDesc = affiliateResult
       ? `${pesertaDesc} (Affiliate: ${affiliateResult.affiliate.code})`
       : voucherResult ? `${pesertaDesc} (Voucher: ${voucherResult.voucher.code})` : pesertaDesc;

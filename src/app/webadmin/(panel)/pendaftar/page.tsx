@@ -115,6 +115,17 @@ export default async function AdminPendaftar({ searchParams }: {
                   <td data-label="Program" className="muted">{r.program.title}</td>
                   <td data-label="Batch" className="muted">
                     {r.batch ? formatHariTanggal(r.batch.scheduleAt) : <span className="muted">—</span>}
+                    <div style={{ marginTop: "0.3rem" }}>
+                      {(r as any).attendanceType === "OFFLINE" ? (
+                        <span className="badge" style={{ background: "rgba(225, 112, 85, 0.15)", color: "#d63031", fontSize: "0.7rem", fontWeight: 700 }}>
+                          🏢 Offline Bekasi
+                        </span>
+                      ) : (
+                        <span className="badge" style={{ background: "rgba(108, 92, 231, 0.1)", color: "#6c5ce7", fontSize: "0.7rem", fontWeight: 700 }}>
+                          💻 Online
+                        </span>
+                      )}
+                    </div>
                   </td>
                   <td data-label="Status"><span className={`badge ${b.cls}`}>{b.label}</span></td>
                   <td data-label="Sertifikat">

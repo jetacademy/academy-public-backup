@@ -5,6 +5,7 @@ import { sanitizeHtml } from "@/lib/sanitize";
 import { slugify } from "@/lib/slug";
 import { sanitizeContentBlocks } from "@/app/webadmin/actions";
 import { parseMarkdownToBlocks } from "@/lib/content-blocks";
+import { formatJadwal, formatDaysLeftLabel } from "@/lib/format";
 
 const SITE_URL = process.env.NEXT_PUBLIC_BASE_URL?.includes("localhost")
   ? process.env.NEXT_PUBLIC_BASE_URL
@@ -31,39 +32,182 @@ export async function GET(req: Request) {
         batches: {
           where: { isActive: true, scheduleAt: { gte: new Date() } },
           orderBy: { scheduleAt: "asc" },
-          select: { id: true, scheduleAt: true, seatsLeft: true },
         },
       },
       orderBy: { scheduleAt: "asc" },
     });
 
-    const payload = programs.map((p) => ({
-      slug: p.slug,
-      url: `${baseUrl}/program/${p.slug}`,
-      type: p.type,
-      title: p.title,
-      tagline: p.tagline,
-      description: p.description,
-      mentorName: p.mentorName,
-      mentorBio: p.mentorBio,
-      materi: p.materi,
-      deliverables: p.deliverables,
-      durationLabel: p.durationLabel,
-      isFree: p.price === 0,
-      price: p.price,
-      priceOld: p.priceOld,
-      certPrice: p.certPrice,
-      certPriceOld: p.certPriceOld,
-      category: p.category?.name ?? null,
-      nextSchedule: (p.batches[0]?.scheduleAt ?? p.scheduleAt).toISOString(),
-      upcomingBatches: p.batches.map((b) => ({
-        id: b.id,
-        scheduleAt: b.scheduleAt.toISOString(),
-        seatsLeft: b.seatsLeft,
-      })),
-      seatsLeft: p.seatsLeft,
-      isFeatured: p.isFeatured,
-    }));
+    // Ambil registrasi terbayar sekaligus untuk semua batch (hindari N+1)
+    const allBatchIds = programs.flatMap((p) => p.batches.map((b) => b.id));
+    const regCounts = allBatchIds.length > 0
+      ? await prisma.registration.groupBy({
+          by: ["batchId"],
+          where: {
+            batchId: { in: allBatchIds },
+            status: { in: ["PAID", "PASSED"] },
+          },
+          _count: { id: true },
+        })
+      : [];
+    const countMap = new Map<string, number>();
+    for (const r of regCounts) {
+      if (r.batchId) countMap.set(r.batchId, r._count.id);
+    }
+
+    // Hitung live quota untuk program zero-human-company jika ada
+    const zhcProgram = programs.find((p) => p.slug === "zero-human-company");
+    let zhcHybridStats: any = null;
+
+    if (zhcProgram) {
+      const activeOnlineBatch = (zhcProgram.batches as any[]).find((b) => b.batchType === "ONLINE" || (!b.batchType && !b.hasOffline)) || (zhcProgram.batches[0] as any);
+      const activeOfflineBatch = (zhcProgram.batches as any[]).find((b) => b.batchType === "OFFLINE" || b.hasOffline);
+
+      const onlineCount = activeOnlineBatch?.id ? (countMap.get(activeOnlineBatch.id) ?? 0) : 0;
+      const offlineCount = activeOfflineBatch?.id ? (countMap.get(activeOfflineBatch.id) ?? 0) : 0;
+
+      const onlineDate = activeOnlineBatch?.scheduleAt ?? zhcProgram.scheduleAt;
+      const offlineDate = activeOfflineBatch?.scheduleAt
+        ? new Date(activeOfflineBatch.scheduleAt)
+        : new Date(onlineDate.getTime() + 2 * 86400000);
+
+      const onlineEbQuota = activeOnlineBatch?.quotaOnlineEb ?? 20;
+      const offlineEbQuota = activeOfflineBatch?.quotaOfflineEb ?? 10;
+      const offlineSeatsMax = activeOfflineBatch?.seatsLeft ?? activeOfflineBatch?.offlineSeatsMax ?? 20;
+
+      zhcHybridStats = {
+        online: {
+          batchId: activeOnlineBatch?.id,
+          batchName: activeOnlineBatch?.name || "Batch Online",
+          label: "Online via Zoom",
+          schedule: onlineDate.toISOString(),
+          scheduleFormatted: formatJadwal(onlineDate),
+          daysLeft: formatDaysLeftLabel(onlineDate),
+          earlyBirdPrice: activeOnlineBatch?.priceOnlineEb ?? 225000,
+          normalPrice: activeOnlineBatch?.priceOnline ?? 490000,
+          earlyBirdQuota: onlineEbQuota,
+          paidCount: onlineCount,
+          earlyBirdRemaining: Math.max(0, onlineEbQuota - onlineCount),
+          isEarlyBirdActive: onlineCount < onlineEbQuota,
+        },
+        offline: {
+          batchId: activeOfflineBatch?.id,
+          batchName: activeOfflineBatch?.name || "Batch Offline Bekasi",
+          label: "Offline",
+          venue: activeOfflineBatch?.offlineVenue || "Coworking Space Kota Bekasi",
+          duration: "4 Jam Tatap Muka",
+          schedule: offlineDate.toISOString(),
+          scheduleFormatted: formatJadwal(offlineDate),
+          daysLeft: formatDaysLeftLabel(offlineDate),
+          earlyBirdPrice: activeOfflineBatch?.priceOfflineEb ?? 750000,
+          normalPrice: activeOfflineBatch?.priceOffline ?? 1400000,
+          earlyBirdQuota: offlineEbQuota,
+          seatsMax: offlineSeatsMax,
+          paidCount: offlineCount,
+          earlyBirdRemaining: Math.max(0, offlineEbQuota - offlineCount),
+          seatsRemaining: Math.max(0, offlineSeatsMax - offlineCount),
+          isEarlyBirdActive: offlineCount < offlineEbQuota,
+          isSoldOut: offlineCount >= offlineSeatsMax || !activeOfflineBatch,
+        },
+      };
+    }
+
+    const payload = programs.map((p) => {
+      const isZhc = p.slug === "zero-human-company";
+
+      const upcomingBatches = p.batches.map((b: any) => {
+        const isOfflineBatch = b.batchType === "OFFLINE" || Boolean(b.hasOffline);
+        const bType: "ONLINE" | "OFFLINE" = isOfflineBatch ? "OFFLINE" : "ONLINE";
+        const paidCount = countMap.get(b.id) ?? 0;
+
+        const ebQuota = isOfflineBatch
+          ? (b.quotaOfflineEb ?? 10)
+          : (b.quotaOnlineEb ?? 20);
+        const isEbActive = paidCount < ebQuota;
+
+        const normalPrice = isOfflineBatch
+          ? (b.priceOffline ?? (isZhc ? 1400000 : p.price))
+          : (b.priceOnline ?? (isZhc ? 490000 : p.price));
+        const ebPrice = isOfflineBatch
+          ? (b.priceOfflineEb ?? (isZhc ? 750000 : null))
+          : (b.priceOnlineEb ?? (isZhc ? 225000 : null));
+
+        const currentPrice = isEbActive && ebPrice !== null ? ebPrice : normalPrice;
+        const maxSeats = isOfflineBatch ? (b.offlineSeatsMax ?? 20) : b.seatsLeft;
+        const seatsRemaining = maxSeats !== null && maxSeats !== undefined ? Math.max(0, maxSeats - paidCount) : null;
+        const isSoldOut = maxSeats !== null && maxSeats !== undefined ? paidCount >= maxSeats : false;
+        const sched = new Date(b.scheduleAt);
+
+        return {
+          id: b.id,
+          name: b.name || (isOfflineBatch ? `Batch Offline ${p.title}` : `Batch Online ${p.title}`),
+          batchType: bType,
+          formatLabel: isOfflineBatch ? "Offline" : "Online via Zoom",
+          scheduleAt: sched.toISOString(),
+          scheduleFormatted: formatJadwal(sched),
+          daysLeft: formatDaysLeftLabel(sched),
+          isActive: b.isActive,
+          hasOffline: Boolean(b.hasOffline || (isZhc && isOfflineBatch)),
+          offlineVenue: b.offlineVenue || (isOfflineBatch ? "Coworking Space Kota Bekasi" : null),
+          offlineMapUrl: b.offlineMapUrl || null,
+          offlineSeatsMax: b.offlineSeatsMax ?? (isOfflineBatch ? 20 : null),
+          seatsLeft: b.seatsLeft,
+          paidCount,
+          seatsRemaining,
+          isSoldOut,
+          pricing: {
+            currentPrice,
+            normalPrice,
+            earlyBirdPrice: ebPrice,
+            earlyBirdQuota: ebQuota,
+            earlyBirdRemaining: Math.max(0, ebQuota - paidCount),
+            isEarlyBirdActive: isEbActive,
+          },
+          // Properti legacy untuk kompatibilitas ke belakang
+          priceOnlineEb: b.priceOnlineEb ?? (isZhc ? 225000 : null),
+          priceOnline: b.priceOnline ?? (isZhc ? 490000 : null),
+          quotaOnlineEb: b.quotaOnlineEb ?? (isZhc ? 20 : null),
+          priceOfflineEb: b.priceOfflineEb ?? (isZhc ? 750000 : null),
+          priceOffline: b.priceOffline ?? (isZhc ? 1400000 : null),
+          quotaOfflineEb: b.quotaOfflineEb ?? (isZhc ? 10 : null),
+        };
+      });
+
+      const onlineBatches = upcomingBatches.filter((b) => b.batchType === "ONLINE");
+      const offlineBatches = upcomingBatches.filter((b) => b.batchType === "OFFLINE");
+
+      return {
+        slug: p.slug,
+        url: `${baseUrl}/program/${p.slug}`,
+        type: p.type,
+        title: p.title,
+        tagline: p.tagline,
+        description: p.description,
+        mentorName: p.mentorName,
+        mentorBio: p.mentorBio,
+        materi: p.materi,
+        deliverables: p.deliverables,
+        durationLabel: p.durationLabel,
+        isFree: p.price === 0,
+        price: p.price,
+        priceOld: p.priceOld,
+        certPrice: p.certPrice,
+        certPriceOld: p.certPriceOld,
+        category: p.category?.name ?? null,
+        nextSchedule: (p.batches[0]?.scheduleAt ?? p.scheduleAt).toISOString(),
+        upcomingBatches,
+        batchesSummary: {
+          onlineCount: onlineBatches.length,
+          offlineCount: offlineBatches.length,
+          activeOnline: onlineBatches[0] ?? null,
+          activeOffline: offlineBatches[0] ?? null,
+          online: onlineBatches,
+          offline: offlineBatches,
+        },
+        hybridPricing: isZhc ? zhcHybridStats : null,
+        seatsLeft: p.seatsLeft,
+        isFeatured: p.isFeatured,
+      };
+    });
 
     return NextResponse.json({ ok: true, count: payload.length, programs: payload });
   } catch (err) {

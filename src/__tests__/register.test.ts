@@ -9,6 +9,7 @@
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { POST } from '@/app/api/register/route';
+import { createInvoice } from '@/lib/xendit';
 
 // ─── Hoisted: define mocks before vi.mock factories ────────────────
 
@@ -669,6 +670,184 @@ describe('POST /api/register — multi-participant flow', () => {
     });
     // Verifies user creation and registration was called for both
     expect(mockPrisma.registration.upsert).toHaveBeenCalledTimes(2);
+  });
+
+  describe('Batch Hybrid: Online vs Offline Bekasi (Zero Human Company)', () => {
+    beforeEach(async () => {
+      const { isXenditConfigured, createInvoice } = await import('@/lib/xendit');
+      vi.mocked(isXenditConfigured).mockReturnValue(true);
+      vi.mocked(createInvoice).mockClear().mockResolvedValue({
+        id: 'inv-test',
+        invoice_url: 'https://xendit.co/inv/test',
+        status: 'PENDING',
+      });
+    });
+
+    it('applies Early Bird Rp 225.000 for Online when online count < 20', async () => {
+      const program = makeProgram({ slug: 'zero-human-company', price: 490000 });
+      mockPrisma.program.findUnique.mockResolvedValue(program);
+      mockPrisma.registration.findFirst.mockResolvedValue(null);
+      mockPrisma.user.findFirst.mockResolvedValue({ id: 'user-1' });
+      mockPrisma.registration.count.mockResolvedValue(5); // online count 5 < 20
+      mockPrisma.registration.upsert.mockResolvedValue(
+        makeRegistration({ programId: program.id, status: 'REGISTERED', attendanceType: 'ONLINE' })
+      );
+
+      const res = await makePostRequest({
+        name: 'Peserta Online',
+        whatsapp: '081234567890',
+        email: 'online@example.com',
+        programSlug: 'zero-human-company',
+        attendanceType: 'ONLINE',
+      });
+
+      expect(res.status).toBe(200);
+      expect(createInvoice).toHaveBeenCalledWith(
+        expect.objectContaining({
+          amount: 225000,
+          description: expect.stringContaining('Online'),
+        })
+      );
+    });
+
+    it('applies Early Bird Rp 750.000 for Offline Bekasi when offline count < 10', async () => {
+      const program = makeProgram({ slug: 'zero-human-company', price: 1400000 });
+      mockPrisma.program.findUnique.mockResolvedValue(program);
+      mockPrisma.registration.findFirst.mockResolvedValue(null);
+      mockPrisma.user.findFirst.mockResolvedValue({ id: 'user-1' });
+      mockPrisma.registration.count.mockResolvedValue(5); // offline count 5 < 10 (masuk early bird)
+      mockPrisma.registration.upsert.mockResolvedValue(
+        makeRegistration({ programId: program.id, status: 'REGISTERED', attendanceType: 'OFFLINE' })
+      );
+
+      const res = await makePostRequest({
+        name: 'Peserta Offline EB',
+        whatsapp: '081234567891',
+        email: 'offline-eb@example.com',
+        programSlug: 'zero-human-company',
+        attendanceType: 'OFFLINE',
+      });
+
+      expect(res.status).toBe(200);
+      expect(createInvoice).toHaveBeenCalledWith(
+        expect.objectContaining({
+          amount: 750000,
+          description: expect.stringContaining('Offline Bekasi'),
+        })
+      );
+    });
+
+    it('applies Normal price Rp 1.400.000 for Offline Bekasi when offline count >= 10 and < 20', async () => {
+      const program = makeProgram({ slug: 'zero-human-company', price: 1400000 });
+      mockPrisma.program.findUnique.mockResolvedValue(program);
+      mockPrisma.registration.findFirst.mockResolvedValue(null);
+      mockPrisma.user.findFirst.mockResolvedValue({ id: 'user-1' });
+      mockPrisma.registration.count.mockResolvedValue(10); // offline count 10 >= 10, EB habis tapi masih sisa reguler (< 20)
+      mockPrisma.registration.upsert.mockResolvedValue(
+        makeRegistration({ programId: program.id, status: 'REGISTERED', attendanceType: 'OFFLINE' })
+      );
+
+      const res = await makePostRequest({
+        name: 'Peserta Offline Reguler',
+        whatsapp: '081234567891',
+        email: 'offline-reg@example.com',
+        programSlug: 'zero-human-company',
+        attendanceType: 'OFFLINE',
+      });
+
+      expect(res.status).toBe(200);
+      expect(createInvoice).toHaveBeenCalledWith(
+        expect.objectContaining({
+          amount: 1400000,
+          description: expect.stringContaining('Offline Bekasi'),
+        })
+      );
+    });
+
+    it('rejects Offline registration when seats reach 20 (room capacity full)', async () => {
+      const program = makeProgram({ slug: 'zero-human-company', price: 1400000 });
+      mockPrisma.program.findUnique.mockResolvedValue(program);
+      mockPrisma.registration.findFirst.mockResolvedValue(null);
+      mockPrisma.user.findFirst.mockResolvedValue({ id: 'user-1' });
+      mockPrisma.registration.count.mockResolvedValue(20); // 20 kursi sudah penuh
+
+      const res = await makePostRequest({
+        name: 'Peserta Offline Telat',
+        whatsapp: '081234567892',
+        email: 'telat@example.com',
+        programSlug: 'zero-human-company',
+        attendanceType: 'OFFLINE',
+      });
+
+      const data = await expectJsonResponse(res, 400);
+      expect(data.error).toMatch(/sudah penuh/i);
+    });
+
+    it('applies normal price Rp 490.000 for Online when online count >= 20', async () => {
+      const program = makeProgram({ slug: 'zero-human-company', price: 490000 });
+      mockPrisma.program.findUnique.mockResolvedValue(program);
+      mockPrisma.registration.findFirst.mockResolvedValue(null);
+      mockPrisma.user.findFirst.mockResolvedValue({ id: 'user-1' });
+      mockPrisma.registration.count.mockResolvedValue(20); // online early bird habis
+      mockPrisma.registration.upsert.mockResolvedValue(
+        makeRegistration({ programId: program.id, status: 'REGISTERED', attendanceType: 'ONLINE' })
+      );
+
+      const res = await makePostRequest({
+        name: 'Peserta Online Reguler',
+        whatsapp: '081234567893',
+        email: 'onlinereguler@example.com',
+        programSlug: 'zero-human-company',
+        attendanceType: 'ONLINE',
+      });
+
+      expect(res.status).toBe(200);
+      expect(createInvoice).toHaveBeenCalledWith(
+        expect.objectContaining({
+          amount: 490000,
+        })
+      );
+    });
+
+    it('assigns offlineBatchId to registration when attendanceType is OFFLINE', async () => {
+      const program = makeProgram({ slug: 'zero-human-company', price: 1400000 });
+      mockPrisma.program.findUnique.mockResolvedValue(program);
+      mockPrisma.registration.findFirst.mockResolvedValue(null);
+      mockPrisma.user.findFirst.mockResolvedValue({ id: 'user-1' });
+      mockPrisma.programBatch.findFirst.mockResolvedValue({
+        id: 'batch-offline-1',
+        programId: program.id,
+        batchType: 'OFFLINE',
+        name: 'Batch 1 (Offline Bekasi)',
+        scheduleAt: new Date(Date.now() + 86400000),
+        seatsLeft: 20,
+        quotaOfflineEb: 10,
+        priceOfflineEb: 750000,
+        priceOffline: 1400000,
+      });
+      mockPrisma.registration.count.mockResolvedValue(2);
+      mockPrisma.registration.upsert.mockResolvedValue(
+        makeRegistration({ programId: program.id, batchId: 'batch-offline-1', status: 'REGISTERED', attendanceType: 'OFFLINE' })
+      );
+
+      const res = await makePostRequest({
+        name: 'Peserta Offline Assigned',
+        whatsapp: '081234567895',
+        email: 'offlineassigned@example.com',
+        programSlug: 'zero-human-company',
+        attendanceType: 'OFFLINE',
+      });
+
+      expect(res.status).toBe(200);
+      expect(mockPrisma.registration.upsert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          create: expect.objectContaining({
+            batchId: 'batch-offline-1',
+            attendanceType: 'OFFLINE',
+          }),
+        })
+      );
+    });
   });
 });
 

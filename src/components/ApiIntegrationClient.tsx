@@ -113,11 +113,14 @@ export default function ApiIntegrationClient({
                 </tr>
               </thead>
               <tbody>
-                <EndpointRow method="GET" path="/api/v1/programs" desc="Daftar program aktif (publik/marketing feed)" />
+                <EndpointRow method="GET" path="/api/v1/programs" desc="Daftar program aktif + batch online & offline lengkap" />
+                <EndpointRow method="GET" path="/api/v1/programs/:id" desc="Detail satu program beserta semua batch online/offline" />
                 <EndpointRow method="POST" path="/api/v1/programs" desc="Buat program baru" />
                 <EndpointRow method="PATCH" path="/api/v1/programs/:id" desc="Ubah sebagian field program" />
-                <EndpointRow method="POST" path="/api/v1/programs/:id/batches" desc="Tambah batch jadwal ke program" />
-                <EndpointRow method="PATCH" path="/api/v1/batches/:id" desc="Ubah jadwal/kursi/status batch" />
+                <EndpointRow method="GET" path="/api/v1/programs/:id/batches" desc="Daftar batch program (filter ?type=ONLINE|OFFLINE)" />
+                <EndpointRow method="POST" path="/api/v1/programs/:id/batches" desc="Tambah batch baru (online / offline tatap muka)" />
+                <EndpointRow method="GET" path="/api/v1/batches/:id" desc="Detail spesifik satu batch (kuota, harga, link)" />
+                <EndpointRow method="PATCH" path="/api/v1/batches/:id" desc="Ubah batch (nama, tipe, jadwal, venue, harga, link)" />
                 <EndpointRow method="DELETE" path="/api/v1/batches/:id" desc="Hapus batch" />
                 <EndpointRow method="GET" path="/api/v1/articles" desc="Daftar semua artikel (termasuk draf)" />
                 <EndpointRow method="POST" path="/api/v1/articles" desc="Buat artikel baru" />
@@ -209,15 +212,41 @@ export default function ApiIntegrationClient({
 
       <div className="form-section">
         <header>
-          <h3>Contoh: Tambah Batch</h3>
+          <h3>Contoh: Tambah Batch Online &amp; Offline</h3>
+          <p>Hermes dapat membuat batch bertipe Online via Zoom ataupun Offline Tatap Muka dengan kuota dan harga Early Bird.</p>
         </header>
         <div className="fs-body">
           <div className="field full">
+            <p style={{ fontWeight: 700, marginBottom: "0.4rem", fontSize: "0.85rem" }}>1. Batch Online (Zoom):</p>
             <pre style={preStyle}>
 {`curl -X POST "${siteUrl}/api/v1/programs/PROGRAM_ID/batches" \\
   -H "X-API-Key: ${apiKey}" \\
   -H "Content-Type: application/json" \\
-  -d '{ "scheduleAt": "2026-09-01T10:00:00.000Z", "seatsLeft": 50 }'`}
+  -d '{
+    "name": "Batch 7 Online",
+    "batchType": "ONLINE",
+    "scheduleAt": "2026-09-26T13:00:00.000Z",
+    "priceOnline": 490000,
+    "priceOnlineEb": 225000,
+    "quotaOnlineEb": 20
+  }'`}
+            </pre>
+            <p style={{ fontWeight: 700, marginTop: "1rem", marginBottom: "0.4rem", fontSize: "0.85rem" }}>2. Batch Offline (Tatap Muka):</p>
+            <pre style={preStyle}>
+{`curl -X POST "${siteUrl}/api/v1/programs/PROGRAM_ID/batches" \\
+  -H "X-API-Key: ${apiKey}" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "name": "Batch 2 Offline Bekasi",
+    "batchType": "OFFLINE",
+    "hasOffline": true,
+    "scheduleAt": "2026-10-03T13:00:00.000Z",
+    "offlineVenue": "Coworking Space Kota Bekasi",
+    "offlineSeatsMax": 20,
+    "priceOffline": 1400000,
+    "priceOfflineEb": 750000,
+    "quotaOfflineEb": 10
+  }'`}
             </pre>
           </div>
         </div>

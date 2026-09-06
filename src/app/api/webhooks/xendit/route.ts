@@ -118,13 +118,22 @@ export async function POST(req: Request) {
         )).catch((err) => console.error("[CAPI] Gagal kirim event:", err));
 
         const memberUrl = `${baseUrl}/member`;
-        const scheduleStr = reg.batch ? formatJadwal(reg.batch.scheduleAt) : formatJadwal(reg.program.scheduleAt);
+        const regAny = reg as any;
+        const isOffline = regAny.attendanceType === "OFFLINE";
+        const offlineDate = regAny.batch?.offlineScheduleAt
+          ? new Date(regAny.batch.offlineScheduleAt)
+          : (reg.batch?.scheduleAt ? new Date(reg.batch.scheduleAt.getTime() + 2 * 86400000) : null);
+
+        const scheduleStr = isOffline && offlineDate
+          ? formatJadwal(offlineDate)
+          : (reg.batch ? formatJadwal(reg.batch.scheduleAt) : formatJadwal(reg.program.scheduleAt));
+
         const zoomLinkVal = reg.batch ? (reg.batch.zoomLink || null) : reg.program.zoomLink;
         const waGroupLinkVal = reg.batch ? (reg.batch.waGroupLink || null) : reg.program.waGroupLink;
         const lmsLinkVal = reg.batch ? (reg.batch.recordingLink || null) : reg.program.lmsLink;
 
         if (reg.program.price > 0) {
-          // program berbayar → kirim semua akses (grup, LMS, Zoom) + link post-test
+          // program berbayar → kirim semua akses (grup, LMS, Zoom/Offline) + link post-test
           await sendWa(reg.whatsapp, msgAccess({
             name: reg.name,
             programTitle: reg.program.title,
@@ -133,6 +142,8 @@ export async function POST(req: Request) {
             waGroupLink: waGroupLinkVal,
             lmsLink: lmsLinkVal,
             memberUrl,
+            attendanceType: regAny.attendanceType,
+            venue: regAny.batch?.offlineVenue || "Coworking Space Kota Bekasi",
           }));
         } else {
           // webinar gratis → yang dibayar adalah paket sertifikat, kirim link post-test

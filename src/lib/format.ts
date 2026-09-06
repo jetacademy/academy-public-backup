@@ -70,3 +70,12 @@ export function getDaysLeft(scheduleAt: Date): number {
   return diff < 1 && diff > -0.5 ? 0 : Math.max(0, Math.ceil(diff));
 }
 
+export function formatDaysLeftLabel(d: Date | string): string {
+  const target = typeof d === "string" ? new Date(d) : d;
+  if (Number.isNaN(target.getTime())) return "";
+  const diffDays = Math.ceil((target.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+  if (diffDays <= 0) return "Hari ini";
+  if (diffDays === 1) return "Besok";
+  return `${diffDays} hari lagi`;
+}
+

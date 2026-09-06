@@ -58,12 +58,39 @@ export default async function AdminBatch({
         <form action={createBatch} className="fs-body">
           <input type="hidden" name="programId" value={program.id} />
           <div className="field">
+            <label>Format Pelatihan</label>
+            <select name="batchType" defaultValue="ONLINE" style={{ fontWeight: 600 }}>
+              <option value="ONLINE">💻 Online (Zoom)</option>
+              <option value="OFFLINE">🏢 Offline (Tatap Muka di Lokasi/Bekasi)</option>
+            </select>
+          </div>
+          <div className="field">
+            <label>Nama / Label Batch (opsional)</label>
+            <input name="name" placeholder="mis. Batch 6 (Online) atau Batch 1 (Offline Bekasi)" />
+          </div>
+          <div className="field">
             <label>Tanggal &amp; Jam Mulai</label>
             <input type="datetime-local" name="scheduleAt" required />
           </div>
           <div className="field">
-            <label>Kuota Kursi (kosongkan jika tak terbatas)</label>
-            <input name="seatsLeft" inputMode="numeric" placeholder="mis. 50" />
+            <label>Harga Normal (Rp)</label>
+            <input name="normalPrice" inputMode="numeric" placeholder="Online default: 490000 / Offline: 1400000" />
+          </div>
+          <div className="field">
+            <label>Harga Early Bird (Rp)</label>
+            <input name="ebPrice" inputMode="numeric" placeholder="Online default: 225000 / Offline: 750000" />
+          </div>
+          <div className="field">
+            <label>Kuota Early Bird (orang)</label>
+            <input name="ebQuota" inputMode="numeric" placeholder="Online default: 20 / Offline: 10" />
+          </div>
+          <div className="field">
+            <label>Kuota Total Kursi (Khusus Offline)</label>
+            <input name="seatsLeft" inputMode="numeric" placeholder="Online: opsional / Offline: 20" />
+          </div>
+          <div className="field">
+            <label>Alamat / Venue (khusus Offline)</label>
+            <input name="offlineVenue" placeholder="mis. Coworking Space Kota Bekasi" />
           </div>
           <div className="full">
             <button type="submit" className="btn btn-purple">Tambah Batch</button>
@@ -75,24 +102,53 @@ export default async function AdminBatch({
         <table className="tbl">
           <thead>
             <tr>
+              <th>Format &amp; Batch</th>
               <th>Jadwal</th>
-              <th>Kuota</th>
+              <th>Harga &amp; Promo</th>
               <th>Pendaftar</th>
               <th>Status</th>
-              <th style={{ minWidth: "16rem" }}>Link Zoom &amp; Grup</th>
+              <th>Sertifikat</th>
+              <th style={{ minWidth: "19rem" }}>Detail, Link &amp; Harga</th>
               <th>Aksi</th>
             </tr>
           </thead>
           <tbody>
             {batches.map((b) => {
               const past = b.scheduleAt < now;
+              const isOffline = (b as any).batchType === "OFFLINE";
+              const currentNormalPrice = (isOffline ? (b as any).priceOffline : (b as any).priceOnline) ?? (isOffline ? 1400000 : 490000);
+              const currentEbPrice = (isOffline ? (b as any).priceOfflineEb : (b as any).priceOnlineEb) ?? (isOffline ? 750000 : 225000);
+              const currentEbQuota = (isOffline ? (b as any).quotaOfflineEb : (b as any).quotaOnlineEb) ?? (isOffline ? 10 : 20);
+
               return (
                 <tr key={b.id}>
+                  <td data-label="Format">
+                    <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem", alignItems: "flex-start" }}>
+                      <span className={`badge ${isOffline ? "warn" : "b"}`} style={{ fontWeight: 700 }}>
+                        {isOffline ? "🏢 Offline" : "💻 Online"}
+                      </span>
+                      <strong style={{ fontSize: "0.85rem" }}>
+                        {(b as any).name || (isOffline ? "Batch Offline" : "Batch Online")}
+                      </strong>
+                    </div>
+                  </td>
                   <td data-label="Jadwal">
                     {formatJadwal(b.scheduleAt)}
                     {past && <div className="muted">Sudah lewat</div>}
                   </td>
-                  <td data-label="Kuota">{b.seatsLeft ?? <span className="muted">Tak terbatas</span>}</td>
+                  <td data-label="Harga &amp; Promo">
+                    <div style={{ fontSize: "0.8rem", display: "flex", flexDirection: "column", gap: "0.2rem" }}>
+                      <div>
+                        <span className="muted">Normal:</span> <strong>Rp {currentNormalPrice.toLocaleString("id-ID")}</strong>
+                      </div>
+                      <div>
+                        <span className="muted">Early Bird:</span> <strong style={{ color: "#00b894" }}>Rp {currentEbPrice.toLocaleString("id-ID")}</strong>
+                      </div>
+                      <div className="muted" style={{ fontSize: "0.75rem" }}>
+                        Kuota EB: {currentEbQuota} org {isOffline ? `| Ruang: ${b.seatsLeft ?? 20} kursi` : ""}
+                      </div>
+                    </div>
+                  </td>
                   <td data-label="Pendaftar">
                     {b._count.registrations > 0 ? (
                       <Link href={`/webadmin/pendaftar?batchId=${b.id}`} className="btn btn-sm">
@@ -117,14 +173,62 @@ export default async function AdminBatch({
                       </button>
                     </form>
                   </td>
-                  <td data-label="Link">
-                    <form action={updateBatchLinks} style={{ display: "flex", flexDirection: "column", gap: "0.3rem" }}>
+                  <td data-label="Detail, Link &amp; Harga">
+                    <form action={updateBatchLinks} style={{ display: "flex", flexDirection: "column", gap: "0.35rem" }}>
                       <input type="hidden" name="id" value={b.id} />
                       <input type="hidden" name="programId" value={program.id} />
-                      <input name="zoomLink" defaultValue={b.zoomLink ?? ""} placeholder="Link Zoom" style={{ fontSize: "0.75rem", padding: "0.2rem 0.4rem", border: "1px solid var(--border)", borderRadius: "4px", width: "100%" }} />
-                      <input name="waGroupLink" defaultValue={b.waGroupLink ?? ""} placeholder="Link Grup WA" style={{ fontSize: "0.75rem", padding: "0.2rem 0.4rem", border: "1px solid var(--border)", borderRadius: "4px", width: "100%" }} />
-                      <input name="recordingLink" defaultValue={b.recordingLink ?? ""} placeholder="Link Rekaman" style={{ fontSize: "0.75rem", padding: "0.2rem 0.4rem", border: "1px solid var(--border)", borderRadius: "4px", width: "100%" }} />
-                      <button type="submit" className="btn btn-sm" style={{ alignSelf: "flex-end" }}>Simpan</button>
+                      
+                      {/* Baris 1: Nama label batch */}
+                      <input name="name" defaultValue={(b as any).name ?? ""} placeholder="Label Nama Batch" style={{ fontSize: "0.75rem", padding: "0.2rem 0.4rem", border: "1px solid var(--border)", borderRadius: "4px", width: "100%" }} />
+
+                      {/* Baris 2: Harga & Kuota */}
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0.3rem" }}>
+                        <div>
+                          <label style={{ fontSize: "0.68rem", color: "var(--ink-soft)", display: "block" }}>Normal (Rp)</label>
+                          <input
+                            name={isOffline ? "priceOffline" : "priceOnline"}
+                            defaultValue={currentNormalPrice}
+                            placeholder="Normal"
+                            style={{ fontSize: "0.75rem", padding: "0.2rem 0.35rem", border: "1px solid var(--border)", borderRadius: "4px", width: "100%" }}
+                          />
+                        </div>
+                        <div>
+                          <label style={{ fontSize: "0.68rem", color: "var(--ink-soft)", display: "block" }}>Early Bird (Rp)</label>
+                          <input
+                            name={isOffline ? "priceOfflineEb" : "priceOnlineEb"}
+                            defaultValue={currentEbPrice}
+                            placeholder="Early Bird"
+                            style={{ fontSize: "0.75rem", padding: "0.2rem 0.35rem", border: "1px solid var(--border)", borderRadius: "4px", width: "100%" }}
+                          />
+                        </div>
+                        <div>
+                          <label style={{ fontSize: "0.68rem", color: "var(--ink-soft)", display: "block" }}>Kuota EB</label>
+                          <input
+                            name={isOffline ? "quotaOfflineEb" : "quotaOnlineEb"}
+                            defaultValue={currentEbQuota}
+                            placeholder="Kuota EB"
+                            style={{ fontSize: "0.75rem", padding: "0.2rem 0.35rem", border: "1px solid var(--border)", borderRadius: "4px", width: "100%" }}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Baris 3: Link zoom / Venue / Kuota Ruangan */}
+                      {!isOffline ? (
+                        <input name="zoomLink" defaultValue={b.zoomLink ?? ""} placeholder="Link Zoom (Online)" style={{ fontSize: "0.75rem", padding: "0.2rem 0.4rem", border: "1px solid var(--border)", borderRadius: "4px", width: "100%" }} />
+                      ) : (
+                        <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: "0.3rem" }}>
+                          <input name="offlineVenue" defaultValue={(b as any).offlineVenue ?? ""} placeholder="Alamat Venue (Bekasi)" style={{ fontSize: "0.75rem", padding: "0.2rem 0.4rem", border: "1px solid var(--border)", borderRadius: "4px", width: "100%" }} />
+                          <input name="seatsLeft" defaultValue={b.seatsLeft ?? 20} placeholder="Kursi Ruang" title="Maksimal Kursi Ruangan" style={{ fontSize: "0.75rem", padding: "0.2rem 0.4rem", border: "1px solid var(--border)", borderRadius: "4px", width: "100%" }} />
+                        </div>
+                      )}
+
+                      {/* Baris 4: WA & Rekaman */}
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.3rem" }}>
+                        <input name="waGroupLink" defaultValue={b.waGroupLink ?? ""} placeholder={`Link Grup WA`} style={{ fontSize: "0.75rem", padding: "0.2rem 0.4rem", border: "1px solid var(--border)", borderRadius: "4px", width: "100%" }} />
+                        <input name="recordingLink" defaultValue={b.recordingLink ?? ""} placeholder="Link Rekaman / LMS" style={{ fontSize: "0.75rem", padding: "0.2rem 0.4rem", border: "1px solid var(--border)", borderRadius: "4px", width: "100%" }} />
+                      </div>
+
+                      <button type="submit" className="btn btn-sm btn-purple" style={{ alignSelf: "flex-end", marginTop: "0.15rem" }}>Simpan Pengaturan</button>
                     </form>
                   </td>
                   <td data-label="Aksi">
@@ -147,7 +251,7 @@ export default async function AdminBatch({
               );
             })}
             {batches.length === 0 && (
-              <tr><td colSpan={5} className="muted">Belum ada batch. Program memakai jadwal tunggal di tab Info Program.</td></tr>
+              <tr><td colSpan={8} className="muted">Belum ada batch. Program memakai jadwal tunggal di tab Info Program.</td></tr>
             )}
           </tbody>
         </table>

@@ -6,6 +6,8 @@ import { slugify } from "@/lib/slug";
 import { sanitizeContentBlocks } from "@/app/webadmin/actions";
 import { parseMarkdownToBlocks } from "@/lib/content-blocks";
 
+import { formatJadwal, formatDaysLeftLabel } from "@/lib/format";
+
 const SITE_URL = process.env.NEXT_PUBLIC_BASE_URL?.includes("localhost")
   ? process.env.NEXT_PUBLIC_BASE_URL
   : "https://academy.jetschool.id";
@@ -13,7 +15,143 @@ const SITE_URL = process.env.NEXT_PUBLIC_BASE_URL?.includes("localhost")
 const PROGRAM_TYPES = ["WEBINAR", "KELAS", "WORKSHOP", "BOOTCAMP"] as const;
 
 /**
+ * GET /api/v1/programs/[id] — ambil detail satu program beserta seluruh batch online & offline.
+ * [id] dapat berupa ID program (cuid) atau slug.
+ */
+export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const auth = await authorizeApiRequest(req, { rateLimitKey: "api-v1-programs", max: 60, windowMs: 60_000 });
+  if (!auth.ok) return auth.response;
+
+  const { id } = await params;
+  const p = await prisma.program.findFirst({
+    where: { OR: [{ id }, { slug: id }] },
+    include: {
+      category: { select: { name: true, slug: true } },
+      batches: {
+        where: { isActive: true },
+        orderBy: { scheduleAt: "asc" },
+      },
+    },
+  });
+
+  if (!p) return NextResponse.json({ error: "Program tidak ditemukan." }, { status: 404 });
+
+  const batchIds = p.batches.map((b) => b.id);
+  const regCounts = batchIds.length > 0
+    ? await prisma.registration.groupBy({
+        by: ["batchId"],
+        where: {
+          batchId: { in: batchIds },
+          status: { in: ["PAID", "PASSED"] },
+        },
+        _count: { id: true },
+      })
+    : [];
+
+  const countMap = new Map<string, number>();
+  for (const r of regCounts) {
+    if (r.batchId) countMap.set(r.batchId, r._count.id);
+  }
+
+  const isZhc = p.slug === "zero-human-company";
+
+  const upcomingBatches = p.batches.map((b: any) => {
+    const isOfflineBatch = b.batchType === "OFFLINE" || Boolean(b.hasOffline);
+    const bType: "ONLINE" | "OFFLINE" = isOfflineBatch ? "OFFLINE" : "ONLINE";
+    const paidCount = countMap.get(b.id) ?? 0;
+
+    const ebQuota = isOfflineBatch ? (b.quotaOfflineEb ?? 10) : (b.quotaOnlineEb ?? 20);
+    const isEbActive = paidCount < ebQuota;
+
+    const normalPrice = isOfflineBatch
+      ? (b.priceOffline ?? (isZhc ? 1400000 : p.price))
+      : (b.priceOnline ?? (isZhc ? 490000 : p.price));
+    const ebPrice = isOfflineBatch
+      ? (b.priceOfflineEb ?? (isZhc ? 750000 : null))
+      : (b.priceOnlineEb ?? (isZhc ? 225000 : null));
+
+    const currentPrice = isEbActive && ebPrice !== null ? ebPrice : normalPrice;
+    const maxSeats = isOfflineBatch ? (b.offlineSeatsMax ?? 20) : b.seatsLeft;
+    const seatsRemaining = maxSeats !== null && maxSeats !== undefined ? Math.max(0, maxSeats - paidCount) : null;
+    const isSoldOut = maxSeats !== null && maxSeats !== undefined ? paidCount >= maxSeats : false;
+    const sched = new Date(b.scheduleAt);
+
+    return {
+      id: b.id,
+      name: b.name || (isOfflineBatch ? `Batch Offline ${p.title}` : `Batch Online ${p.title}`),
+      batchType: bType,
+      formatLabel: isOfflineBatch ? "Offline" : "Online via Zoom",
+      scheduleAt: sched.toISOString(),
+      scheduleFormatted: formatJadwal(sched),
+      daysLeft: formatDaysLeftLabel(sched),
+      isActive: b.isActive,
+      hasOffline: Boolean(b.hasOffline || (isZhc && isOfflineBatch)),
+      offlineVenue: b.offlineVenue || (isOfflineBatch ? "Coworking Space Kota Bekasi" : null),
+      offlineMapUrl: b.offlineMapUrl || null,
+      offlineScheduleAt: b.offlineScheduleAt ? b.offlineScheduleAt.toISOString() : null,
+      offlineSeatsMax: b.offlineSeatsMax ?? (isOfflineBatch ? 20 : null),
+      seatsLeft: b.seatsLeft,
+      paidCount,
+      seatsRemaining,
+      isSoldOut,
+      pricing: {
+        currentPrice,
+        normalPrice,
+        earlyBirdPrice: ebPrice,
+        earlyBirdQuota: ebQuota,
+        earlyBirdRemaining: Math.max(0, ebQuota - paidCount),
+        isEarlyBirdActive: isEbActive,
+      },
+      zoomLink: b.zoomLink || null,
+      waGroupLink: b.waGroupLink || null,
+      recordingLink: b.recordingLink || null,
+    };
+  });
+
+  const onlineBatches = upcomingBatches.filter((b) => b.batchType === "ONLINE");
+  const offlineBatches = upcomingBatches.filter((b) => b.batchType === "OFFLINE");
+
+  return NextResponse.json({
+    ok: true,
+    program: {
+      id: p.id,
+      slug: p.slug,
+      url: `${SITE_URL}/program/${p.slug}`,
+      type: p.type,
+      title: p.title,
+      tagline: p.tagline,
+      description: p.description,
+      mentorName: p.mentorName,
+      mentorBio: p.mentorBio,
+      materi: p.materi,
+      deliverables: p.deliverables,
+      durationLabel: p.durationLabel,
+      isFree: p.price === 0,
+      price: p.price,
+      priceOld: p.priceOld,
+      certPrice: p.certPrice,
+      certPriceOld: p.certPriceOld,
+      category: p.category?.name ?? null,
+      nextSchedule: (p.batches[0]?.scheduleAt ?? p.scheduleAt).toISOString(),
+      upcomingBatches,
+      batchesSummary: {
+        onlineCount: onlineBatches.length,
+        offlineCount: offlineBatches.length,
+        activeOnline: onlineBatches[0] ?? null,
+        activeOffline: offlineBatches[0] ?? null,
+        online: onlineBatches,
+        offline: offlineBatches,
+      },
+      seatsLeft: p.seatsLeft,
+      isFeatured: p.isFeatured,
+      isActive: p.isActive,
+    },
+  });
+}
+
+/**
  * PATCH /api/v1/programs/[id] — perbarui sebagian field program.
+
  * Body JSON: field mana pun dari POST /api/v1/programs — semua opsional.
  *
  * contentMarkdown / contentBlocks: isi halaman program — kalau salah satu diisi

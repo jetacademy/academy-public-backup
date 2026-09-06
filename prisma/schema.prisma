@@ -119,12 +119,26 @@ model ProgramBatch {
   certBgUrl     String?        @db.Text
   certConfig    Json?
   certPublished Boolean        @default(false) // kontrol rilis sertifikat per batch (toggle admin)
+  hasOffline    Boolean        @default(false) // apakah batch ini menyediakan opsi tatap muka offline
+  offlineVenue  String?        @db.Text // alamat venue offline (mis. Coworking Space Kota Bekasi)
+  offlineMapUrl String?        @db.Text // link Google Maps venue
+  offlineScheduleAt DateTime?  // jadwal tatap muka offline jika berbeda hari/jam dari online
+  offlineSeatsMax Int?         @default(20) // kuota maksimal kursi offline
+  priceOffline  Int?           @default(1400000) // harga normal offline
+  priceOfflineEb Int?          @default(750000) // harga early bird offline
+  quotaOfflineEb Int?          @default(10) // kuota early bird offline (10 pertama)
+  priceOnline   Int?           @default(490000) // harga normal online
+  priceOnlineEb Int?           @default(225000) // harga early bird online
+  quotaOnlineEb Int?           @default(20) // kuota early bird online (20 pertama)
+  name          String?        // label nama batch, mis. "Batch 6" atau "Batch 1 Offline Bekasi"
+  batchType     String         @default("ONLINE") // ONLINE | OFFLINE
   registrations Registration[]
   moduleLinks   BatchModule[]
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
 
   @@index([programId])
+  @@index([programId, batchType, scheduleAt])
   @@index([programId, scheduleAt])
   @@index([scheduleAt])
   @@map("programbatch")
@@ -158,6 +172,7 @@ model Registration {
   programId    String
   batch        ProgramBatch?      @relation(fields: [batchId], references: [id], onDelete: SetNull)
   batchId      String? // batch/angkatan yang dipilih peserta (null = program tanpa batch, pakai Program.scheduleAt)
+  attendanceType String           @default("ONLINE") // ONLINE | OFFLINE
   status       RegistrationStatus @default(REGISTERED)
   participants Json? // array string: nama peserta tambahan (multi-pendaftar 1 group WA/email)
   payment      Payment?
@@ -174,6 +189,7 @@ model Registration {
   @@index([whatsapp]) // lookup WA saja (OTP login)
   @@index([programId])
   @@index([batchId])
+  @@index([attendanceType])
   @@index([status])
   @@index([status, programId]) // filter status per program di dashboard
   @@index([createdAt])
