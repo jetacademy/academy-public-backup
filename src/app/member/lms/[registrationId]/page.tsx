@@ -631,9 +631,6 @@ export default async function LmsPage({
           </div>
         )}
       </LmsViewContainer>
-
-      <Footer />
-      <WaFloat />
     </>
   );
 }

@@ -5,13 +5,56 @@
 // ============================================================
 
 export function normalizeWa(raw: string): string {
-  let n = raw.replace(/[^0-9]/g, "");
-  if (n.startsWith("0")) {
+  if (!raw) return "";
+  let trimmed = raw.trim();
+  // Jika diawali "00", bersihkan prefix panggilan internasional (mis. 0062 -> 62)
+  if (trimmed.startsWith("00")) {
+    trimmed = trimmed.slice(2);
+  }
+  let n = trimmed.replace(/[^0-9]/g, "");
+  // Jika formatnya 6208xxx (salah ketik awalan 62 + 08), rapikan jadi 628xxx
+  if (n.startsWith("6208")) {
+    n = "628" + n.slice(4);
+  } else if (n.startsWith("0")) {
     n = "62" + n.slice(1);
   } else if (n.startsWith("8")) {
     n = "62" + n;
   }
   return n;
+}
+
+export type WaValidationResult = {
+  valid: boolean;
+  normalized: string;
+  reason?: string;
+};
+
+/** Validasi pra-kirim nomor WhatsApp untuk mendeteksi nomor rusak/email sebelum dikirim ke API */
+export function validateWaNumber(raw: string): WaValidationResult {
+  if (!raw || !raw.trim()) {
+    return { valid: false, normalized: "", reason: "Nomor WhatsApp kosong" };
+  }
+  if (raw.includes("@")) {
+    return { valid: false, normalized: "", reason: "Format data berupa email, bukan nomor telepon" };
+  }
+  const normalized = normalizeWa(raw);
+  if (!normalized) {
+    return { valid: false, normalized: "", reason: "Nomor tidak mengandung angka valid" };
+  }
+  // Panjang nomor telepon seluler internasional umumnya 10-15 digit
+  if (normalized.length < 10) {
+    return { valid: false, normalized, reason: `Nomor terlalu pendek (${normalized.length} digit, min 10 digit)` };
+  }
+  if (normalized.length > 15) {
+    return { valid: false, normalized, reason: `Nomor terlalu panjang (${normalized.length} digit, maks 15 digit)` };
+  }
+  // Khusus Indonesia (62), wajib nomor seluler diawali 628
+  if (normalized.startsWith("62")) {
+    if (!normalized.startsWith("628")) {
+      return { valid: false, normalized, reason: "Bukan nomor HP seluler (harus diawali 08 atau 628)" };
+    }
+  }
+  return { valid: true, normalized };
 }
 
 /** Identifier login (WhatsApp atau email) → bentuk baku, tanpa mengubah email. */
@@ -20,7 +63,25 @@ export function normalizeIdentifier(raw: string): string {
   return trimmed.includes("@") ? trimmed : normalizeWa(trimmed);
 }
 
-export async function sendWa(to: string, text: string): Promise<boolean> {
+export type SendWaDetailResult = {
+  ok: boolean;
+  statusCode?: number;
+  error?: string;
+  targetPhone: string;
+  responseBody?: unknown;
+};
+
+/** Kirim pesan WA dengan informasi status dan alasan error lengkap */
+export async function sendWaDetailed(to: string, text: string): Promise<SendWaDetailResult> {
+  const validation = validateWaNumber(to);
+  if (!validation.valid) {
+    return {
+      ok: false,
+      error: validation.reason || "Format nomor WhatsApp tidak valid",
+      targetPhone: validation.normalized || to,
+    };
+  }
+
   const url = process.env.EVOLUTION_API_URL;
   const apikey = process.env.EVOLUTION_API_API_KEY;
   const instance = process.env.EVOLUTION_API_INSTANCE;
@@ -29,21 +90,83 @@ export async function sendWa(to: string, text: string): Promise<boolean> {
   const isPlaceholder = !url || !apikey || !instance || url.includes("domainkamu") || apikey.startsWith("isi_");
   if (isPlaceholder) {
     console.warn("[wa] Evolution API belum dikonfigurasi — pesan dilewati:", text.slice(0, 60));
-    return false;
+    return {
+      ok: false,
+      error: "Evolution API belum dikonfigurasi di server",
+      targetPhone: validation.normalized,
+    };
   }
 
   try {
     const res = await fetch(`${url}/message/sendText/${instance}`, {
       method: "POST",
       headers: { "Content-Type": "application/json", apikey },
-      body: JSON.stringify({ number: normalizeWa(to), text }),
+      body: JSON.stringify({ number: validation.normalized, text }),
     });
-    if (!res.ok) console.error("[wa] gagal kirim:", res.status, await res.text());
-    return res.ok;
+
+    let resBody: Record<string, unknown> | null = null;
+    try {
+      resBody = (await res.json()) as Record<string, unknown>;
+    } catch {
+      // bukan json
+    }
+
+    if (!res.ok) {
+      let errorMsg = `HTTP ${res.status}`;
+      if (resBody) {
+        const respObj = resBody.response as Record<string, unknown> | undefined;
+        if (typeof resBody.message === "string") {
+          errorMsg = resBody.message;
+        } else if (Array.isArray(resBody.message)) {
+          errorMsg = resBody.message.join(", ");
+        } else if (resBody.error) {
+          errorMsg = typeof resBody.error === "string" ? resBody.error : JSON.stringify(resBody.error);
+        } else if (respObj && typeof respObj.message === "string") {
+          errorMsg = respObj.message;
+        } else if (respObj && respObj.message) {
+          errorMsg = JSON.stringify(respObj.message);
+        }
+      }
+
+      // Terjemahkan error umum WhatsApp/Evolution API ke bahasa yang jelas
+      if (res.status === 400 && /not.*registered|not.*exists|invalid/i.test(errorMsg)) {
+        errorMsg = "Nomor tidak terdaftar di WhatsApp";
+      } else if (res.status === 429) {
+        errorMsg = "Rate limit WhatsApp / server sedang sibuk";
+      } else if (res.status === 503 || res.status === 502) {
+        errorMsg = "Gateway WhatsApp tidak dapat dihubungi";
+      }
+
+      console.error("[wa] gagal kirim:", res.status, errorMsg);
+      return {
+        ok: false,
+        statusCode: res.status,
+        error: errorMsg,
+        targetPhone: validation.normalized,
+        responseBody: resBody,
+      };
+    }
+
+    return {
+      ok: true,
+      statusCode: res.status,
+      targetPhone: validation.normalized,
+      responseBody: resBody,
+    };
   } catch (err) {
+    const errorMsg = err instanceof Error ? err.message : "Gagal koneksi ke server WA";
     console.error("[wa] error:", err);
-    return false;
+    return {
+      ok: false,
+      error: errorMsg,
+      targetPhone: validation.normalized,
+    };
   }
+}
+
+export async function sendWa(to: string, text: string): Promise<boolean> {
+  const result = await sendWaDetailed(to, text);
+  return result.ok;
 }
 
 // ---------- Template pesan (jelas, sopan, profesional) ----------

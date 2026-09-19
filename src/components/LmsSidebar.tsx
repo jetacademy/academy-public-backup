@@ -28,13 +28,6 @@ const TYPE_LABEL: Record<string, string> = {
   QUIZ: "Kuis",
 };
 
-const TYPE_ICON: Record<string, string> = {
-  VIDEO: "▶",
-  TEXT: "📝",
-  PDF: "📄",
-  QUIZ: "🧠",
-};
-
 interface LmsSidebarProps {
   sections: Section[];
   currentLessonId: string;
@@ -44,7 +37,6 @@ interface LmsSidebarProps {
   totalLessons: number;
   progressPercent: number;
   isAllDone: boolean;
-  /** If true, rendered as mobile drawer (controlled by isOpen) */
   drawer?: boolean;
   isOpen?: boolean;
   onClose?: () => void;
@@ -66,7 +58,7 @@ export default function LmsSidebar({
   const completedSet = new Set(completedLessonIds);
   const drawerRef = useRef<HTMLDivElement>(null);
 
-  // Lock body scroll when drawer open
+  // Lock scroll saat drawer mobile terbuka
   useEffect(() => {
     if (!drawer) return;
     if (isOpen) {
@@ -74,222 +66,96 @@ export default function LmsSidebar({
     } else {
       document.body.style.overflow = "";
     }
-    return () => { document.body.style.overflow = ""; };
+    return () => {
+      document.body.style.overflow = "";
+    };
   }, [isOpen, drawer]);
 
-  // Pre-compute module numbers before render
-  let modNum = 0;
-  const moduleNumbers = new Map<string, number>();
-  sections.forEach((section) => {
-    section.modules.forEach((mod) => {
-      modNum += 1;
-      moduleNumbers.set(mod.id, modNum);
-    });
-  });
+  // Pure immutable module numbering to satisfy react-hooks/immutability
+  const sectionsWithModIndex = sections.reduce<
+    { title: string | null; modules: (Module & { moduleNo: number })[] }[]
+  >((acc, section) => {
+    const prevCount = acc.reduce((sum, item) => sum + item.modules.length, 0);
+    const modules = section.modules.map((mod, mIdx) => ({
+      ...mod,
+      moduleNo: prevCount + mIdx + 1,
+    }));
+    acc.push({ title: section.title, modules });
+    return acc;
+  }, []);
 
-  const sidebarContent = (
+  const content = (
     <>
-      {/* Progress mini bar */}
-      <div className="lms-progress-mini">
-        <div className="lms-progress-mini-bar">
+      {/* Progress bar ringkas */}
+      <div className="lms-side-progress-box">
+        <div className="lms-side-progress-row">
+          <span className="lms-side-progress-label">Progres Belajar</span>
+          <span className="lms-side-progress-val">
+            {completedCount}/{totalLessons} ({progressPercent}%)
+          </span>
+        </div>
+        <div className="lms-side-progress-track">
           <div
-            className="lms-progress-mini-fill"
+            className="lms-side-progress-bar"
             style={{ width: `${progressPercent}%` }}
           />
         </div>
-        <span className="lms-progress-mini-label">
-          {completedCount}/{totalLessons}
-        </span>
       </div>
 
-      {/* Curriculum list */}
-      <div style={{ display: "grid", gap: "1.2rem" }}>
-        {sections.map((section, sIdx) => (
-          <div key={sIdx} style={{ display: "grid", gap: "0.8rem" }}>
+      {/* Daftar Modul & Materi */}
+      <div className="lms-curriculum-list">
+        {sectionsWithModIndex.map((section, sIdx) => (
+          <div key={sIdx} className="lms-section-group">
             {section.title && (
-              <div
-                style={{
-                  fontSize: "0.68rem",
-                  textTransform: "uppercase",
-                  fontWeight: 900,
-                  letterSpacing: "0.08em",
-                  color: "var(--purple)",
-                  paddingBottom: ".3rem",
-                  borderBottom: "2px solid rgba(108, 92, 231, 0.15)",
-                }}
-              >
+              <div className="lms-section-title">
                 {section.title}
               </div>
             )}
 
             {section.modules.map((mod) => {
-              const currentModNum = moduleNumbers.get(mod.id) ?? 0;
               return (
-                <div
-                  key={mod.id}
-                  style={{
-                    background: "var(--white)",
-                    border: "1px solid var(--border)",
-                    borderRadius: "var(--r-md)",
-                    padding: "1rem",
-                    boxShadow: "0 1px 3px rgba(0,0,0,.03)",
-                  }}
-                >
-                  {/* Module header */}
-                  <div
-                    style={{
-                      marginBottom: "0.75rem",
-                      paddingBottom: "0.5rem",
-                      borderBottom: "1px solid var(--border)",
-                    }}
-                  >
-                    <span
-                      style={{
-                        display: "inline-block",
-                        fontSize: "0.6rem",
-                        textTransform: "uppercase",
-                        fontWeight: 900,
-                        letterSpacing: "0.08em",
-                        color: "var(--purple)",
-                        background: "rgba(108, 92, 231, 0.08)",
-                        padding: "0.15rem 0.45rem",
-                        borderRadius: "4px",
-                        marginBottom: "0.3rem",
-                      }}
-                    >
-                      Modul {currentModNum}
-                    </span>
-                    <div
-                      style={{
-                        fontSize: "0.83rem",
-                        fontWeight: 800,
-                        color: "var(--ink-main)",
-                        lineHeight: 1.35,
-                      }}
-                    >
-                      {mod.title}
-                    </div>
+                <div key={mod.id} className="lms-module-card">
+                  <div className="lms-module-header">
+                    <span className="lms-module-num">Modul {mod.moduleNo}</span>
+                    <h3 className="lms-module-title">{mod.title}</h3>
                   </div>
 
-                  {/* Lessons */}
                   {mod.lessons.length === 0 ? (
-                    <div
-                      style={{
-                        fontSize: "0.72rem",
-                        color: "var(--ink-faint)",
-                        fontStyle: "italic",
-                        textAlign: "center",
-                        padding: "0.4rem 0",
-                      }}
-                    >
+                    <div className="lms-empty-lesson-notice">
                       Belum ada materi
                     </div>
                   ) : (
-                    <div style={{ display: "grid", gap: "0.4rem" }}>
+                    <div className="lms-module-lesson-list">
                       {mod.lessons.map((les) => {
-                        const active = les.id === currentLessonId && !isAllDone;
-                        const done = completedSet.has(les.id);
+                        const isActive = les.id === currentLessonId && !isAllDone;
+                        const isDone = completedSet.has(les.id);
 
                         return (
                           <Link
                             key={les.id}
                             href={`/member/lms/${registrationId}?lessonId=${les.id}`}
                             onClick={onClose}
-                            className={`lms-lesson-item${active ? " active" : done ? " done" : ""}`}
+                            className={`lms-nav-lesson-row${isActive ? " is-active" : ""}${isDone ? " is-done" : ""}`}
                           >
-                            {/* Status indicator */}
-                            {done ? (
-                              <span
-                                style={{
-                                  display: "flex",
-                                  alignItems: "center",
-                                  justifyContent: "center",
-                                  width: "1.15rem",
-                                  height: "1.15rem",
-                                  background: "#2ecc71",
-                                  border: "2px solid #2ecc71",
-                                  borderRadius: "50%",
-                                  flexShrink: 0,
-                                  color: "white",
-                                  fontSize: "0.6rem",
-                                  fontWeight: "bold",
-                                  marginTop: "0.15rem",
-                                }}
-                              >
-                                ✓
-                              </span>
-                            ) : active ? (
-                              <span
-                                style={{
-                                  display: "flex",
-                                  alignItems: "center",
-                                  justifyContent: "center",
-                                  width: "1.15rem",
-                                  height: "1.15rem",
-                                  border: "2px solid var(--purple)",
-                                  borderRadius: "50%",
-                                  flexShrink: 0,
-                                  background: "rgba(108,92,231,.1)",
-                                  marginTop: "0.15rem",
-                                }}
-                              >
-                                <span
-                                  style={{
-                                    width: "0.42rem",
-                                    height: "0.42rem",
-                                    background: "var(--purple)",
-                                    borderRadius: "50%",
-                                  }}
-                                />
-                              </span>
-                            ) : (
-                              <span
-                                style={{
-                                  width: "1.15rem",
-                                  height: "1.15rem",
-                                  border: "2px solid #ccc",
-                                  borderRadius: "50%",
-                                  flexShrink: 0,
-                                  marginTop: "0.15rem",
-                                  display: "flex",
-                                }}
-                              />
-                            )}
+                            {/* Indikator Status Simpel */}
+                            <span className="lms-nav-status" aria-hidden="true">
+                              {isDone ? (
+                                <span className="lms-check-icon">✓</span>
+                              ) : isActive ? (
+                                <span className="lms-active-dot" />
+                              ) : (
+                                <span className="lms-pending-dot" />
+                              )}
+                            </span>
 
-                            {/* Lesson info */}
-                            <div style={{ flex: 1, minWidth: 0 }}>
-                              <div
-                                style={{
-                                  fontSize: "0.8rem",
-                                  fontWeight: active ? 800 : done ? 600 : 500,
-                                  color: active
-                                    ? "var(--purple)"
-                                    : done
-                                    ? "var(--ink-soft)"
-                                    : "var(--ink-main)",
-                                  lineHeight: 1.35,
-                                  overflow: "hidden",
-                                  textOverflow: "ellipsis",
-                                  display: "-webkit-box",
-                                  WebkitLineClamp: 2,
-                                  WebkitBoxOrient: "vertical" as const,
-                                }}
-                              >
+                            {/* Teks Materi & Meta */}
+                            <div className="lms-nav-lesson-info">
+                              <span className="lms-nav-lesson-title">
                                 {les.title}
-                              </div>
-                              <span
-                                style={{
-                                  fontSize: "0.67rem",
-                                  color: "var(--ink-faint)",
-                                  display: "flex",
-                                  alignItems: "center",
-                                  gap: "0.25rem",
-                                  marginTop: "0.15rem",
-                                }}
-                              >
-                                <span>{TYPE_ICON[les.type] ?? "📌"}</span>
+                              </span>
+                              <span className="lms-nav-lesson-meta">
                                 {TYPE_LABEL[les.type] ?? les.type}
-                                {les.duration && ` • ${les.duration}`}
+                                {les.duration ? ` · ${les.duration}` : ""}
                               </span>
                             </div>
                           </Link>
@@ -306,63 +172,56 @@ export default function LmsSidebar({
     </>
   );
 
+  // Versi Drawer Mobile
   if (drawer) {
     return (
       <>
-        {/* Backdrop */}
         <div
-          className={`lms-sidebar-overlay${isOpen ? " open" : ""}`}
+          className={`lms-drawer-backdrop${isOpen ? " is-open" : ""}`}
           onClick={onClose}
           aria-hidden="true"
         />
-
-        {/* Drawer */}
         <div
           ref={drawerRef}
-          className={`lms-sidebar-drawer${isOpen ? " open" : ""}`}
+          className={`lms-mobile-drawer${isOpen ? " is-open" : ""}`}
           role="dialog"
           aria-modal="true"
           aria-label="Kurikulum Kelas"
         >
-          {/* Sticky drawer header */}
-          <div className="lms-drawer-header">
-            <div className="lms-drawer-header-title">
-              <h3>Kurikulum Kelas</h3>
-              <span className="lms-drawer-header-sub">
-                {completedCount} dari {totalLessons} selesai
+          <div className="lms-drawer-topbar">
+            <div>
+              <h2 className="lms-drawer-heading">Kurikulum Materi</h2>
+              <span className="lms-drawer-sub">
+                {completedCount} dari {totalLessons} materi selesai
               </span>
             </div>
             <button
-              className="lms-drawer-close"
-              onClick={onClose}
-              aria-label="Tutup menu"
               type="button"
+              className="lms-drawer-close-btn"
+              onClick={onClose}
+              aria-label="Tutup daftar materi"
             >
               ✕
             </button>
           </div>
-
-          {/* Scrollable body */}
-          <div className="lms-drawer-body">
-            {sidebarContent}
+          <div className="lms-drawer-content">
+            {content}
           </div>
         </div>
       </>
     );
   }
 
-  // Desktop sidebar
+  // Versi Sidebar Desktop
   return (
-    <div className="lms-sidebar-pane">
-      <div style={{ marginBottom: "1.2rem" }}>
-        <h3 style={{ fontSize: "1rem", fontWeight: 800, margin: "0 0 0.2rem 0" }}>
-          Kurikulum Kelas
-        </h3>
-        <span style={{ fontSize: "0.75rem", color: "var(--ink-soft)", fontWeight: 500 }}>
-          {completedCount} dari {totalLessons} materi selesai
+    <aside className="lms-sidebar-pane" aria-label="Daftar Materi">
+      <div className="lms-sidebar-top">
+        <h2 className="lms-sidebar-title">Kurikulum</h2>
+        <span className="lms-sidebar-sub">
+          {completedCount} dari {totalLessons} selesai
         </span>
       </div>
-      {sidebarContent}
-    </div>
+      {content}
+    </aside>
   );
 }

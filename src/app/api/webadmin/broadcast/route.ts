@@ -1,9 +1,16 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { sendWa } from "@/lib/wa";
+import { sendWaDetailed } from "@/lib/wa";
+import { saveBroadcastReport, BroadcastFailure } from "@/lib/broadcast-store";
 
 export type BroadcastMessageType = "zoom" | "grup" | "custom";
-export type BroadcastResult = { sent: number; failed: number; total: number };
+export type BroadcastResult = {
+  sent: number;
+  failed: number;
+  total: number;
+  reportId?: string;
+  failures?: BroadcastFailure[];
+};
 
 export async function POST(req: Request) {
   // Auth via internal secret header (dikirim dari server action)
@@ -57,27 +64,47 @@ export async function POST(req: Request) {
     });
 
     if (registrations.length === 0) {
-      return NextResponse.json({ error: "Tidak ada penerima yang cocok." }, { status: 400 });
+      return NextResponse.json({ error: "Tidak ada penerima yang cocok dengan filter yang dipilih." }, { status: 400 });
     }
 
-    // ── Build message ──────────────────────────────────────────
-    const program = programId
-      ? await prisma.program.findUnique({ where: { id: programId }, select: { zoomLink: true, waGroupLink: true, title: true } })
-      : null;
+    // ── Build message (dukung zoomLink/waGroupLink per batch jika ada) ────────
+    let targetTitle = "";
+    let targetZoomLink: string | null = null;
+    let targetWaGroupLink: string | null = null;
+
+    if (batchId) {
+      const batch = await prisma.programBatch.findUnique({
+        where: { id: batchId },
+        include: { program: { select: { id: true, title: true, zoomLink: true, waGroupLink: true } } },
+      });
+      if (batch) {
+        targetTitle = `${batch.program.title} (${batch.name || "Batch"})`;
+        targetZoomLink = batch.zoomLink || batch.program.zoomLink;
+        targetWaGroupLink = batch.waGroupLink || batch.program.waGroupLink;
+      }
+    } else if (programId) {
+      const program = await prisma.program.findUnique({
+        where: { id: programId },
+        select: { title: true, zoomLink: true, waGroupLink: true },
+      });
+      if (program) {
+        targetTitle = program.title;
+        targetZoomLink = program.zoomLink;
+        targetWaGroupLink = program.waGroupLink;
+      }
+    }
 
     let messageText = "";
     if (messageType === "zoom") {
-      const link = program?.zoomLink;
-      if (!link) {
-        return NextResponse.json({ error: "Program ini tidak memiliki link Zoom." }, { status: 400 });
+      if (!targetZoomLink) {
+        return NextResponse.json({ error: "Target ini belum memiliki link Zoom." }, { status: 400 });
       }
-      messageText = `Halo {{name}},\n\nBerikut link Zoom untuk program "${program?.title}":\n${link}\n\nJangan lupa catat jadwalnya ya. Sampai jumpa! 😊`;
+      messageText = `Halo {{name}},\n\nBerikut link Zoom untuk program "${targetTitle}":\n${targetZoomLink}\n\nJangan lupa catat jadwalnya ya. Sampai jumpa! 😊`;
     } else if (messageType === "grup") {
-      const link = program?.waGroupLink;
-      if (!link) {
-        return NextResponse.json({ error: "Program ini tidak memiliki link grup WA." }, { status: 400 });
+      if (!targetWaGroupLink) {
+        return NextResponse.json({ error: "Target ini belum memiliki link grup WhatsApp." }, { status: 400 });
       }
-      messageText = `Halo {{name}},\n\nBergabunglah dengan grup WhatsApp peserta program "${program?.title}":\n${link}\n\nDiskusikan materi dan dapatkan info terbaru di grup ya! 😊`;
+      messageText = `Halo {{name}},\n\nBergabunglah dengan grup WhatsApp peserta program "${targetTitle}":\n${targetWaGroupLink}\n\nDiskusikan materi dan dapatkan info terbaru di grup ya! 😊`;
     } else if (messageType === "custom") {
       messageText = customMessage?.trim() ?? "";
     }
@@ -86,28 +113,72 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Pesan tidak boleh kosong." }, { status: 400 });
     }
 
-    // ── Send broadcast (batch: 5 per group, jeda 3 detik) ──
+    // ── Send broadcast sekuensial dengan pacing aman & error reporting ──
     let sent = 0;
     let failed = 0;
-    const batchSize = 5;
-    for (let i = 0; i < registrations.length; i += batchSize) {
-      const batch = registrations.slice(i, i + batchSize);
-      const results = await Promise.allSettled(
-        batch.map(async (reg) => {
-          if (!reg.whatsapp) return false;
-          return sendWa(reg.whatsapp, messageText.replace(/\{\{name\}\}/g, reg.name));
-        })
-      );
-      for (const r of results) {
-        if (r.status === "fulfilled" && r.value) sent++;
-        else failed++;
+    const failures: BroadcastFailure[] = [];
+
+    for (let i = 0; i < registrations.length; i++) {
+      const reg = registrations[i];
+      const name = (reg.name || "").trim();
+      const rawWa = (reg.whatsapp || "").trim();
+
+      if (!rawWa) {
+        failed++;
+        failures.push({
+          id: reg.id,
+          name: name || "(Tanpa Nama)",
+          whatsapp: "-",
+          reason: "Nomor WhatsApp kosong di database",
+        });
+        continue;
       }
-      if (i + batchSize < registrations.length) {
-        await new Promise((r) => setTimeout(r, 3000));
+
+      const personalizedText = messageText.replace(/\{\{name\}\}/g, name);
+      let sendRes = await sendWaDetailed(rawWa, personalizedText);
+
+      // Retry 1x jika server WhatsApp sibuk (429) atau koneksi timeout
+      if (!sendRes.ok && (sendRes.statusCode === 429 || sendRes.error?.includes("sibuk") || sendRes.error?.includes("jaringan"))) {
+        await new Promise((r) => setTimeout(r, 1500));
+        sendRes = await sendWaDetailed(rawWa, personalizedText);
+      }
+
+      if (sendRes.ok) {
+        sent++;
+      } else {
+        failed++;
+        failures.push({
+          id: reg.id,
+          name: name || "(Tanpa Nama)",
+          whatsapp: rawWa,
+          reason: sendRes.error || "Gagal terkirim",
+        });
+      }
+
+      // Jeda pacing 600ms antar pengiriman agar socket WhatsApp stabil
+      if (i < registrations.length - 1) {
+        await new Promise((r) => setTimeout(r, 600));
       }
     }
 
-    const result: BroadcastResult = { sent, failed, total: registrations.length };
+    // Simpan laporan ke broadcast store
+    const report = saveBroadcastReport({
+      target: targetTitle || "Target Broadcast",
+      targetId: batchId || programId,
+      messageType,
+      total: registrations.length,
+      sent,
+      failed,
+      failures,
+    });
+
+    const result: BroadcastResult = {
+      sent,
+      failed,
+      total: registrations.length,
+      reportId: report.id,
+      failures,
+    };
     console.log(`[broadcast] admin — ${messageType} → ${registrations.length} penerima (${sent} terkirim, ${failed} gagal)`);
 
     return NextResponse.json(result);

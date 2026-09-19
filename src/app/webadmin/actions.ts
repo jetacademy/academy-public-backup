@@ -7,12 +7,13 @@ import { prisma } from "@/lib/prisma";
 import { requireAdmin, createAdminSession, destroyAdminSession } from "@/lib/admin-auth";
 import { hashPassword, generateApiKey } from "@/lib/crypto";
 import { checkRateLimit } from "@/lib/rate-limit";
-import { sendWa, msgAccess, msgPaid, normalizeWa } from "@/lib/wa";
+import { sendWa, msgAccess, msgPaid, normalizeWa, sendWaDetailed } from "@/lib/wa";
 import { formatJadwal, parseWIB } from "@/lib/format";
 import { sendEmail, getPaidEmailHtml } from "@/lib/email";
 import { recordAffiliateConversion, voidAffiliateConversion } from "@/lib/affiliate";
 import { linkLeadToRegistration } from "@/lib/lead-link";
 import { isCertIssuanceEnabled, issueCertificate, checkCertEligibility, isScheduleGateOpen } from "@/lib/certificates";
+import { getBroadcastReport, getLatestBroadcastReport, saveBroadcastReport, BroadcastFailure } from "@/lib/broadcast-store";
 import { createBunnyVideo, getBunnyUploadAuth, deleteBunnyVideo } from "@/lib/bunny";
 import { sanitizeHtml } from "@/lib/sanitize";
 import { slugify } from "@/lib/slug";
@@ -1447,11 +1448,10 @@ export async function sendBroadcast(formData: FormData) {
 
   // Cek kapan terakhir broadcast
   let lastSentAt: Date | null = null;
-  if (onlyNew && programId) {
-    const setting = await prisma.systemSetting.findUnique({ where: { id: "singleton" } });
-    const key = `last_broadcast_${programId}`;
-    const raw = setting as Record<string, unknown> | null;
-    lastSentAt = raw?.[key] ? new Date(raw[key] as string) : null;
+  if (onlyNew) {
+    const targetKey = batchId || programId || "";
+    const latest = getLatestBroadcastReport(targetKey);
+    if (latest) lastSentAt = new Date(latest.createdAt);
   }
 
   const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL ?? "http://localhost:3000"}/api/webadmin/broadcast`, {
@@ -1469,13 +1469,107 @@ export async function sendBroadcast(formData: FormData) {
   const data = await res.json();
   if (!res.ok) redirect(`/webadmin/broadcast?e=${encodeURIComponent(data.error || "Gagal")}`);
 
-  // Simpan timestamp broadcast terakhir
-  if (programId && data.sent > 0) {
-    await prisma.$executeRaw`UPDATE systemSetting SET \`last_broadcast_${programId}\` = NOW() WHERE id = 'singleton'`;
+  const resultQuery = new URLSearchParams({
+    ok: "1",
+    sent: String(data.sent ?? 0),
+    failed: String(data.failed ?? 0),
+    total: String(data.total ?? 0),
+  });
+  if (data.reportId) {
+    resultQuery.set("reportId", data.reportId);
+  }
+  redirect(`/webadmin/broadcast?${resultQuery.toString()}`);
+}
+
+export async function retryBroadcastFailures(formData: FormData) {
+  await requireAdmin();
+  const reportId = String(formData.get("reportId") ?? "").trim();
+  const customMessage = String(formData.get("customMessage") ?? "").trim();
+  if (!reportId) redirect("/webadmin/broadcast?e=report_not_found");
+
+  const report = getBroadcastReport(reportId);
+  if (!report || report.failures.length === 0) {
+    redirect("/webadmin/broadcast?e=no_failures");
   }
 
-  const resultQuery = new URLSearchParams({ ok: "1", sent: String(data.sent), failed: String(data.failed), total: String(data.total) });
-  redirect(`/webadmin/broadcast?${resultQuery.toString()}`);
+  const failureIds = report.failures.map((f) => f.id);
+  const registrations = await prisma.registration.findMany({
+    where: { id: { in: failureIds } },
+    select: {
+      id: true,
+      name: true,
+      whatsapp: true,
+      program: { select: { title: true, zoomLink: true, waGroupLink: true } },
+      batch: { select: { scheduleAt: true, zoomLink: true, waGroupLink: true, name: true } },
+    },
+  });
+
+  if (registrations.length === 0) {
+    redirect("/webadmin/broadcast?e=recipients_not_found");
+  }
+
+  let sent = 0;
+  let failed = 0;
+  const newFailures: BroadcastFailure[] = [];
+
+  for (let i = 0; i < registrations.length; i++) {
+    const reg = registrations[i];
+    const name = (reg.name || "").trim();
+    const rawWa = (reg.whatsapp || "").trim();
+
+    const zoomLink = reg.batch?.zoomLink || reg.program.zoomLink;
+    const waGroupLink = reg.batch?.waGroupLink || reg.program.waGroupLink;
+    const targetTitle = reg.batch?.name ? `${reg.program.title} (${reg.batch.name})` : reg.program.title;
+
+    const baseText = customMessage || (report.messageType === "zoom"
+      ? `Halo {{name}},\n\nBerikut link Zoom untuk program "${targetTitle}":\n${zoomLink}\n\nJangan lupa catat jadwalnya ya. Sampai jumpa! 😊`
+      : report.messageType === "grup"
+      ? `Halo {{name}},\n\nBergabunglah dengan grup WhatsApp peserta program "${targetTitle}":\n${waGroupLink}\n\nDiskusikan materi di grup ya! 😊`
+      : "Halo {{name}},\n\nIni adalah pesan dari Jetschool Academy.");
+
+    const personalized = baseText.replace(/\{\{name\}\}/g, name);
+    let sendRes = await sendWaDetailed(rawWa, personalized);
+
+    if (!sendRes.ok && (sendRes.statusCode === 429 || sendRes.error?.includes("sibuk") || sendRes.error?.includes("jaringan"))) {
+      await new Promise((r) => setTimeout(r, 1500));
+      sendRes = await sendWaDetailed(rawWa, personalized);
+    }
+
+    if (sendRes.ok) {
+      sent++;
+    } else {
+      failed++;
+      newFailures.push({
+        id: reg.id,
+        name,
+        whatsapp: rawWa,
+        reason: sendRes.error || "Gagal terkirim",
+      });
+    }
+
+    if (i < registrations.length - 1) {
+      await new Promise((r) => setTimeout(r, 600));
+    }
+  }
+
+  const newReport = saveBroadcastReport({
+    target: `${report.target} (Retry Gagal)`,
+    targetId: report.targetId,
+    messageType: report.messageType,
+    total: registrations.length,
+    sent,
+    failed,
+    failures: newFailures,
+  });
+
+  const q = new URLSearchParams({
+    ok: "1",
+    sent: String(sent),
+    failed: String(failed),
+    total: String(registrations.length),
+    reportId: newReport.id,
+  });
+  redirect(`/webadmin/broadcast?${q.toString()}`);
 }
 
 export async function updateBatchLinks(formData: FormData) {

@@ -80,105 +80,46 @@
 }
 
 /* ═══════════════════════════════════════════════════
-   LMS HEADER — sticky, satu baris, sangat compact
+   LMS ROOT APP LAYOUT
+   ═══════════════════════════════════════════════════ */
+.lms-app-layout {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+}
+
+/* ═══════════════════════════════════════════════════
+   LMS HEADER — Bersih, Jelas, Sticky
    ═══════════════════════════════════════════════════ */
 .lms-header {
   background: var(--white);
   border-bottom: 1px solid var(--border);
-  padding: 0 1.5rem;
+  padding: 0 1.25rem;
   height: 56px;
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 0.75rem;
   position: sticky;
   top: 0;
   z-index: 100;
-  box-shadow: 0 1px 0 var(--border), 0 2px 8px rgba(0,0,0,.04);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
 }
 
-/* Judul kelas di header */
-.lms-header-title {
-  flex: 1;
+.lms-header-left {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
   min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-  overflow: hidden;
-}
-.lms-header-label {
-  font-size: 0.58rem;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  font-weight: 800;
-  color: var(--purple);
-  line-height: 1;
-}
-.lms-header-name {
-  font-size: 0.9rem;
-  font-weight: 800;
-  color: var(--ink);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  line-height: 1.25;
+  flex: 1;
 }
 
-/* Progress pill (desktop) */
-.lms-header-progress {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  background: rgba(35,33,118,.06);
-  border: 1px solid rgba(35,33,118,.12);
-  border-radius: 99px;
-  padding: 0.25rem 0.75rem 0.25rem 0.5rem;
-  white-space: nowrap;
-}
-.lms-header-progress-bar {
-  width: 80px;
-  height: 5px;
-  background: rgba(35,33,118,.12);
-  border-radius: 99px;
-  overflow: hidden;
-}
-.lms-header-progress-fill {
-  height: 100%;
-  background: var(--purple);
-  border-radius: 99px;
-  transition: width .4s ease;
-}
-.lms-header-progress-pct {
-  font-size: 0.72rem;
-  font-weight: 800;
-  color: var(--purple);
-}
-
-/* Toggle materi (mobile only) */
-.lms-mob-nav-toggle {
-  display: none;
-  align-items: center;
-  gap: 0.4rem;
-  background: var(--purple);
-  color: #fff;
-  border: none;
-  border-radius: var(--r-sm);
-  padding: 0.4rem 0.75rem;
-  font-size: 0.75rem;
-  font-weight: 700;
-  cursor: pointer;
-  flex-shrink: 0;
-  transition: background .15s;
-  white-space: nowrap;
-}
-.lms-mob-nav-toggle:hover { background: var(--purple-deep); }
-.lms-mob-nav-toggle svg { width: 0.9rem; height: 0.9rem; }
-
-/* ── Back to Dashboard Button ── */
-.lms-back-btn {
+.lms-back-link {
   display: inline-flex;
   align-items: center;
-  gap: 0.3rem;
-  font-size: 0.76rem;
+  gap: 0.35rem;
+  font-size: 0.78rem;
   font-weight: 700;
   color: var(--ink-soft);
   padding: 0.35rem 0.65rem;
@@ -190,349 +131,495 @@
   text-decoration: none;
   flex-shrink: 0;
 }
-.lms-back-btn:hover {
+.lms-back-link:hover {
   background: var(--white);
   color: var(--purple);
   border-color: var(--purple);
 }
-.lms-back-btn svg { width: 0.9rem; height: 0.9rem; }
+.lms-back-arrow {
+  font-size: 0.88rem;
+  line-height: 1;
+}
 
 .lms-header-divider {
   width: 1px;
-  height: 22px;
+  height: 20px;
   background: var(--border);
   flex-shrink: 0;
 }
 
-/* ── Desktop Header Actions & Nav Group ── */
-.lms-header-desktop-actions {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.lms-header-nav-group {
-  display: flex;
-  align-items: center;
-  gap: 0.2rem;
-  background: var(--chip);
-  padding: 0.2rem;
-  border-radius: var(--r-sm);
-  border: 1px solid var(--border);
-}
-
-.lms-hdr-nav-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-  font-size: 0.72rem;
-  font-weight: 700;
-  color: var(--ink-soft);
-  padding: 0.25rem 0.55rem;
-  border-radius: 6px;
-  transition: all 0.15s ease;
-  text-decoration: none;
-}
-.lms-hdr-nav-btn:hover:not(.disabled) {
-  background: var(--white);
-  color: var(--purple);
-  box-shadow: 0 1px 3px rgba(0,0,0,.05);
-}
-.lms-hdr-nav-btn.disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-.lms-hdr-nav-btn svg { width: 0.85rem; height: 0.85rem; }
-
-/* ── Focus Mode Button ── */
-.lms-sidebar-toggle-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  font-size: 0.74rem;
-  font-weight: 700;
-  color: var(--ink-soft);
-  background: var(--white);
-  border: 1px solid var(--border);
-  border-radius: var(--r-sm);
-  padding: 0.35rem 0.7rem;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  flex-shrink: 0;
-}
-.lms-sidebar-toggle-btn:hover {
-  background: rgba(108,92,231,.08);
-  color: var(--purple);
-  border-color: var(--purple);
-}
-.lms-sidebar-toggle-btn.active {
-  background: var(--purple);
-  color: #fff;
-  border-color: var(--purple);
-}
-.lms-sidebar-toggle-btn svg { width: 0.95rem; height: 0.95rem; }
-
-/* ── Claim Banner ── */
-.lms-claim-banner {
-  background: #E8F8EF;
-  border-bottom: 1px solid #c9ecd9;
-  padding: .7rem 1.5rem;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: .6rem;
-}
-
-/* ═══════════════════════════════════════════════════
-   LAYOUT UTAMA: split pane
-   ═══════════════════════════════════════════════════ */
-.lms-split {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 21rem;
-  min-height: calc(100vh - 56px);
-  align-items: start;
-  transition: grid-template-columns .25s ease;
-}
-
-/* Mode Fokus (Sidebar disembunyikan di Desktop) */
-.lms-split.sidebar-collapsed {
-  grid-template-columns: 1fr;
-}
-.lms-split.sidebar-collapsed .lms-sidebar-pane {
-  display: none;
-}
-.lms-split.sidebar-collapsed .lms-inner-container {
-  max-width: 62rem;
-}
-
-.lms-content-pane {
-  padding: 1.75rem 2rem 6rem; /* bottom 6rem = ruang untuk bottom-nav mobile */
-  overflow-y: auto;
-}
-
-/* ── Desktop Inline Navigation Footer Bar ── */
-.lms-desktop-nav-bar {
-  display: flex;
-  align-items: stretch;
-  gap: 1rem;
-  margin-top: 1.75rem;
-  max-width: 52rem;
-  margin-inline: auto;
-}
-.lms-split.sidebar-collapsed .lms-desktop-nav-bar {
-  max-width: 62rem;
-}
-
-.lms-desk-nav-btn {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  gap: 0.8rem;
-  padding: 0.85rem 1.1rem;
-  background: var(--white);
-  border: 1px solid var(--border);
-  border-radius: var(--r-md);
-  text-decoration: none;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 2px 6px rgba(0,0,0,.03);
-}
-.lms-desk-nav-btn:hover:not(.disabled) {
-  border-color: var(--purple);
-  box-shadow: 0 6px 20px rgba(108,92,231,.12);
-  transform: translateY(-2px);
-}
-.lms-desk-nav-btn.disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-  background: var(--chip);
-}
-.lms-desk-nav-btn.next {
-  justify-content: flex-end;
-}
-.lms-desk-nav-arrow {
-  font-size: 1.2rem;
-  font-weight: 800;
-  color: var(--purple);
-}
-.lms-desk-nav-info {
+.lms-header-title-box {
   display: flex;
   flex-direction: column;
-  gap: 0.1rem;
   min-width: 0;
+  overflow: hidden;
 }
-.lms-desk-nav-sub {
-  font-size: 0.65rem;
-  font-weight: 800;
+
+.lms-header-prog-name {
+  font-size: 0.64rem;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--ink-faint);
-}
-.lms-desk-nav-title {
-  font-size: 0.85rem;
-  font-weight: 700;
-  color: var(--ink-main);
+  letter-spacing: 0.06em;
+  font-weight: 800;
+  color: var(--purple);
+  line-height: 1.2;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.lms-sidebar-pane {
-  background: var(--bg-panel);
-  border-left: 1px solid var(--border);
+.lms-header-lesson-name {
+  font-size: 0.92rem;
+  font-weight: 800;
+  color: var(--ink);
+  margin: 0;
+  line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lms-header-right {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-shrink: 0;
+}
+
+/* Progress ringkas di header */
+.lms-header-progress {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--chip);
+  border: 1px solid var(--border);
+  border-radius: 99px;
+  padding: 0.28rem 0.65rem;
+  white-space: nowrap;
+}
+.lms-header-progress-bar {
+  width: 70px;
+  height: 5px;
+  background: var(--border);
+  border-radius: 99px;
+  overflow: hidden;
+}
+.lms-header-progress-fill {
+  height: 100%;
+  background: var(--purple);
+  border-radius: 99px;
+  transition: width 0.3s ease;
+}
+.lms-header-progress-text {
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: var(--ink-soft);
+}
+
+/* Tombol Buka/Tutup Kurikulum */
+.lms-curriculum-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.38rem 0.75rem;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--border);
+  background: var(--white);
+  color: var(--ink-soft);
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+.lms-curriculum-btn:hover {
+  background: var(--white);
+  color: var(--purple);
+  border-color: var(--purple);
+}
+.lms-curriculum-btn.active {
+  background: var(--purple);
+  color: #fff;
+  border-color: var(--purple);
+}
+.lms-curriculum-btn svg {
+  width: 0.95rem;
+  height: 0.95rem;
+}
+.lms-curriculum-btn.mobile-only {
+  display: none;
+}
+
+/* ═══════════════════════════════════════════════════
+   MAIN SPLIT LAYOUT (DESKTOP)
+   ═══════════════════════════════════════════════════ */
+.lms-main-split {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 21rem;
+  min-height: calc(100vh - 56px);
+  align-items: stretch;
+  transition: grid-template-columns 0.2s ease;
+}
+
+.lms-main-split.sidebar-hidden {
+  grid-template-columns: 1fr;
+}
+
+.lms-main-split.sidebar-hidden .lms-sidebar-pane {
+  display: none;
+}
+
+.lms-content-scroll {
+  padding: 1.75rem 2rem 5rem;
   overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.lms-content-wrapper {
+  max-width: 52rem;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.lms-main-split.sidebar-hidden .lms-content-wrapper {
+  max-width: 62rem;
+}
+
+/* ═══════════════════════════════════════════════════
+   INLINE PREV / NEXT NAVIGATION (DESKTOP / TABLET)
+   ═══════════════════════════════════════════════════ */
+.lms-inline-nav {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-top: 1.75rem;
+}
+
+.lms-nav-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding: 0.9rem 1.15rem;
+  border-radius: var(--r-md);
+  border: 1px solid var(--border);
+  background: var(--white);
+  text-decoration: none;
+  transition: all 0.15s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+}
+.lms-nav-card:hover:not(.disabled) {
+  border-color: var(--purple);
+  box-shadow: 0 4px 14px rgba(108, 92, 231, 0.08);
+  transform: translateY(-1px);
+}
+.lms-nav-card.next {
+  text-align: right;
+}
+.lms-nav-card.disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  background: var(--chip);
+}
+.lms-nav-card-dir {
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--purple);
+}
+.lms-nav-card.disabled .lms-nav-card-dir {
+  color: var(--ink-faint);
+}
+.lms-nav-card-title {
+  font-size: 0.86rem;
+  font-weight: 700;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ═══════════════════════════════════════════════════
+   SIDEBAR & CURRICULUM LIST
+   ═══════════════════════════════════════════════════ */
+.lms-sidebar-pane {
+  background: var(--white);
+  border-left: 1px solid var(--border);
   padding: 1.25rem;
+  overflow-y: auto;
   max-height: calc(100vh - 56px);
   position: sticky;
   top: 56px;
 }
 
-.lms-inner-container {
-  max-width: 52rem;
-  margin: 0 auto;
+.lms-sidebar-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 0.85rem;
+  padding-bottom: 0.65rem;
+  border-bottom: 1px solid var(--border);
+}
+.lms-sidebar-title {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--ink);
+  margin: 0;
+}
+.lms-sidebar-sub {
+  font-size: 0.72rem;
+  color: var(--ink-faint);
+  font-weight: 600;
+}
+
+/* Progress Box di Sidebar */
+.lms-side-progress-box {
+  background: var(--chip);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  padding: 0.65rem 0.85rem;
+  margin-bottom: 1rem;
+}
+.lms-side-progress-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.4rem;
+}
+.lms-side-progress-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--ink-soft);
+}
+.lms-side-progress-val {
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: var(--purple);
+}
+.lms-side-progress-track {
+  height: 5px;
+  background: var(--border);
+  border-radius: 99px;
+  overflow: hidden;
+}
+.lms-side-progress-bar {
+  height: 100%;
+  background: var(--purple);
+  border-radius: 99px;
+  transition: width 0.3s ease;
+}
+
+/* Modul & Materi */
+.lms-curriculum-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+.lms-section-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+.lms-section-title {
+  font-size: 0.65rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ink-faint);
+  padding: 0.2rem 0.4rem;
+}
+.lms-module-card {
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  overflow: hidden;
+  background: var(--white);
+}
+.lms-module-header {
+  padding: 0.55rem 0.75rem;
+  background: var(--chip);
+  border-bottom: 1px solid var(--border);
+}
+.lms-module-num {
+  font-size: 0.62rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: var(--purple);
+  letter-spacing: 0.05em;
+  display: block;
+}
+.lms-module-title {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--ink);
+  margin: 0.1rem 0 0;
+  line-height: 1.3;
+}
+.lms-empty-lesson-notice {
+  padding: 0.75rem;
+  font-size: 0.78rem;
+  color: var(--ink-faint);
+  font-style: italic;
+}
+.lms-module-lesson-list {
+  display: flex;
+  flex-direction: column;
+}
+.lms-nav-lesson-row {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.6rem 0.75rem;
+  border-bottom: 1px solid #f1f5f9;
+  text-decoration: none;
+  color: var(--ink);
+  transition: background 0.12s ease;
+  min-height: 44px;
+}
+.lms-nav-lesson-row:last-child {
+  border-bottom: none;
+}
+.lms-nav-lesson-row:hover {
+  background: #f8fafc;
+}
+.lms-nav-lesson-row.is-active {
+  background: var(--purple-soft);
+  border-left: 3px solid var(--purple);
+  padding-left: calc(0.75rem - 3px);
+}
+.lms-nav-lesson-row.is-done {
+  opacity: 0.88;
+}
+
+/* Status Icons */
+.lms-nav-status {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.lms-check-icon {
+  color: #10b981;
+  font-weight: 800;
+  font-size: 0.85rem;
+  line-height: 1;
+}
+.lms-active-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--purple);
+}
+.lms-pending-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 1.5px solid #cbd5e1;
+}
+
+.lms-nav-lesson-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+.lms-nav-lesson-title {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--ink);
+  line-height: 1.3;
+}
+.lms-nav-lesson-row.is-active .lms-nav-lesson-title {
+  color: var(--purple-deep);
+  font-weight: 700;
+}
+.lms-nav-lesson-meta {
+  font-size: 0.68rem;
+  color: var(--ink-faint);
+  margin-top: 1px;
 }
 
 /* ═══════════════════════════════════════════════════
-   OVERLAY + DRAWER (mobile sidebar)
+   MOBILE DRAWER (SINGLE SOURCE OF TRUTH)
    ═══════════════════════════════════════════════════ */
-.lms-sidebar-overlay {
-  display: none;
+.lms-drawer-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,.5);
+  background: rgba(0, 0, 0, 0.45);
   z-index: 200;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+  backdrop-filter: blur(1px);
 }
-.lms-sidebar-overlay.open { display: block; }
+.lms-drawer-backdrop.is-open {
+  opacity: 1;
+  pointer-events: auto;
+}
 
-.lms-sidebar-drawer {
+.lms-mobile-drawer {
   position: fixed;
   top: 0;
   right: 0;
-  width: min(88vw, 340px);
+  width: min(88vw, 360px);
   height: 100dvh;
   background: var(--white);
-  border-left: 1px solid var(--border);
   z-index: 201;
-  overflow-y: auto;
-  padding: 0;
   transform: translateX(100%);
-  transition: transform .28s cubic-bezier(0.4,0,0.2,1);
-  box-shadow: -8px 0 32px rgba(0,0,0,.18);
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
   flex-direction: column;
+  box-shadow: -4px 0 24px rgba(0, 0, 0, 0.12);
 }
-.lms-sidebar-drawer.open { transform: translateX(0); }
+.lms-mobile-drawer.is-open {
+  transform: translateX(0);
+}
 
-/* Drawer header — sticky di atas */
-.lms-drawer-header {
-  position: sticky;
-  top: 0;
-  z-index: 10;
-  background: var(--white);
+.lms-drawer-topbar {
+  padding: 0.85rem 1.15rem;
   border-bottom: 1px solid var(--border);
-  padding: 0.9rem 1rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 0.5rem;
   flex-shrink: 0;
+  background: var(--white);
 }
-.lms-drawer-header-title {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-}
-.lms-drawer-header h3 {
-  font-size: 0.9rem;
+.lms-drawer-heading {
+  font-size: 0.95rem;
   font-weight: 800;
-  margin: 0;
   color: var(--ink);
+  margin: 0;
   line-height: 1.2;
 }
-.lms-drawer-header-sub {
-  font-size: 0.68rem;
+.lms-drawer-sub {
+  font-size: 0.72rem;
   color: var(--ink-soft);
   font-weight: 600;
 }
-.lms-drawer-close {
-  background: var(--chip);
-  border: none;
+.lms-drawer-close-btn {
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
-  width: 1.9rem;
-  height: 1.9rem;
+  border: 1px solid var(--border);
+  background: var(--chip);
+  color: var(--ink-soft);
+  font-size: 0.9rem;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  font-size: 0.95rem;
-  color: var(--ink-soft);
-  flex-shrink: 0;
-  transition: background .15s, color .15s;
+  transition: all 0.15s ease;
 }
-.lms-drawer-close:hover { background: var(--border); color: var(--ink); }
-
-/* Drawer body (scrollable) */
-.lms-drawer-body {
+.lms-drawer-close-btn:hover {
+  background: var(--border);
+  color: var(--ink);
+}
+.lms-drawer-content {
   flex: 1;
   overflow-y: auto;
-  padding: 0.9rem;
+  padding: 1rem 1.15rem;
 }
-
-/* ═══════════════════════════════════════════════════
-   PROGRESS — sidebar & drawer
-   ═══════════════════════════════════════════════════ */
-.lms-progress-mini {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.55rem 0.8rem;
-  background: rgba(35,33,118,.06);
-  border-radius: var(--r-sm);
-  margin-bottom: 0.9rem;
-  border: 1px solid rgba(35,33,118,.1);
-}
-.lms-progress-mini-bar {
-  flex: 1;
-  height: 5px;
-  background: rgba(35,33,118,.12);
-  border-radius: 99px;
-  overflow: hidden;
-}
-.lms-progress-mini-fill {
-  height: 100%;
-  background: var(--purple);
-  border-radius: 99px;
-  transition: width .5s ease;
-}
-.lms-progress-mini-label {
-  font-size: 0.68rem;
-  font-weight: 800;
-  color: var(--purple);
-  white-space: nowrap;
-}
-
-/* ═══════════════════════════════════════════════════
-   LESSON ITEM — daftar materi di sidebar/drawer
-   ═══════════════════════════════════════════════════ */
-.lms-lesson-item {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.6rem;
-  padding: 0.5rem 0.65rem;
-  border-radius: 8px;
-  text-decoration: none;
-  border: 1.5px solid transparent;
-  transition: background .15s, border-color .15s;
-}
-.lms-lesson-item:hover {
-  background: rgba(35,33,118,.05);
-  border-color: rgba(35,33,118,.15);
-}
-.lms-lesson-item.active {
-  background: rgba(35,33,118,.07);
-  border-color: var(--purple);
-}
-.lms-lesson-item.done { opacity: 0.7; }
 
 /* ═══════════════════════════════════════════════════
    VIDEO PLAYER
@@ -904,127 +991,170 @@
 }
 
 /* ═══════════════════════════════════════════════════
-   MOBILE BOTTOM NAV BAR
-   — navigasi utama di mobile: ← prev | Materi | next →
+   MOBILE BOTTOM BAR & NAV
    ═══════════════════════════════════════════════════ */
+.lms-mobile-bar {
+  display: none; /* tampil di mobile via media query */
+}
+
+/* Fallback for legacy class */
 .lms-bottom-nav {
-  display: none; /* tampil hanya di mobile via media query */
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  z-index: 150;
-  background: var(--white);
-  border-top: 1px solid var(--border);
-  box-shadow: 0 -4px 16px rgba(0,0,0,.08);
-  height: 56px;
-  align-items: center;
-  gap: 0;
+  display: none;
 }
-.lms-bottom-nav-btn {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 2px;
-  height: 100%;
-  border: none;
-  background: transparent;
-  color: var(--ink-soft);
-  font-size: 0.62rem;
-  font-weight: 700;
-  cursor: pointer;
-  text-decoration: none;
-  transition: color .15s, background .15s;
-  padding: 0 0.5rem;
-}
-.lms-bottom-nav-btn:hover { background: var(--chip); color: var(--ink); }
-.lms-bottom-nav-btn svg { width: 1.1rem; height: 1.1rem; }
-.lms-bottom-nav-btn.disabled {
-  opacity: 0.35;
-  pointer-events: none;
-}
-.lms-bottom-nav-center {
-  flex: 1.2;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  border: none;
-  border-left: 1px solid var(--border);
-  border-right: 1px solid var(--border);
-  background: transparent;
-  color: var(--purple);
-  font-size: 0.62rem;
-  font-weight: 800;
-  cursor: pointer;
-  gap: 2px;
-  padding: 0;
-  transition: background .15s;
-}
-.lms-bottom-nav-center:hover { background: rgba(35,33,118,.05); }
-.lms-bottom-nav-center svg { width: 1.1rem; height: 1.1rem; }
 
 /* ═══════════════════════════════════════════════════
    RESPONSIVE — ≤ 900px (tablet kecil & HP)
    ═══════════════════════════════════════════════════ */
 @media (max-width: 900px) {
   /* Layout: 1 kolom, sidebar jadi drawer */
-  .lms-split {
-    grid-template-columns: 1fr;
+  .lms-main-split {
+    display: block;
     min-height: unset;
   }
   .lms-sidebar-pane {
-    display: none; /* ganti dengan drawer */
+    display: none !important;
   }
-  .lms-content-pane {
-    padding: 1rem 1rem 6rem; /* 6rem = space for bottom nav */
+  .lms-content-scroll {
+    padding: 1rem 1rem 5.5rem;
     position: static;
   }
 
-  /* Sembunyikan elemen navigasi khusus desktop */
-  .lms-header-desktop-actions,
-  .lms-desktop-nav-bar,
-  .lms-back-text {
+  /* Sembunyikan progress desktop di header & inline nav */
+  .lms-header-progress {
+    display: none !important;
+  }
+  .lms-inline-nav {
     display: none !important;
   }
 
-  /* Tampilkan toggle materi di header */
-  .lms-mob-nav-toggle { display: flex; }
+  /* Toggle kurikulum di header: switch desktop/mobile button */
+  .lms-curriculum-btn.desktop-only {
+    display: none !important;
+  }
+  .lms-curriculum-btn.mobile-only {
+    display: inline-flex !important;
+  }
 
-  /* Sembunyikan progress bar desktop di header */
-  .lms-header-progress { display: none; }
+  /* Tampilkan mobile bottom bar sticky */
+  .lms-mobile-bar {
+    display: flex;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 150;
+    background: var(--white);
+    border-top: 1px solid var(--border);
+    box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.06);
+    height: 50px;
+    align-items: stretch;
+    padding-bottom: env(safe-area-inset-bottom, 0);
+  }
 
-  /* Tampilkan bottom nav */
-  .lms-bottom-nav { display: flex; }
+  .lms-mob-bar-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    border: none;
+    background: transparent;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--ink-soft);
+    text-decoration: none;
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease;
+    padding: 0 0.5rem;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .lms-mob-bar-btn:active {
+    background: var(--chip);
+    color: var(--ink);
+  }
+  .lms-mob-bar-btn.center {
+    flex: 1.4;
+    border-left: 1px solid var(--border);
+    border-right: 1px solid var(--border);
+    color: var(--purple);
+    font-weight: 800;
+  }
+  .lms-mob-bar-btn.center:active {
+    background: var(--purple-soft);
+  }
+  .lms-mob-bar-btn.disabled {
+    opacity: 0.35;
+    pointer-events: none;
+  }
 }
 
 @media (max-width: 600px) {
   .lms-header {
-    padding: 0 0.9rem;
+    padding: 0 0.85rem;
     height: 52px;
     gap: 0.5rem;
   }
-  .lms-header-name { font-size: 0.82rem; }
+  .lms-back-text {
+    display: none;
+  }
+  .lms-header-prog-name {
+    font-size: 0.6rem;
+  }
+  .lms-header-lesson-name {
+    font-size: 0.84rem;
+    max-width: 200px;
+  }
 
-  .member-admin-banner { padding: 1rem; flex-direction: column; align-items: stretch; }
-  .member-header-card { padding: 1rem; flex-direction: column; align-items: stretch; }
-  .member-program-card { grid-template-columns: 1fr; gap: 1rem; padding: 1.1rem; }
-  .member-card-actions { min-width: 100%; }
+  .member-admin-banner {
+    padding: 1rem;
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .member-header-card {
+    padding: 1rem;
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .member-program-card {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    padding: 1.1rem;
+  }
+  .member-card-actions {
+    min-width: 100%;
+  }
 
-  .lms-claim-banner { padding: .65rem 0.9rem; flex-direction: column; align-items: stretch; text-align: center; }
+  .lms-claim-banner {
+    padding: 0.65rem 0.9rem;
+    flex-direction: column;
+    align-items: stretch;
+    text-align: center;
+  }
 
-  .lms-content-pane { padding: 0.85rem 0.85rem 6rem; }
-  .lms-lesson-card { padding: 1rem; }
-  .lms-pdf-frame { height: 58vh; }
-
-  .lms-sidebar-drawer { width: min(93vw, 320px); }
+  .lms-content-scroll {
+    padding: 0.85rem 0.85rem 5.5rem;
+  }
+  .lms-lesson-card {
+    padding: 1.15rem;
+  }
+  .lms-mobile-drawer {
+    width: min(92vw, 320px);
+  }
 }
 
 @media (max-width: 380px) {
-  .lms-header-name { font-size: 0.78rem; }
-  .lms-mob-nav-toggle { padding: 0.35rem 0.6rem; font-size: 0.7rem; }
-  .lms-lesson-card { padding: 0.85rem; }
+  .lms-header-lesson-name {
+    max-width: 140px;
+    font-size: 0.8rem;
+  }
+  .lms-curriculum-btn {
+    padding: 0.35rem 0.55rem;
+    font-size: 0.72rem;
+  }
+  .lms-mob-bar-btn {
+    font-size: 0.72rem;
+  }
+  .lms-lesson-card {
+    padding: 0.95rem;
+  }
 }

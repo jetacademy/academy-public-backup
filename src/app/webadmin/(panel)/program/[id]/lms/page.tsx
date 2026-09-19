@@ -61,36 +61,75 @@ function ModuleCard({
   return (
     <section className="lms-mod">
       <div className="lms-mod-head">
-        <span className="mod-no">{label}</span>
+        <div className="lms-mod-head-top">
+          <span className="mod-no">{label}</span>
+          <span className="lms-mod-count">
+            {mod.lessons.length} materi
+          </span>
+          <div className="lms-mod-actions">
+            <form action={moveLmsModule}>
+              <input type="hidden" name="id" value={mod.id} />
+              <input type="hidden" name="programId" value={programId} />
+              <input type="hidden" name="dir" value="up" />
+              <button type="submit" className="icon-btn" disabled={isFirst} title="Geser ke atas" aria-label="Geser ke atas">↑</button>
+            </form>
+            <form action={moveLmsModule}>
+              <input type="hidden" name="id" value={mod.id} />
+              <input type="hidden" name="programId" value={programId} />
+              <input type="hidden" name="dir" value="down" />
+              <button type="submit" className="icon-btn" disabled={isLast} title="Geser ke bawah" aria-label="Geser ke bawah">↓</button>
+            </form>
+            <form action={deleteLmsModule}>
+              <input type="hidden" name="id" value={mod.id} />
+              <input type="hidden" name="programId" value={programId} />
+              <ConfirmButton
+                className="icon-btn danger"
+                title="Hapus modul"
+                message={`Hapus modul "${mod.title}" beserta ${mod.lessons.length} materinya? Progres belajar peserta pada modul ini ikut terhapus.`}
+              >
+                Hapus
+              </ConfirmButton>
+            </form>
+          </div>
+        </div>
 
-        <form action={saveLmsModule} className="inline-title">
+        <form action={saveLmsModule} className="lms-mod-form">
           <input type="hidden" name="id" value={mod.id} />
           <input type="hidden" name="programId" value={programId} />
-          <input name="title" defaultValue={mod.title} required title="Klik untuk mengganti nama modul" />
-          <select
-            name="groupId"
-            defaultValue={mod.groupId ?? ""}
-            title="Pindahkan ke kelompok lain"
-            style={{ padding: ".4em .6em", fontSize: ".76rem", borderRadius: "8px", border: "1px solid var(--chip)", background: "var(--white)", maxWidth: "11rem" }}
-          >
-            <option value="">Tanpa kelompok</option>
-            {groups.map((g) => (
-              <option key={g.id} value={g.id}>{g.title}</option>
-            ))}
-          </select>
-          <button type="submit" className="btn btn-sm btn-purple">Simpan</button>
+          <div className="lms-mod-title-row">
+            <input
+              name="title"
+              defaultValue={mod.title}
+              required
+              title="Klik untuk mengganti nama modul"
+              className="lms-mod-title-input"
+            />
+            <select
+              name="groupId"
+              defaultValue={mod.groupId ?? ""}
+              title="Pindahkan ke kelompok lain"
+              className="lms-mod-group-select"
+            >
+              <option value="">Tanpa kelompok</option>
+              {groups.map((g) => (
+                <option key={g.id} value={g.id}>{g.title}</option>
+              ))}
+            </select>
+            <button type="submit" className="btn btn-sm btn-purple lms-mod-save-btn">Simpan</button>
+          </div>
 
-          <div style={{ width: "100%", display: "flex", gap: ".6rem 1rem", flexWrap: "wrap", paddingTop: ".5rem", borderTop: "1px solid var(--chip)", marginTop: ".5rem" }}>
+          <div className="lms-batch-selector">
+            <span className="lms-batch-label">Akses Batch:</span>
             {batches.length > 0 ? (
               batches.map((b) => (
-                <label key={b.id} style={{ display: "flex", alignItems: "center", gap: ".3rem", fontSize: ".78rem", cursor: "pointer" }}>
+                <label key={b.id} className="lms-batch-chip">
                   <input
                     type="checkbox"
                     name="batchIds"
                     value={b.id}
                     defaultChecked={mod.batchLinks.some((bl) => bl.batchId === b.id)}
                   />
-                  {b.label}
+                  <span>{b.label}</span>
                 </label>
               ))
             ) : (
@@ -98,41 +137,11 @@ function ModuleCard({
             )}
           </div>
         </form>
-
-        <span style={{ fontSize: ".72rem", color: "var(--ink-faint)", fontWeight: 700 }}>
-          {mod.lessons.length} materi
-        </span>
-
-        <div style={{ display: "flex", gap: ".35rem" }}>
-          <form action={moveLmsModule}>
-            <input type="hidden" name="id" value={mod.id} />
-            <input type="hidden" name="programId" value={programId} />
-            <input type="hidden" name="dir" value="up" />
-            <button type="submit" className="icon-btn" disabled={isFirst} title="Geser ke atas">↑</button>
-          </form>
-          <form action={moveLmsModule}>
-            <input type="hidden" name="id" value={mod.id} />
-            <input type="hidden" name="programId" value={programId} />
-            <input type="hidden" name="dir" value="down" />
-            <button type="submit" className="icon-btn" disabled={isLast} title="Geser ke bawah">↓</button>
-          </form>
-          <form action={deleteLmsModule}>
-            <input type="hidden" name="id" value={mod.id} />
-            <input type="hidden" name="programId" value={programId} />
-            <ConfirmButton
-              className="icon-btn danger"
-              title="Hapus modul"
-              message={`Hapus modul "${mod.title}" beserta ${mod.lessons.length} materinya? Progres belajar peserta pada modul ini ikut terhapus.`}
-            >
-              Hapus
-            </ConfirmButton>
-          </form>
-        </div>
       </div>
 
       <div className="lms-lessons">
         {mod.lessons.length === 0 && (
-          <p style={{ fontSize: ".8rem", color: "var(--ink-faint)", fontStyle: "italic", padding: ".4rem .7rem", margin: 0 }}>
+          <p style={{ fontSize: ".8rem", color: "var(--ink-faint)", fontStyle: "italic", padding: ".6rem .8rem", margin: 0 }}>
             Belum ada materi di modul ini.
           </p>
         )}
@@ -140,51 +149,63 @@ function ModuleCard({
         {mod.lessons.map((les, lesIdx) => {
           const chip = TYPE_CHIP[les.type] ?? TYPE_CHIP.VIDEO;
           return (
-            <div key={les.id} className="q-row" style={{ boxShadow: "none" }}>
-              <span className={`type-chip ${chip.cls}`}>{chip.label}</span>
-              <Link href={`/webadmin/program/${programId}/lms/lesson/${les.id}`} className="q-text" title="Klik untuk mengedit materi">
-                {les.title}
-              </Link>
-              {les.isPreview && <span className="badge" style={{ fontSize: ".62rem", flexShrink: 0 }}>Preview Gratis</span>}
-              {les.type === "QUIZ" && (
-                <span className="l-meta" style={{ flexShrink: 0 }}>{les._count.questions} soal</span>
-              )}
-              <span className="l-meta" style={{ flexShrink: 0 }}>{les.duration}</span>
-              <div style={{ display: "flex", gap: ".35rem", flexShrink: 0 }}>
-                <form action={moveLmsLesson}>
-                  <input type="hidden" name="id" value={les.id} />
-                  <input type="hidden" name="programId" value={programId} />
-                  <input type="hidden" name="moduleId" value={mod.id} />
-                  <input type="hidden" name="dir" value="up" />
-                  <button type="submit" className="icon-btn" disabled={lesIdx === 0} title="Geser ke atas">↑</button>
-                </form>
-                <form action={moveLmsLesson}>
-                  <input type="hidden" name="id" value={les.id} />
-                  <input type="hidden" name="programId" value={programId} />
-                  <input type="hidden" name="moduleId" value={mod.id} />
-                  <input type="hidden" name="dir" value="down" />
-                  <button type="submit" className="icon-btn" disabled={lesIdx === mod.lessons.length - 1} title="Geser ke bawah">↓</button>
-                </form>
-                <Link href={`/webadmin/program/${programId}/lms/lesson/${les.id}`} className="icon-btn" title="Edit materi" style={{ textDecoration: "none" }}>
-                  Edit
+            <div key={les.id} className="lms-lesson-item">
+              <div className="lms-lesson-main">
+                <div className="lms-lesson-meta-top">
+                  <span className={`type-chip ${chip.cls}`}>{chip.label}</span>
+                  {les.isPreview && <span className="badge" style={{ fontSize: ".62rem" }}>Preview Gratis</span>}
+                  {les.type === "QUIZ" && (
+                    <span className="l-meta">{les._count.questions} soal</span>
+                  )}
+                  {les.duration && <span className="l-meta">{les.duration}</span>}
+                </div>
+                <Link
+                  href={`/webadmin/program/${programId}/lms/lesson/${les.id}`}
+                  className="lms-lesson-title"
+                  title="Klik untuk mengedit materi"
+                >
+                  {les.title}
                 </Link>
-                <form action={deleteLmsLesson}>
-                  <input type="hidden" name="id" value={les.id} />
-                  <input type="hidden" name="programId" value={programId} />
-                  <ConfirmButton className="icon-btn danger" title="Hapus materi" message={`Hapus materi "${les.title}"?`}>
-                    Hapus
-                  </ConfirmButton>
-                </form>
+              </div>
+
+              <div className="lms-lesson-actions">
+                <div className="lms-lesson-reorder">
+                  <form action={moveLmsLesson}>
+                    <input type="hidden" name="id" value={les.id} />
+                    <input type="hidden" name="programId" value={programId} />
+                    <input type="hidden" name="moduleId" value={mod.id} />
+                    <input type="hidden" name="dir" value="up" />
+                    <button type="submit" className="icon-btn" disabled={lesIdx === 0} title="Geser ke atas" aria-label="Geser ke atas">↑</button>
+                  </form>
+                  <form action={moveLmsLesson}>
+                    <input type="hidden" name="id" value={les.id} />
+                    <input type="hidden" name="programId" value={programId} />
+                    <input type="hidden" name="moduleId" value={mod.id} />
+                    <input type="hidden" name="dir" value="down" />
+                    <button type="submit" className="icon-btn" disabled={lesIdx === mod.lessons.length - 1} title="Geser ke bawah" aria-label="Geser ke bawah">↓</button>
+                  </form>
+                </div>
+                <div className="lms-lesson-ops">
+                  <Link href={`/webadmin/program/${programId}/lms/lesson/${les.id}`} className="btn btn-sm lms-btn-edit">
+                    Edit
+                  </Link>
+                  <form action={deleteLmsLesson}>
+                    <input type="hidden" name="id" value={les.id} />
+                    <input type="hidden" name="programId" value={programId} />
+                    <ConfirmButton className="icon-btn danger" title="Hapus materi" message={`Hapus materi "${les.title}"?`}>
+                      Hapus
+                    </ConfirmButton>
+                  </form>
+                </div>
               </div>
             </div>
           );
         })}
 
-        <div style={{ marginTop: ".6rem" }}>
+        <div className="lms-add-lesson-btn-wrapper">
           <Link
             href={`/webadmin/program/${programId}/lms/lesson/new?module=${mod.id}`}
-            className="btn btn-sm"
-            style={{ borderStyle: "dashed", boxShadow: "inset 0 0 0 1.5px var(--chip)", background: "transparent", color: "var(--purple)" }}
+            className="btn btn-sm lms-add-lesson-btn"
           >
             + Tambah Materi / Tes
           </Link>
@@ -271,44 +292,50 @@ export default async function AdminLms({
       {program.groups.map((group, gIdx) => (
         <section key={group.id} className="lms-group">
           <div className="lms-group-head">
-            <span className="group-no">Bagian {gIdx + 1}</span>
+            <div className="lms-group-head-top">
+              <span className="group-no">Bagian {gIdx + 1}</span>
+              <span className="lms-group-count">
+                {group.modules.length} modul
+              </span>
+              <div className="lms-group-actions">
+                <form action={moveLmsGroup}>
+                  <input type="hidden" name="id" value={group.id} />
+                  <input type="hidden" name="programId" value={program.id} />
+                  <input type="hidden" name="dir" value="up" />
+                  <button type="submit" className="icon-btn" disabled={gIdx === 0} title="Geser ke atas" aria-label="Geser ke atas">↑</button>
+                </form>
+                <form action={moveLmsGroup}>
+                  <input type="hidden" name="id" value={group.id} />
+                  <input type="hidden" name="programId" value={program.id} />
+                  <input type="hidden" name="dir" value="down" />
+                  <button type="submit" className="icon-btn" disabled={gIdx === program.groups.length - 1} title="Geser ke bawah" aria-label="Geser ke bawah">↓</button>
+                </form>
+                <form action={deleteLmsGroup}>
+                  <input type="hidden" name="id" value={group.id} />
+                  <input type="hidden" name="programId" value={program.id} />
+                  <ConfirmButton
+                    className="icon-btn danger"
+                    title="Hapus kelompok"
+                    message={`Hapus kelompok "${group.title}"? Modul di dalamnya TIDAK ikut terhapus — hanya keluar dari kelompok.`}
+                  >
+                    Hapus
+                  </ConfirmButton>
+                </form>
+              </div>
+            </div>
 
-            <form action={saveLmsGroup} className="inline-title">
+            <form action={saveLmsGroup} className="lms-group-form">
               <input type="hidden" name="id" value={group.id} />
               <input type="hidden" name="programId" value={program.id} />
-              <input name="title" defaultValue={group.title} required title="Klik untuk mengganti nama kelompok" />
-              <button type="submit" className="btn btn-sm btn-purple">Simpan Nama</button>
+              <input
+                name="title"
+                defaultValue={group.title}
+                required
+                title="Klik untuk mengganti nama kelompok"
+                className="lms-group-title-input"
+              />
+              <button type="submit" className="btn btn-sm btn-purple lms-group-save-btn">Simpan Nama</button>
             </form>
-
-            <span style={{ fontSize: ".72rem", color: "var(--ink-faint)", fontWeight: 700 }}>
-              {group.modules.length} modul
-            </span>
-
-            <div style={{ display: "flex", gap: ".35rem" }}>
-              <form action={moveLmsGroup}>
-                <input type="hidden" name="id" value={group.id} />
-                <input type="hidden" name="programId" value={program.id} />
-                <input type="hidden" name="dir" value="up" />
-                <button type="submit" className="icon-btn" disabled={gIdx === 0} title="Geser ke atas">↑</button>
-              </form>
-              <form action={moveLmsGroup}>
-                <input type="hidden" name="id" value={group.id} />
-                <input type="hidden" name="programId" value={program.id} />
-                <input type="hidden" name="dir" value="down" />
-                <button type="submit" className="icon-btn" disabled={gIdx === program.groups.length - 1} title="Geser ke bawah">↓</button>
-              </form>
-              <form action={deleteLmsGroup}>
-                <input type="hidden" name="id" value={group.id} />
-                <input type="hidden" name="programId" value={program.id} />
-                <ConfirmButton
-                  className="icon-btn danger"
-                  title="Hapus kelompok"
-                  message={`Hapus kelompok "${group.title}"? Modul di dalamnya TIDAK ikut terhapus — hanya keluar dari kelompok.`}
-                >
-                  Hapus
-                </ConfirmButton>
-              </form>
-            </div>
           </div>
 
           <div className="lms-group-body">
@@ -326,16 +353,16 @@ export default async function AdminLms({
             ))}
 
             {/* Tambah modul ke kelompok ini */}
-            <form action={saveLmsModule} style={{ display: "flex", gap: ".7rem", flexWrap: "wrap", marginTop: group.modules.length > 0 ? "1rem" : 0 }}>
+            <form action={saveLmsModule} className="lms-add-module-form" style={{ marginTop: group.modules.length > 0 ? "1rem" : 0 }}>
               <input type="hidden" name="programId" value={program.id} />
               <input type="hidden" name="groupId" value={group.id} />
               <input
                 name="title"
                 placeholder={`Nama modul baru di Bagian ${gIdx + 1}…`}
                 required
-                style={{ flex: 1, minWidth: "14rem", padding: ".6em 1em", border: "1.5px dashed var(--chip)", borderRadius: "10px", background: "var(--white)", fontSize: ".85rem" }}
+                className="lms-add-module-input"
               />
-              <button type="submit" className="btn btn-sm btn-purple">+ Tambah Modul</button>
+              <button type="submit" className="btn btn-sm btn-purple lms-add-module-btn">+ Tambah Modul</button>
             </form>
           </div>
         </section>
@@ -364,34 +391,32 @@ export default async function AdminLms({
 
       {/* Tambah kelompok / modul lepas */}
       <div className="lms-add-mod">
-        <div style={{ display: "grid", gap: "1.4rem" }}>
-          <div>
-            <h3 style={{ fontSize: ".95rem", fontWeight: 800, color: "var(--purple)", margin: "0 0 .6rem" }}>
+        <div className="lms-add-mod-grid">
+          <div className="lms-add-card">
+            <h3 style={{ color: "var(--purple)" }}>
               + Tambah Kelompok Modul
             </h3>
-            <form action={saveLmsGroup} style={{ display: "flex", gap: ".8rem", flexWrap: "wrap" }}>
+            <form action={saveLmsGroup} className="lms-add-form">
               <input type="hidden" name="programId" value={program.id} />
               <input
                 name="title"
                 placeholder={`cth: Bagian ${program.groups.length + 1}: Praktik & Studi Kasus`}
                 required
-                style={{ flex: 1, minWidth: "16rem", padding: ".7em 1em", border: "1px solid var(--chip)", borderRadius: "10px", background: "var(--white)" }}
               />
               <button type="submit" className="btn btn-purple">Tambah Kelompok</button>
             </form>
           </div>
-          <div>
-            <h3 style={{ fontSize: ".95rem", fontWeight: 800, color: "var(--ink-soft)", margin: "0 0 .6rem" }}>
+          <div className="lms-add-card">
+            <h3 style={{ color: "var(--ink-soft)" }}>
               + Tambah Modul Tanpa Kelompok
             </h3>
-            <form action={saveLmsModule} style={{ display: "flex", gap: ".8rem", flexWrap: "wrap" }}>
+            <form action={saveLmsModule} className="lms-add-form">
               <input type="hidden" name="programId" value={program.id} />
               <input type="hidden" name="groupId" value="" />
               <input
                 name="title"
                 placeholder="cth: Orientasi & Pengantar"
                 required
-                style={{ flex: 1, minWidth: "16rem", padding: ".7em 1em", border: "1px solid var(--chip)", borderRadius: "10px", background: "var(--white)" }}
               />
               <button type="submit" className="btn">Tambah Modul</button>
             </form>

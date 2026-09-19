@@ -4,7 +4,6 @@ import { useState } from "react";
 import Link from "next/link";
 import LmsHeader from "./LmsHeader";
 import LmsSidebar from "./LmsSidebar";
-import LmsMobileNav from "./LmsMobileNav";
 
 type Lesson = {
   id: string;
@@ -58,82 +57,67 @@ export default function LmsViewContainer({
   children,
 }: LmsViewContainerProps) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   return (
-    <div className="lms-scope" style={{ background: "var(--bg-panel)", minHeight: "90vh" }}>
-      {/* Header Interaktif Desktop & Mobile */}
+    <div className="lms-app-layout">
+      {/* Header Bersih */}
       <LmsHeader
         programTitle={programTitle}
         currentLessonTitle={currentLessonTitle}
         completedCount={completedCount}
         totalLessons={totalLessons}
         progressPercent={progressPercent}
-        prevLessonId={prevLesson?.id ?? null}
-        nextLessonId={nextLesson?.id ?? null}
-        registrationId={registrationId}
         sidebarOpen={sidebarOpen}
         onToggleSidebar={() => setSidebarOpen((v) => !v)}
-        sidebarSections={sidebarSections}
-        currentLessonId={currentLessonId}
-        completedLessonIdsArr={completedLessonIdsArr}
-        isAllDone={isAllDone}
+        onOpenDrawer={() => setDrawerOpen(true)}
       />
 
-      {/* Main Split-Pane Layout */}
-      <div className={`lms-split${!sidebarOpen ? " sidebar-collapsed" : ""}`}>
-        {/* Pane Konten Materi */}
-        <div className="lms-content-pane">
-          {children}
+      {/* Main Split-Pane */}
+      <div className={`lms-main-split${!sidebarOpen ? " sidebar-hidden" : ""}`}>
+        {/* Konten Utama Materi */}
+        <main className="lms-content-scroll">
+          <div className="lms-content-wrapper">
+            {children}
 
-          {/* Desktop & Tablet Inline Navigation Footer Bar */}
-          {!isAllDone && (
-            <div className="lms-desktop-nav-bar">
-              {/* Materi Sebelumnya */}
-              {prevLesson ? (
-                <Link
-                  href={`/member/lms/${registrationId}?lessonId=${prevLesson.id}`}
-                  className="lms-desk-nav-btn prev"
-                >
-                  <span className="lms-desk-nav-arrow">←</span>
-                  <div className="lms-desk-nav-info">
-                    <span className="lms-desk-nav-sub">Materi Sebelumnya</span>
-                    <span className="lms-desk-nav-title">{prevLesson.title}</span>
+            {/* Navigasi Sebelumnya / Berikutnya di Bawah Materi (Desktop & Tablet) */}
+            {!isAllDone && (
+              <nav className="lms-inline-nav" aria-label="Navigasi Materi">
+                {prevLesson ? (
+                  <Link
+                    href={`/member/lms/${registrationId}?lessonId=${prevLesson.id}`}
+                    className="lms-nav-card prev"
+                  >
+                    <span className="lms-nav-card-dir">← Sebelumnya</span>
+                    <span className="lms-nav-card-title">{prevLesson.title}</span>
+                  </Link>
+                ) : (
+                  <div className="lms-nav-card prev disabled">
+                    <span className="lms-nav-card-dir">Mulai Belajar</span>
+                    <span className="lms-nav-card-title">Materi Pertama</span>
                   </div>
-                </Link>
-              ) : (
-                <div className="lms-desk-nav-btn prev disabled">
-                  <span className="lms-desk-nav-arrow">←</span>
-                  <div className="lms-desk-nav-info">
-                    <span className="lms-desk-nav-sub">Materi Pertama</span>
-                  </div>
-                </div>
-              )}
+                )}
 
-              {/* Materi Berikutnya */}
-              {nextLesson ? (
-                <Link
-                  href={`/member/lms/${registrationId}?lessonId=${nextLesson.id}`}
-                  className="lms-desk-nav-btn next"
-                >
-                  <div className="lms-desk-nav-info" style={{ textAlign: "right" }}>
-                    <span className="lms-desk-nav-sub">Materi Berikutnya</span>
-                    <span className="lms-desk-nav-title">{nextLesson.title}</span>
+                {nextLesson ? (
+                  <Link
+                    href={`/member/lms/${registrationId}?lessonId=${nextLesson.id}`}
+                    className="lms-nav-card next"
+                  >
+                    <span className="lms-nav-card-dir">Berikutnya →</span>
+                    <span className="lms-nav-card-title">{nextLesson.title}</span>
+                  </Link>
+                ) : (
+                  <div className="lms-nav-card next disabled">
+                    <span className="lms-nav-card-dir">Akhir Materi</span>
+                    <span className="lms-nav-card-title">Materi Terakhir</span>
                   </div>
-                  <span className="lms-desk-nav-arrow">→</span>
-                </Link>
-              ) : (
-                <div className="lms-desk-nav-btn next disabled">
-                  <div className="lms-desk-nav-info" style={{ textAlign: "right" }}>
-                    <span className="lms-desk-nav-sub">Materi Terakhir</span>
-                  </div>
-                  <span className="lms-desk-nav-arrow">→</span>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
+                )}
+              </nav>
+            )}
+          </div>
+        </main>
 
-        {/* Sidebar Desktop (Daftar Kurikulum) */}
+        {/* Sidebar Kurikulum Desktop */}
         <LmsSidebar
           sections={sidebarSections}
           currentLessonId={currentLessonId}
@@ -146,58 +130,60 @@ export default function LmsViewContainer({
         />
       </div>
 
-      {/* Mobile Sticky Bottom Nav (56px) */}
-      <div className="lms-bottom-nav">
+      {/* Drawer Kurikulum Mobile (Single Source of Truth) */}
+      <LmsSidebar
+        sections={sidebarSections}
+        currentLessonId={currentLessonId}
+        completedLessonIds={completedLessonIdsArr}
+        registrationId={registrationId}
+        completedCount={completedCount}
+        totalLessons={totalLessons}
+        progressPercent={progressPercent}
+        isAllDone={isAllDone}
+        drawer
+        isOpen={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+      />
+
+      {/* Mobile Bottom Bar — Simpel, Mudah Dipahami, Jelas */}
+      <nav className="lms-mobile-bar" aria-label="Navigasi Bawah">
         {prevLesson ? (
           <Link
             href={`/member/lms/${registrationId}?lessonId=${prevLesson.id}`}
-            className="lms-bottom-nav-btn"
+            className="lms-mob-bar-btn prev"
+            title="Materi Sebelumnya"
           >
-            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="13 5 7 10 13 15" />
-            </svg>
-            Sebelumnya
+            ← Sblm
           </Link>
         ) : (
-          <span className="lms-bottom-nav-btn disabled">
-            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="13 5 7 10 13 15" />
-            </svg>
-            Sebelumnya
+          <span className="lms-mob-bar-btn disabled">
+            ← Sblm
           </span>
         )}
 
-        <LmsMobileNav
-          sections={sidebarSections}
-          currentLessonId={currentLessonId}
-          completedLessonIds={completedLessonIdsArr}
-          registrationId={registrationId}
-          completedCount={completedCount}
-          totalLessons={totalLessons}
-          progressPercent={progressPercent}
-          isAllDone={isAllDone}
-          bottomBar
-        />
+        <button
+          type="button"
+          className="lms-mob-bar-btn center"
+          onClick={() => setDrawerOpen(true)}
+          aria-label="Buka Kurikulum Materi"
+        >
+          Kurikulum · {progressPercent}%
+        </button>
 
         {nextLesson ? (
           <Link
             href={`/member/lms/${registrationId}?lessonId=${nextLesson.id}`}
-            className="lms-bottom-nav-btn"
+            className="lms-mob-bar-btn next"
+            title="Materi Berikutnya"
           >
-            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="7 5 13 10 7 15" />
-            </svg>
-            Berikutnya
+            Lanjut →
           </Link>
         ) : (
-          <span className="lms-bottom-nav-btn disabled">
-            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="7 5 13 10 7 15" />
-            </svg>
-            Berikutnya
+          <span className="lms-mob-bar-btn disabled">
+            Lanjut →
           </span>
         )}
-      </div>
+      </nav>
     </div>
   );
 }

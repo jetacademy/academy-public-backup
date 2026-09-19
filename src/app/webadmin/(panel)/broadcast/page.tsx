@@ -3,6 +3,8 @@ import { prisma } from "@/lib/prisma";
 import { formatHariTanggal } from "@/lib/format";
 import { sendBroadcast } from "../../actions";
 import BroadcastButton from "./BroadcastButton";
+import BroadcastReport from "./BroadcastReport";
+import { getBroadcastReport, getLatestBroadcastReport } from "@/lib/broadcast-store";
 
 export const dynamic = "force-dynamic";
 
@@ -18,22 +20,38 @@ const MESSAGE_TYPE_LABEL: Record<BroadcastMessageType, string> = {
 async function getProgramDetail(id: string) {
   return prisma.program.findUnique({
     where: { id },
-    select: { id: true, title: true, zoomLink: true, waGroupLink: true },
+    select: { id: true, title: true, zoomLink: true, waGroupLink: true, price: true },
   });
 }
 
-/** Hitung jumlah penerima broadcast berdasarkan filter. */
+/** Hitung jumlah penerima broadcast yang valid sesuai jenis program (gratis vs berbayar). */
 async function countRecipients(programId?: string, batchId?: string): Promise<number> {
-  const where: { programId?: string; batchId?: string } = {};
+  let isFree = false;
+  if (programId) {
+    const prog = await prisma.program.findUnique({ where: { id: programId }, select: { price: true } });
+    isFree = prog ? prog.price === 0 : false;
+  } else if (batchId) {
+    const batch = await prisma.programBatch.findUnique({
+      where: { id: batchId },
+      include: { program: { select: { price: true } } },
+    });
+    isFree = batch ? batch.program.price === 0 : false;
+  }
+
+  const statusFilter = isFree ? ["PAID", "PASSED", "REGISTERED"] : ["PAID", "PASSED"];
+  const where: Record<string, unknown> = {
+    status: { in: statusFilter },
+  };
   if (batchId) where.batchId = batchId;
   else if (programId) where.programId = programId;
+
   return prisma.registration.count({ where });
 }
 
 export default async function AdminBroadcast({
   searchParams,
 }: {
-  searchParams: Promise<{ program?: string; batch?: string; type?: string; ok?: string; sent?: string; failed?: string; total?: string; e?: string }>;
+  searchParams: Promise<{ program?: string; batch?: string; type?: string; ok?: string; sent?: string; failed?: string; total?: string; reportId?: string; e?: string }>;
 }) {
   const sp = await searchParams;
   const selectedProgramId = sp.program ?? "";
@@ -41,14 +59,27 @@ export default async function AdminBroadcast({
   const selectedType = (sp.type ?? "") as BroadcastMessageType | "";
   const error = sp.e ?? "";
 
+  // ── Laporan broadcast (jika baru saja dikirim atau ada reportId) ──
+  const activeReport = sp.reportId
+    ? getBroadcastReport(sp.reportId)
+    : sp.ok === "1"
+    ? getLatestBroadcastReport()
+    : null;
+
   // ── Fetch data ──────────────────────────────────────────────
-  const [programs, allBatches, programDetail, recipientCount] = await Promise.all([
-    prisma.program.findMany({ orderBy: { title: "asc" }, take: 200, select: { id: true, title: true } }),
+  const [programs, allBatches, programDetail, batchDetail, recipientCount] = await Promise.all([
+    prisma.program.findMany({ orderBy: { title: "asc" }, take: 200, select: { id: true, title: true, price: true } }),
     prisma.programBatch.findMany({
       orderBy: { scheduleAt: "desc" },
       select: { id: true, scheduleAt: true, programId: true, program: { select: { title: true } } },
     }),
     selectedProgramId ? getProgramDetail(selectedProgramId) : null,
+    selectedBatchId
+      ? prisma.programBatch.findUnique({
+          where: { id: selectedBatchId },
+          include: { program: { select: { title: true, zoomLink: true, waGroupLink: true } } },
+        })
+      : null,
     selectedProgramId || selectedBatchId
       ? countRecipients(selectedProgramId || undefined, selectedBatchId || undefined)
       : Promise.resolve(0),
@@ -59,15 +90,25 @@ export default async function AdminBroadcast({
     ? allBatches.filter((b) => b.programId === selectedProgramId)
     : allBatches;
 
-  // ── Build message preview ───────────────────────────────────
+  // ── Build target info & message preview ─────────────────────
+  let targetTitle = programDetail?.title ?? "";
+  let targetZoomLink = programDetail?.zoomLink ?? null;
+  let targetWaGroupLink = programDetail?.waGroupLink ?? null;
+
+  if (batchDetail) {
+    targetTitle = `${batchDetail.program.title} (${batchDetail.name || formatHariTanggal(batchDetail.scheduleAt)})`;
+    targetZoomLink = batchDetail.zoomLink || batchDetail.program.zoomLink;
+    targetWaGroupLink = batchDetail.waGroupLink || batchDetail.program.waGroupLink;
+  }
+
   const messagePreview =
     selectedType === "zoom"
-      ? programDetail?.zoomLink
-        ? `Halo {{name}},\n\nBerikut link Zoom untuk program "${programDetail.title}":\n${programDetail.zoomLink}\n\nSampai jumpa! 😊`
+      ? targetZoomLink
+        ? `Halo {{name}},\n\nBerikut link Zoom untuk program "${targetTitle}":\n${targetZoomLink}\n\nSampai jumpa! 😊`
         : null
       : selectedType === "grup"
-        ? programDetail?.waGroupLink
-          ? `Halo {{name}},\n\nBergabunglah dengan grup WhatsApp "${programDetail.title}":\n${programDetail.waGroupLink}\n\nDiskusikan materi di grup ya! 😊`
+        ? targetWaGroupLink
+          ? `Halo {{name}},\n\nBergabunglah dengan grup WhatsApp "${targetTitle}":\n${targetWaGroupLink}\n\nDiskusikan materi di grup ya! 😊`
           : null
       : null;
 
@@ -77,8 +118,10 @@ export default async function AdminBroadcast({
         <h1>📢 Broadcast WhatsApp</h1>
       </div>
 
-      {/* ── Hasil pengiriman ───────────────────────────────────── */}
-      {sp.ok === "1" && (
+      {/* ── Laporan detail hasil pengiriman & kegagalan ───────── */}
+      {activeReport ? (
+        <BroadcastReport report={activeReport} />
+      ) : sp.ok === "1" ? (
         <div className="alert alert-success" style={{ marginBottom: "1.4rem", padding: "1rem", background: "#dcfce7", border: "1px solid #86efac", borderRadius: 8 }}>
           <strong>✅ Broadcast berhasil dikirim!</strong>
           <br />
@@ -87,7 +130,7 @@ export default async function AdminBroadcast({
             {Number(sp.failed ?? 0) > 0 ? <span style={{ color: "#dc2626" }}> &middot; {sp.failed} gagal</span> : ""}
           </span>
         </div>
-      )}
+      ) : null}
 
       {error && (
         <div className="alert alert-error" style={{ marginBottom: "1.4rem", padding: "1rem", background: "#fee2e2", border: "1px solid #fca5a5", borderRadius: 8 }}>
@@ -135,11 +178,7 @@ export default async function AdminBroadcast({
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: ".6rem" }}>
             <span>
               <strong>🎯 Target Penerima:</strong>{" "}
-              {selectedBatchId
-                ? `Batch ${formatHariTanggal(allBatches.find((b) => b.id === selectedBatchId)?.scheduleAt ?? new Date())}`
-                : selectedProgramId
-                  ? `Program "${programDetail?.title ?? ""}"`
-                  : "—"}
+              {targetTitle || "—"}
             </span>
             <span style={{
               background: "var(--yellow)",
@@ -178,11 +217,9 @@ export default async function AdminBroadcast({
               <tr>
                 <td style={{ padding: ".25rem .5rem .25rem 0", color: "var(--ink-soft)", width: 140 }}>Target</td>
                 <td style={{ padding: ".25rem 0", fontWeight: 600 }}>
-                  {selectedBatchId
-                    ? `Batch — ${formatHariTanggal(allBatches.find((b) => b.id === selectedBatchId)?.scheduleAt ?? new Date())}`
-                    : selectedProgramId
-                      ? `Program — ${programDetail?.title ?? ""}`
-                      : <span style={{ color: "var(--ink-faint)" }}>Belum dipilih</span>}
+                  {targetTitle
+                    ? (selectedBatchId ? `Batch — ${targetTitle}` : `Program — ${targetTitle}`)
+                    : <span style={{ color: "var(--ink-faint)" }}>Belum dipilih</span>}
                 </td>
               </tr>
               <tr>
@@ -228,8 +265,8 @@ export default async function AdminBroadcast({
             ) : (
               <p className="muted" style={{ fontStyle: "italic" }}>
                 {selectedType === "zoom"
-                  ? "Program ini belum memiliki link Zoom."
-                  : "Program ini belum memiliki link Grup WA."}
+                  ? "Target ini belum memiliki link Zoom."
+                  : "Target ini belum memiliki link Grup WA."}
               </p>
             )}
           </div>
