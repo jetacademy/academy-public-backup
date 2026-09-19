@@ -62,13 +62,13 @@ describe("Sales Endpoints (/api/v1/sales/*)", () => {
           program_id: "prog-1",
           program_title: "Zero Human Company",
           revenue: 12500000,
-          transactions: 50n,
+          transactions: BigInt(50),
         },
         {
           program_id: "prog-2",
           program_title: "AI Workshop",
           revenue: 8000000,
-          transactions: 40n,
+          transactions: BigInt(40),
         },
       ]);
 
@@ -107,18 +107,20 @@ describe("Sales Endpoints (/api/v1/sales/*)", () => {
 
   describe("2. /api/v1/sales/funnel", () => {
     it("returns funnel metrics with impressions, clicks, leads, transactions, revenue", async () => {
+      const WIB_OFFSET_MS = 7 * 60 * 60 * 1000;
+      const todayStr = new Date(Date.now() + WIB_OFFSET_MS).toISOString().slice(0, 10);
       mockQueryRaw
         .mockResolvedValueOnce([
           {
-            day: "2026-09-19",
-            transactions: 4n,
+            day: todayStr,
+            transactions: BigInt(4),
             revenue: 2025000,
           },
         ])
         .mockResolvedValueOnce([
           {
-            day: "2026-09-19",
-            leads_count: 150n,
+            day: todayStr,
+            leads_count: BigInt(150),
           },
         ]);
 
@@ -135,7 +137,7 @@ describe("Sales Endpoints (/api/v1/sales/*)", () => {
       expect(json.data.length).toBe(1);
 
       const day = json.data[0];
-      expect(day.date).toBe("2026-09-19");
+      expect(day.date).toBe(todayStr);
       expect(day.leads).toBe(150);
       expect(day.transactions).toBe(4);
       expect(day.revenue).toBe(2025000);
@@ -156,7 +158,7 @@ describe("Sales Endpoints (/api/v1/sales/*)", () => {
           customer_phone: "08123456789",
           customer_email: "budi@example.com",
           total_spent: 5000000,
-          transaction_count: 2n,
+          transaction_count: BigInt(2),
         },
         {
           customer_key: "08987654321",
@@ -164,7 +166,7 @@ describe("Sales Endpoints (/api/v1/sales/*)", () => {
           customer_phone: "08987654321",
           customer_email: "ani@example.com",
           total_spent: 500000,
-          transaction_count: 1n,
+          transaction_count: BigInt(1),
         },
       ]);
 
@@ -190,7 +192,7 @@ describe("Sales Endpoints (/api/v1/sales/*)", () => {
       mockQueryRaw.mockResolvedValueOnce([
         {
           day: "2026-09-01",
-          transactions: 2n,
+          transactions: BigInt(2),
           revenue: 350000,
           program_title: "Zero Human Company",
         },
@@ -221,23 +223,23 @@ describe("Sales Endpoints (/api/v1/sales/*)", () => {
         .mockResolvedValueOnce([
           {
             source: "FACEBOOK",
-            transactions: 5n,
+            transactions: BigInt(5),
             revenue: 5000000,
           },
           {
             source: "GOOGLE",
-            transactions: 4n,
+            transactions: BigInt(4),
             revenue: 4000000,
           },
         ])
         .mockResolvedValueOnce([
           {
             source: "FACEBOOK",
-            leads_count: 50n,
+            leads_count: BigInt(50),
           },
           {
             source: "GOOGLE",
-            leads_count: 30n,
+            leads_count: BigInt(30),
           },
         ]);
 

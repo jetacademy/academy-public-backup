@@ -10,20 +10,24 @@ export default function ConfirmButton({
   className,
   title,
   disabled,
+  onConfirm,
   children,
 }: {
   message: string;
   className?: string;
   title?: string;
   disabled?: boolean;
+  onConfirm?: () => Promise<void> | void;
   children: React.ReactNode;
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [wasPending, setWasPending] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
   const formRef = useRef<HTMLFormElement | null>(null);
   const cancelButtonRef = useRef<HTMLButtonElement | null>(null);
 
-  const { pending } = useFormStatus();
+  const { pending: formPending } = useFormStatus();
+  const pending = formPending || isProcessing;
 
   const openModal = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
@@ -36,7 +40,19 @@ export default function ConfirmButton({
     setIsOpen(false);
   }, [pending]);
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
+    if (onConfirm) {
+      try {
+        setIsProcessing(true);
+        await onConfirm();
+        setIsOpen(false);
+      } catch (err) {
+        console.error("[ConfirmButton] Error executing onConfirm:", err);
+      } finally {
+        setIsProcessing(false);
+      }
+      return;
+    }
     if (!formRef.current) return;
     formRef.current.requestSubmit();
   };

@@ -6,11 +6,14 @@ import ConfirmButton from "@/components/ConfirmButton";
 import {
   saveLmsGroup,
   deleteLmsGroup,
+  deleteLmsGroupAction,
   moveLmsGroup,
   saveLmsModule,
   deleteLmsModule,
+  deleteLmsModuleAction,
   reorderLmsModulesAction,
   deleteLmsLesson,
+  deleteLmsLessonAction,
   moveLmsLessonAction,
 } from "@/app/webadmin/actions";
 
@@ -96,6 +99,81 @@ export default function AdminLmsCurriculumManager({
 
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  // Collapse / Expand state (hide/show)
+  const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
+  const [collapsedModules, setCollapsedModules] = useState<Record<string, boolean>>({});
+
+  const storageKey = `admin_lms_collapse_${programId}`;
+
+  // Hydrate collapse state dari localStorage
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(storageKey);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed.groups) setCollapsedGroups(parsed.groups);
+        if (parsed.modules) setCollapsedModules(parsed.modules);
+      }
+    } catch {
+      // ignore localStorage errors
+    }
+  }, [storageKey]);
+
+  const saveCollapseState = (
+    newGroups: Record<string, boolean>,
+    newModules: Record<string, boolean>
+  ) => {
+    try {
+      localStorage.setItem(
+        storageKey,
+        JSON.stringify({ groups: newGroups, modules: newModules })
+      );
+    } catch {
+      // ignore
+    }
+  };
+
+  const toggleGroup = (groupId: string) => {
+    setCollapsedGroups((prev) => {
+      const next = { ...prev, [groupId]: !prev[groupId] };
+      saveCollapseState(next, collapsedModules);
+      return next;
+    });
+  };
+
+  const toggleModule = (moduleId: string) => {
+    setCollapsedModules((prev) => {
+      const next = { ...prev, [moduleId]: !prev[moduleId] };
+      saveCollapseState(collapsedGroups, next);
+      return next;
+    });
+  };
+
+  const collapseAll = () => {
+    const allG: Record<string, boolean> = {};
+    groups.forEach((g) => {
+      allG[g.id] = true;
+    });
+    const allM: Record<string, boolean> = {};
+    groups.forEach((g) => {
+      g.modules.forEach((m) => {
+        allM[m.id] = true;
+      });
+    });
+    orphanModules.forEach((m) => {
+      allM[m.id] = true;
+    });
+    setCollapsedGroups(allG);
+    setCollapsedModules(allM);
+    saveCollapseState(allG, allM);
+  };
+
+  const expandAll = () => {
+    setCollapsedGroups({});
+    setCollapsedModules({});
+    saveCollapseState({}, {});
+  };
 
   // Simpan ref state sebelum drag untuk rollback jika gagal
   const previousStateRef = useRef<{ groups: GroupRow[]; orphanModules: ModuleRow[] }>({
@@ -381,6 +459,96 @@ export default function AdminLmsCurriculumManager({
     setModuleDragOverIdx(null);
   };
 
+  // Hapus modul dengan optimistic update
+  const handleDeleteModule = async (moduleId: string, moduleTitle: string, groupId: string | null) => {
+    previousStateRef.current = { groups, orphanModules };
+
+    // 1. Optimistic remove
+    if (groupId) {
+      setGroups((prevG) =>
+        prevG.map((g) =>
+          g.id === groupId
+            ? { ...g, modules: g.modules.filter((m) => m.id !== moduleId) }
+            : g
+        )
+      );
+    } else {
+      setOrphanModules((prevO) => prevO.filter((m) => m.id !== moduleId));
+    }
+
+    setStatusMessage(`Menghapus modul "${moduleTitle}"…`);
+    try {
+      const res = await deleteLmsModuleAction(programId, moduleId);
+      if (!res.ok) throw new Error(res.error || "Gagal menghapus modul");
+      setStatusMessage(`Modul "${moduleTitle}" berhasil dihapus.`);
+      setTimeout(() => setStatusMessage(null), 2500);
+    } catch (err: any) {
+      console.error("[handleDeleteModule] Error:", err);
+      setGroups(previousStateRef.current.groups);
+      setOrphanModules(previousStateRef.current.orphanModules);
+      setErrorMessage(err?.message || "Gagal menghapus modul.");
+      setStatusMessage(null);
+    }
+  };
+
+  // Hapus materi dengan optimistic update
+  const handleDeleteLesson = async (lessonId: string, lessonTitle: string, moduleId: string) => {
+    previousStateRef.current = { groups, orphanModules };
+
+    setGroups((prevG) =>
+      prevG.map((g) => ({
+        ...g,
+        modules: g.modules.map((m) =>
+          m.id === moduleId ? { ...m, lessons: m.lessons.filter((l) => l.id !== lessonId) } : m
+        ),
+      }))
+    );
+    setOrphanModules((prevO) =>
+      prevO.map((m) =>
+        m.id === moduleId ? { ...m, lessons: m.lessons.filter((l) => l.id !== lessonId) } : m
+      )
+    );
+
+    setStatusMessage(`Menghapus materi "${lessonTitle}"…`);
+    try {
+      const res = await deleteLmsLessonAction(programId, lessonId);
+      if (!res.ok) throw new Error(res.error || "Gagal menghapus materi");
+      setStatusMessage(`Materi "${lessonTitle}" berhasil dihapus.`);
+      setTimeout(() => setStatusMessage(null), 2500);
+    } catch (err: any) {
+      console.error("[handleDeleteLesson] Error:", err);
+      setGroups(previousStateRef.current.groups);
+      setOrphanModules(previousStateRef.current.orphanModules);
+      setErrorMessage(err?.message || "Gagal menghapus materi.");
+      setStatusMessage(null);
+    }
+  };
+
+  // Hapus kelompok dengan optimistic update (modul dikeluarkan jadi tanpa kelompok)
+  const handleDeleteGroup = async (groupId: string, groupTitle: string) => {
+    previousStateRef.current = { groups, orphanModules };
+
+    const targetGroup = groups.find((g) => g.id === groupId);
+    const releasedModules = targetGroup ? targetGroup.modules.map((m) => ({ ...m, groupId: null })) : [];
+
+    setGroups((prevG) => prevG.filter((g) => g.id !== groupId));
+    setOrphanModules((prevO) => [...prevO, ...releasedModules]);
+
+    setStatusMessage(`Menghapus kelompok "${groupTitle}"…`);
+    try {
+      const res = await deleteLmsGroupAction(programId, groupId);
+      if (!res.ok) throw new Error(res.error || "Gagal menghapus kelompok");
+      setStatusMessage(`Kelompok "${groupTitle}" berhasil dihapus.`);
+      setTimeout(() => setStatusMessage(null), 2500);
+    } catch (err: any) {
+      console.error("[handleDeleteGroup] Error:", err);
+      setGroups(previousStateRef.current.groups);
+      setOrphanModules(previousStateRef.current.orphanModules);
+      setErrorMessage(err?.message || "Gagal menghapus kelompok.");
+      setStatusMessage(null);
+    }
+  };
+
   // Render Modul tunggal
   const renderModuleCard = (
     mod: ModuleRow,
@@ -399,6 +567,8 @@ export default function AdminLmsCurriculumManager({
     const isFooterDropActive =
       lessonDropTarget?.moduleId === mod.id &&
       (lessonDropTarget.position === "end" || lessonDropTarget.position === "empty");
+
+    const isModCollapsed = Boolean(collapsedModules[mod.id]);
 
     return (
       <section
@@ -421,12 +591,38 @@ export default function AdminLmsCurriculumManager({
           }
         }}
         onDragEnd={resetModuleDrag}
-        className={`lms-mod${isModuleDragging ? " is-dragging" : ""}${isModuleDragOver ? " is-drag-over" : ""}${
+        className={`lms-mod${isModCollapsed ? " is-collapsed" : ""}${isModuleDragging ? " is-dragging" : ""}${isModuleDragOver ? " is-drag-over" : ""}${
           isLessonDragActive && isTargetOfLessonDrop ? " is-lesson-drop-target" : ""
         }`}
       >
         <div className="lms-mod-head">
           <div className="lms-mod-head-top">
+            {/* Tombol Collapse / Expand Modul */}
+            <button
+              type="button"
+              className="lms-collapse-toggle-btn"
+              onClick={() => toggleModule(mod.id)}
+              title={isModCollapsed ? "Bentangkan materi modul ini" : "Ciutkan materi modul ini"}
+              aria-label={isModCollapsed ? "Bentangkan modul" : "Ciutkan modul"}
+            >
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                style={{
+                  transform: isModCollapsed ? "rotate(-90deg)" : "rotate(0deg)",
+                  transition: "transform 0.18s ease",
+                }}
+              >
+                <polyline points="6 9 12 15 18 9" />
+              </svg>
+            </button>
+
             {/* Drag Handle Modul */}
             <span
               className="lms-drag-handle lms-mod-drag-handle"
@@ -502,6 +698,7 @@ export default function AdminLmsCurriculumManager({
                   className="icon-btn danger"
                   title="Hapus modul"
                   message={`Hapus modul "${mod.title}" beserta ${mod.lessons.length} materinya? Progres belajar peserta pada modul ini ikut terhapus.`}
+                  onConfirm={() => handleDeleteModule(mod.id, mod.title, groupId)}
                 >
                   Hapus
                 </ConfirmButton>
@@ -766,6 +963,7 @@ export default function AdminLmsCurriculumManager({
                               className="icon-btn danger"
                               title="Hapus materi"
                               message={`Hapus materi "${les.title}"?`}
+                              onConfirm={() => handleDeleteLesson(les.id, les.title, mod.id)}
                             >
                               Hapus
                             </ConfirmButton>
@@ -830,13 +1028,90 @@ export default function AdminLmsCurriculumManager({
         </div>
       )}
 
+      {/* Toolbar Kurikulum: Statistik & Tombol Ciutkan/Bentangkan Semua */}
+      <div className="lms-curriculum-toolbar">
+        <div className="lms-toolbar-info">
+          <span>Struktur Kurikulum:</span>
+          <span className="lms-toolbar-pill">{groups.length} Bagian</span>
+          <span className="lms-toolbar-pill">
+            {groups.reduce((acc, g) => acc + g.modules.length, 0) + orphanModules.length} Modul
+          </span>
+          <span className="lms-toolbar-pill">
+            {groups.reduce(
+              (acc, g) => acc + g.modules.reduce((mAcc, m) => mAcc + m.lessons.length, 0),
+              0
+            ) + orphanModules.reduce((mAcc, m) => mAcc + m.lessons.length, 0)}{" "}
+            Materi
+          </span>
+        </div>
+
+        <div className="lms-toolbar-actions">
+          <button
+            type="button"
+            className="lms-btn-toolbar"
+            onClick={collapseAll}
+            title="Ciutkan semua bagian dan modul agar tampilan ringkas"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="4 14 10 14 10 20" />
+              <polyline points="20 10 14 10 14 4" />
+              <line x1="14" y1="10" x2="21" y2="3" />
+              <line x1="3" y1="21" x2="10" y2="14" />
+            </svg>
+            Ciutkan Semua
+          </button>
+          <button
+            type="button"
+            className="lms-btn-toolbar"
+            onClick={expandAll}
+            title="Bentangkan semua bagian dan modul"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="15 3 21 3 21 9" />
+              <polyline points="9 21 3 21 3 15" />
+              <line x1="21" y1="3" x2="14" y2="10" />
+              <line x1="3" y1="21" x2="10" y2="14" />
+            </svg>
+            Bentangkan Semua
+          </button>
+        </div>
+      </div>
+
       {/* Render Semua Kelompok Modul */}
-      {groups.map((group, gIdx) => (
-        <section key={group.id} className="lms-group">
-          <div className="lms-group-head">
-            <div className="lms-group-head-top">
-              <span className="group-no">Bagian {gIdx + 1}</span>
-              <span className="lms-group-count">{group.modules.length} modul</span>
+      {groups.map((group, gIdx) => {
+        const isGroupCollapsed = Boolean(collapsedGroups[group.id]);
+        return (
+          <section key={group.id} className={`lms-group${isGroupCollapsed ? " is-collapsed" : ""}`}>
+            <div className="lms-group-head">
+              <div className="lms-group-head-top">
+                {/* Tombol Collapse / Expand Bagian */}
+                <button
+                  type="button"
+                  className="lms-collapse-toggle-btn"
+                  onClick={() => toggleGroup(group.id)}
+                  title={isGroupCollapsed ? "Bentangkan bagian ini" : "Ciutkan bagian ini"}
+                  aria-label={isGroupCollapsed ? "Bentangkan bagian" : "Ciutkan bagian"}
+                >
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    style={{
+                      transform: isGroupCollapsed ? "rotate(-90deg)" : "rotate(0deg)",
+                      transition: "transform 0.18s ease",
+                    }}
+                  >
+                    <polyline points="6 9 12 15 18 9" />
+                  </svg>
+                </button>
+
+                <span className="group-no">Bagian {gIdx + 1}</span>
+                <span className="lms-group-count">{group.modules.length} modul</span>
               <div className="lms-group-actions">
                 <form action={moveLmsGroup}>
                   <input type="hidden" name="id" value={group.id} />
@@ -873,6 +1148,7 @@ export default function AdminLmsCurriculumManager({
                     className="icon-btn danger"
                     title="Hapus kelompok"
                     message={`Hapus kelompok "${group.title}"? Modul di dalamnya TIDAK ikut terhapus — hanya keluar dari kelompok.`}
+                    onConfirm={() => handleDeleteGroup(group.id, group.title)}
                   >
                     Hapus
                   </ConfirmButton>
@@ -937,7 +1213,8 @@ export default function AdminLmsCurriculumManager({
             </form>
           </div>
         </section>
-      ))}
+        );
+      })}
 
       {/* Modul tanpa kelompok (Orphan Modules) */}
       {orphanModules.length > 0 && (

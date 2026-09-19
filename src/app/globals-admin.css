@@ -937,6 +937,102 @@
   to { transform: rotate(360deg); }
 }
 
+/* ── Collapse / Expand (Hide / Show) ── */
+.lms-curriculum-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: .6rem;
+  margin-bottom: 1.2rem;
+  padding: .55rem .9rem;
+  background: var(--white);
+  border: 1px solid var(--chip);
+  border-radius: var(--r-sm);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+}
+
+.lms-toolbar-info {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  font-size: .82rem;
+  color: var(--ink-soft);
+  font-weight: 600;
+}
+
+.lms-toolbar-pill {
+  font-size: .74rem;
+  color: var(--ink-soft);
+  font-weight: 700;
+  background: var(--chip, #f1f0f4);
+  padding: .25em .65em;
+  border-radius: 6px;
+  white-space: nowrap;
+}
+
+.lms-toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: .45rem;
+}
+
+.lms-btn-toolbar {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  padding: .32rem .75rem;
+  border-radius: 7px;
+  border: 1px solid var(--chip);
+  background: var(--white);
+  color: var(--ink-soft);
+  font-size: .78rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all .15s ease;
+}
+.lms-btn-toolbar:hover {
+  border-color: var(--purple);
+  color: var(--purple);
+  background: #F6F4FE;
+}
+
+.lms-collapse-toggle-btn {
+  display: inline-grid;
+  place-items: center;
+  width: 1.85rem;
+  height: 1.85rem;
+  border-radius: 7px;
+  border: 1px solid var(--chip);
+  background: var(--white);
+  color: var(--ink-soft);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all .15s ease;
+}
+.lms-collapse-toggle-btn:hover {
+  border-color: var(--purple);
+  color: var(--purple);
+  background: #F6F4FE;
+}
+
+.lms-group.is-collapsed {
+  margin-bottom: .8rem;
+}
+.lms-group.is-collapsed .lms-group-body {
+  display: none !important;
+}
+
+.lms-mod.is-collapsed .lms-lessons {
+  display: none !important;
+}
+.lms-mod.is-collapsed .lms-batch-selector {
+  display: none !important;
+}
+.lms-mod.is-collapsed .lms-mod-head {
+  border-bottom: none;
+}
+
 .type-chip {
   display: inline-flex; align-items: center; gap: .35em; font-size: .68rem; font-weight: 800;
   padding: .3em .7em; border-radius: 99px; flex-shrink: 0; letter-spacing: .02em;

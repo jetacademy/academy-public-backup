@@ -361,13 +361,27 @@ export async function saveLmsGroup(formData: FormData) {
 }
 
 /** Hapus kelompok — modul di dalamnya TIDAK ikut terhapus (menjadi tanpa kelompok) */
+export async function deleteLmsGroupAction(programId: string, id: string) {
+  await requireAdmin();
+  try {
+    await prisma.$transaction(async (tx) => {
+      await tx.lmsModule.updateMany({ where: { groupId: id }, data: { groupId: null } });
+      await tx.lmsGroup.delete({ where: { id } });
+    });
+    revalidatePath(`/webadmin/program/${programId}/lms`);
+    revalidatePath(`/member/lms`);
+    return { ok: true };
+  } catch (err: any) {
+    console.error("[deleteLmsGroupAction] Gagal:", err);
+    return { ok: false, error: err?.message || "Gagal menghapus kelompok" };
+  }
+}
+
 export async function deleteLmsGroup(formData: FormData) {
   await requireAdmin();
   const id = String(formData.get("id"));
   const programId = String(formData.get("programId"));
-  await prisma.lmsGroup.delete({ where: { id } }).catch((err) => console.error("[deleteLmsGroup] Gagal:", err));
-  revalidatePath(`/webadmin/program/${programId}/lms`);
-  revalidatePath(`/member/lms`);
+  await deleteLmsGroupAction(programId, id);
 }
 
 export async function moveLmsGroup(formData: FormData) {
@@ -432,12 +446,42 @@ export async function saveLmsModule(formData: FormData) {
   revalidatePath(`/webadmin/program/${programId}/lms`);
 }
 
+/** Hapus modul LMS beserta seluruh relasi (batch links, materi, completion, kuis) */
+export async function deleteLmsModuleAction(programId: string, id: string) {
+  await requireAdmin();
+  try {
+    await prisma.$transaction(async (tx) => {
+      // 1. Hapus keterkaitan batch module
+      await tx.batchModule.deleteMany({ where: { moduleId: id } });
+
+      // 2. Ambil seluruh materi di modul ini
+      const lessons = await tx.lesson.findMany({ where: { moduleId: id }, select: { id: true } });
+      const lessonIds = lessons.map((l) => l.id);
+
+      if (lessonIds.length > 0) {
+        await tx.testAttempt.deleteMany({ where: { lessonId: { in: lessonIds } } });
+        await tx.question.deleteMany({ where: { lessonId: { in: lessonIds } } });
+        await tx.completion.deleteMany({ where: { lessonId: { in: lessonIds } } });
+        await tx.lesson.deleteMany({ where: { moduleId: id } });
+      }
+
+      // 3. Hapus modul
+      await tx.lmsModule.delete({ where: { id } });
+    });
+
+    revalidatePath(`/webadmin/program/${programId}/lms`);
+    return { ok: true };
+  } catch (err: any) {
+    console.error("[deleteLmsModuleAction] Gagal:", err);
+    return { ok: false, error: err?.message || "Gagal menghapus modul" };
+  }
+}
+
 export async function deleteLmsModule(formData: FormData) {
   await requireAdmin();
   const id = String(formData.get("id"));
   const programId = String(formData.get("programId"));
-  await prisma.lmsModule.delete({ where: { id } }).catch((err) => console.error("[deleteLmsModule] Gagal:", err));
-  revalidatePath(`/webadmin/program/${programId}/lms`);
+  await deleteLmsModuleAction(programId, id);
 }
 
 /** Geser urutan modul ke atas / bawah — dalam lingkup kelompoknya */
@@ -541,12 +585,30 @@ export async function saveLmsLesson(formData: FormData) {
   }
 }
 
+/** Hapus materi beserta riwayat progres dan pertanyaan kuis */
+export async function deleteLmsLessonAction(programId: string, id: string) {
+  await requireAdmin();
+  try {
+    await prisma.$transaction(async (tx) => {
+      await tx.testAttempt.deleteMany({ where: { lessonId: id } });
+      await tx.question.deleteMany({ where: { lessonId: id } });
+      await tx.completion.deleteMany({ where: { lessonId: id } });
+      await tx.lesson.delete({ where: { id } });
+    });
+
+    revalidatePath(`/webadmin/program/${programId}/lms`);
+    return { ok: true };
+  } catch (err: any) {
+    console.error("[deleteLmsLessonAction] Gagal:", err);
+    return { ok: false, error: err?.message || "Gagal menghapus materi" };
+  }
+}
+
 export async function deleteLmsLesson(formData: FormData) {
   await requireAdmin();
   const id = String(formData.get("id"));
   const programId = String(formData.get("programId"));
-  await prisma.lesson.delete({ where: { id } }).catch((err) => console.error("[deleteLmsLesson] Gagal:", err));
-  revalidatePath(`/webadmin/program/${programId}/lms`);
+  await deleteLmsLessonAction(programId, id);
   redirect(`/webadmin/program/${programId}/lms?deleted=1`);
 }
 

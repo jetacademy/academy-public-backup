@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import ConfirmButton from "@/components/ConfirmButton";
 import AdminLmsLessonList, { type LessonRow } from "./AdminLmsLessonList";
-import { saveLmsModule, deleteLmsModule, reorderLmsModulesAction } from "@/app/webadmin/actions";
+import { saveLmsModule, deleteLmsModule, deleteLmsModuleAction, reorderLmsModulesAction } from "@/app/webadmin/actions";
 
 export type ModuleRow = {
   id: string;
@@ -62,6 +62,13 @@ export default function AdminLmsModuleList({
     updated.splice(toIdx, 0, moved);
     setModules(updated);
     saveOrder(updated);
+  };
+
+  const handleDeleteModule = async (moduleId: string) => {
+    const prev = modules;
+    setModules(modules.filter((m) => m.id !== moduleId));
+    const res = await deleteLmsModuleAction(programId, moduleId);
+    if (!res.ok) setModules(prev);
   };
 
   const handleDragStart = (e: React.DragEvent, index: number) => {
@@ -172,6 +179,7 @@ export default function AdminLmsModuleList({
                       className="icon-btn danger"
                       title="Hapus modul"
                       message={`Hapus modul "${mod.title}" beserta ${mod.lessons.length} materinya? Progres belajar peserta pada modul ini ikut terhapus.`}
+                      onConfirm={() => handleDeleteModule(mod.id)}
                     >
                       Hapus
                     </ConfirmButton>
