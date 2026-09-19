@@ -301,78 +301,8 @@ export default function LmsPdfViewer({ fileUrl, title, allowDownload = false }: 
           )}
         </div>
 
-        {/* Engine Switcher + Action Controls */}
+        {/* Action Controls */}
         <div className="lms-pdf-header-actions">
-          {/* Reader Engine Switcher (Canvas / Native / GDocs) */}
-          <div
-            className="lms-pdf-engine-selector"
-            style={{
-              display: "inline-flex",
-              background: "rgba(0,0,0,0.06)",
-              borderRadius: "var(--r-sm, 6px)",
-              padding: "2px",
-              gap: "2px",
-            }}
-          >
-            <button
-              type="button"
-              className={`lms-pdf-btn-icon ${readerEngine === "canvas" ? "active" : ""}`}
-              style={{
-                fontSize: "0.72rem",
-                padding: "0.25rem 0.5rem",
-                width: "auto",
-                height: "auto",
-                background: readerEngine === "canvas" ? "var(--white, #fff)" : "transparent",
-                fontWeight: readerEngine === "canvas" ? 700 : 500,
-                boxShadow: readerEngine === "canvas" ? "0 1px 3px rgba(0,0,0,0.1)" : "none",
-                borderRadius: "4px",
-              }}
-              onClick={() => {
-                setReaderEngine("canvas");
-                if (error) handleRetry();
-              }}
-              title="Mode Pembaca Canvas Interaktif (Default)"
-            >
-              🎨 Canvas
-            </button>
-            <button
-              type="button"
-              className={`lms-pdf-btn-icon ${readerEngine === "native" ? "active" : ""}`}
-              style={{
-                fontSize: "0.72rem",
-                padding: "0.25rem 0.5rem",
-                width: "auto",
-                height: "auto",
-                background: readerEngine === "native" ? "var(--white, #fff)" : "transparent",
-                fontWeight: readerEngine === "native" ? 700 : 500,
-                boxShadow: readerEngine === "native" ? "0 1px 3px rgba(0,0,0,0.1)" : "none",
-                borderRadius: "4px",
-              }}
-              onClick={() => setReaderEngine("native")}
-              title="Mode Penampil Bawaan Browser (Iframe / Native)"
-            >
-              🌐 Native
-            </button>
-            <button
-              type="button"
-              className={`lms-pdf-btn-icon ${readerEngine === "gdocs" ? "active" : ""}`}
-              style={{
-                fontSize: "0.72rem",
-                padding: "0.25rem 0.5rem",
-                width: "auto",
-                height: "auto",
-                background: readerEngine === "gdocs" ? "var(--white, #fff)" : "transparent",
-                fontWeight: readerEngine === "gdocs" ? 700 : 500,
-                boxShadow: readerEngine === "gdocs" ? "0 1px 3px rgba(0,0,0,0.1)" : "none",
-                borderRadius: "4px",
-              }}
-              onClick={() => setReaderEngine("gdocs")}
-              title="Mode Penampil Cloud Google Docs"
-            >
-              ☁️ Cloud
-            </button>
-          </div>
-
           {/* Mode Switcher: Single vs Continuous (Canvas Mode Only) */}
           {readerEngine === "canvas" && !error && numPages > 1 && (
             <div

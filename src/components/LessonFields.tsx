@@ -175,6 +175,7 @@ export default function LessonFields({ lesson, programId }: { lesson?: LessonDat
                 defaultValue={lesson?.content ?? ""}
                 minHeight="16rem"
                 placeholder="Tulis materi pembelajaran di sini…"
+                programId={programId}
               />
             </div>
           )}
@@ -187,6 +188,7 @@ export default function LessonFields({ lesson, programId }: { lesson?: LessonDat
                 defaultValue={lesson?.content ?? ""}
                 minHeight="7rem"
                 placeholder="Ringkasan atau catatan pendamping video…"
+                programId={programId}
               />
             </div>
           )}

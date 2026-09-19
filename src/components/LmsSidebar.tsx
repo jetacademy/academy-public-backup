@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState, useMemo } from "react";
 import Link from "next/link";
 
 type Lesson = {
@@ -27,6 +27,21 @@ const TYPE_LABEL: Record<string, string> = {
   PDF: "PDF",
   QUIZ: "Kuis",
 };
+
+function highlightMatch(text: string, query: string) {
+  if (!query) return text;
+  const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const parts = text.split(new RegExp(`(${escaped})`, "gi"));
+  return parts.map((part, i) =>
+    part.toLowerCase() === query.toLowerCase() ? (
+      <mark key={i} className="lms-highlight">
+        {part}
+      </mark>
+    ) : (
+      part
+    )
+  );
+}
 
 interface LmsSidebarProps {
   sections: Section[];
@@ -55,6 +70,7 @@ export default function LmsSidebar({
   isOpen = false,
   onClose,
 }: LmsSidebarProps) {
+  const [searchQuery, setSearchQuery] = useState("");
   const completedSet = new Set(completedLessonIds);
   const drawerRef = useRef<HTMLDivElement>(null);
 
@@ -72,17 +88,54 @@ export default function LmsSidebar({
   }, [isOpen, drawer]);
 
   // Pure immutable module numbering to satisfy react-hooks/immutability
-  const sectionsWithModIndex = sections.reduce<
-    { title: string | null; modules: (Module & { moduleNo: number })[] }[]
-  >((acc, section) => {
-    const prevCount = acc.reduce((sum, item) => sum + item.modules.length, 0);
-    const modules = section.modules.map((mod, mIdx) => ({
-      ...mod,
-      moduleNo: prevCount + mIdx + 1,
-    }));
-    acc.push({ title: section.title, modules });
-    return acc;
-  }, []);
+  const sectionsWithModIndex = useMemo(() => {
+    return sections.reduce<
+      { title: string | null; modules: (Module & { moduleNo: number })[] }[]
+    >((acc, section) => {
+      // Hanya kelompok yang memiliki modul yang disertakan
+      if (section.modules.length === 0) return acc;
+
+      const prevCount = acc.reduce((sum, item) => sum + item.modules.length, 0);
+      const modules = section.modules.map((mod, mIdx) => ({
+        ...mod,
+        moduleNo: prevCount + mIdx + 1,
+      }));
+      acc.push({ title: section.title, modules });
+      return acc;
+    }, []);
+  }, [sections]);
+
+  const query = searchQuery.trim().toLowerCase();
+
+  const filteredSections = useMemo(() => {
+    if (!query) return sectionsWithModIndex;
+
+    return sectionsWithModIndex
+      .map((section) => {
+        const sectionMatches = section.title?.toLowerCase().includes(query);
+        const filteredModules = section.modules
+          .map((mod) => {
+            const moduleMatches = mod.title.toLowerCase().includes(query);
+            const matchingLessons = mod.lessons.filter(
+              (l) => l.title.toLowerCase().includes(query) || (l.duration && l.duration.toLowerCase().includes(query))
+            );
+
+            if (moduleMatches) {
+              return mod;
+            } else if (matchingLessons.length > 0) {
+              return { ...mod, lessons: matchingLessons };
+            }
+            return sectionMatches ? mod : null;
+          })
+          .filter((m): m is Module & { moduleNo: number } => m !== null);
+
+        if (filteredModules.length > 0) {
+          return { title: section.title, modules: filteredModules };
+        }
+        return null;
+      })
+      .filter((s): s is { title: string | null; modules: (Module & { moduleNo: number })[] } => s !== null);
+  }, [sectionsWithModIndex, query]);
 
   const content = (
     <>
@@ -102,13 +155,54 @@ export default function LmsSidebar({
         </div>
       </div>
 
+      {/* Kolom Pencarian Materi & Modul */}
+      <div className="lms-side-search-box">
+        <span className="lms-side-search-icon" aria-hidden="true">🔍</span>
+        <input
+          type="text"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="Cari materi atau modul…"
+          className="lms-side-search-input"
+          aria-label="Cari materi atau modul"
+        />
+        {searchQuery && (
+          <button
+            type="button"
+            className="lms-side-search-clear"
+            onClick={() => setSearchQuery("")}
+            title="Hapus pencarian"
+            aria-label="Hapus pencarian"
+          >
+            ✕
+          </button>
+        )}
+      </div>
+
+      {/* Notifikasi Hasil Pencarian Kosong */}
+      {query && filteredSections.length === 0 && (
+        <div className="lms-side-search-empty">
+          <p style={{ margin: "0 0 0.5rem", fontSize: "0.85rem", color: "var(--ink-soft)" }}>
+            Tidak ada materi untuk kata kunci <strong>&ldquo;{searchQuery}&rdquo;</strong>.
+          </p>
+          <button
+            type="button"
+            className="btn btn-sm btn-line"
+            style={{ fontSize: "0.76rem", padding: "0.25rem 0.6rem" }}
+            onClick={() => setSearchQuery("")}
+          >
+            Reset Pencarian
+          </button>
+        </div>
+      )}
+
       {/* Daftar Modul & Materi */}
       <div className="lms-curriculum-list">
-        {sectionsWithModIndex.map((section, sIdx) => (
+        {filteredSections.map((section, sIdx) => (
           <div key={sIdx} className="lms-section-group">
             {section.title && (
               <div className="lms-section-title">
-                {section.title}
+                {highlightMatch(section.title, query)}
               </div>
             )}
 
@@ -117,7 +211,9 @@ export default function LmsSidebar({
                 <div key={mod.id} className="lms-module-card">
                   <div className="lms-module-header">
                     <span className="lms-module-num">Modul {mod.moduleNo}</span>
-                    <h3 className="lms-module-title">{mod.title}</h3>
+                    <h3 className="lms-module-title">
+                      {highlightMatch(mod.title, query)}
+                    </h3>
                   </div>
 
                   {mod.lessons.length === 0 ? (
@@ -151,7 +247,7 @@ export default function LmsSidebar({
                             {/* Teks Materi & Meta */}
                             <div className="lms-nav-lesson-info">
                               <span className="lms-nav-lesson-title">
-                                {les.title}
+                                {highlightMatch(les.title, query)}
                               </span>
                               <span className="lms-nav-lesson-meta">
                                 {TYPE_LABEL[les.type] ?? les.type}

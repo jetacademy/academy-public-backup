@@ -26,6 +26,13 @@ async function getPurify() {
         node.removeAttribute("src");
       }
     }
+    if (node.tagName === "IFRAME") {
+      const src = node.getAttribute("src") || "";
+      const isAllowedVideo = /^(https?:)?\/\/(www\.)?(youtube\.com|youtube-nocookie\.com|youtu\.be|player\.vimeo\.com|vimeo\.com|iframe\.mediadelivery\.net)/i.test(src);
+      if (!isAllowedVideo) {
+        node.remove();
+      }
+    }
   });
   return purifyInstance;
 }
@@ -36,14 +43,14 @@ export async function sanitizeHtml(html: string | null): Promise<string | null> 
   const purify = await getPurify();
   const cleaned = purify.sanitize(html, {
     ALLOWED_TAGS: [
-      "p", "br", "b", "i", "u", "strong", "em", "a", "ul", "ol", "li",
-      "h1", "h2", "h3", "h4", "h5", "h6", "img", "hr", "blockquote",
+      "p", "br", "b", "i", "u", "s", "strike", "strong", "em", "a", "ul", "ol", "li",
+      "h1", "h2", "h3", "h4", "h5", "h6", "img", "iframe", "hr", "blockquote",
       "pre", "code", "span", "div", "table", "thead", "tbody", "tr", "th", "td",
     ],
-    ALLOWED_ATTR: ["href", "src", "alt", "target", "rel", "class"],
+    ALLOWED_ATTR: ["href", "src", "alt", "target", "rel", "class", "style", "allow", "allowfullscreen", "frameborder", "width", "height"],
     ALLOW_DATA_ATTR: false,
   });
   const trimmed = cleaned.trim();
   const textOnly = trimmed.replace(/<[^>]*>/g, "").trim();
-  return textOnly.length > 0 || /<img\b/i.test(trimmed) ? trimmed : null;
+  return textOnly.length > 0 || /<(img|iframe)\b/i.test(trimmed) ? trimmed : null;
 }

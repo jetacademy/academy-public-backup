@@ -203,10 +203,20 @@ export default async function LmsPage({
     }),
   ]);
 
+  // Hanya kelompok dan modul yang memiliki materi untuk peserta ini yang ditampilkan
+  const validGroups = groups
+    .map((g) => ({
+      ...g,
+      modules: g.modules.filter((m) => m.lessons.length > 0),
+    }))
+    .filter((g) => g.modules.length > 0);
+
+  const validUngrouped = ungrouped.filter((m) => m.lessons.length > 0);
+
   type ModuleWithLessons = (typeof ungrouped)[number];
   const sections: { title: string | null; modules: ModuleWithLessons[] }[] = [
-    ...groups.map((g) => ({ title: g.title, modules: g.modules })),
-    ...(ungrouped.length > 0 ? [{ title: groups.length > 0 ? "Lainnya" : null, modules: ungrouped }] : []),
+    ...validGroups.map((g) => ({ title: g.title, modules: g.modules })),
+    ...(validUngrouped.length > 0 ? [{ title: validGroups.length > 0 ? "Lainnya" : null, modules: validUngrouped }] : []),
   ];
   const orderedModules = sections.flatMap((s) => s.modules);
   let allLessons = orderedModules.flatMap((m) => m.lessons);
@@ -309,20 +319,27 @@ export default async function LmsPage({
     );
   }
 
-  // Serialisasi section untuk client component (hanya field yang diperlukan)
-  const sidebarSections = sections.map((s) => ({
-    title: s.title,
-    modules: s.modules.map((m) => ({
-      id: m.id,
-      title: m.title,
-      lessons: m.lessons.map((l) => ({
-        id: l.id,
-        title: l.title,
-        type: l.type,
-        duration: l.duration ?? null,
-      })),
-    })),
-  }));
+  // Serialisasi section untuk client component (hanya materi yang dapat diakses)
+  const accessibleLessonIds = new Set(allLessons.map((l) => l.id));
+  const sidebarSections = sections
+    .map((s) => ({
+      title: s.title,
+      modules: s.modules
+        .map((m) => ({
+          id: m.id,
+          title: m.title,
+          lessons: m.lessons
+            .filter((l) => accessibleLessonIds.has(l.id))
+            .map((l) => ({
+              id: l.id,
+              title: l.title,
+              type: l.type,
+              duration: l.duration ?? null,
+            })),
+        }))
+        .filter((m) => m.lessons.length > 0),
+    }))
+    .filter((s) => s.modules.length > 0);
   const completedLessonIdsArr = Array.from(completedLessonIds);
 
   const prevLessonObj =

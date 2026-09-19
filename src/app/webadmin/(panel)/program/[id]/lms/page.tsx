@@ -6,214 +6,9 @@ import {
   deleteLmsGroup,
   moveLmsGroup,
   saveLmsModule,
-  deleteLmsModule,
-  moveLmsModule,
-  deleteLmsLesson,
-  moveLmsLesson,
 } from "@/app/webadmin/actions";
 import ConfirmButton from "@/components/ConfirmButton";
-
-const TYPE_CHIP: Record<string, { cls: string; label: string }> = {
-  VIDEO: { cls: "video", label: "Video" },
-  TEXT: { cls: "text", label: "Teks" },
-  PDF: { cls: "pdf", label: "PDF" },
-  QUIZ: { cls: "quiz", label: "Kuis" },
-};
-
-type LessonRow = {
-  id: string;
-  title: string;
-  type: string;
-  duration: string;
-  isPreview: boolean;
-  passingScore: number | null;
-  _count: { questions: number };
-};
-
-type ModuleRow = {
-  id: string;
-  title: string;
-  groupId: string | null;
-  lessons: LessonRow[];
-  batchLinks: { batchId: string }[];
-};
-
-type GroupOption = { id: string; title: string };
-
-/** Kartu satu modul: rename + pindah kelompok, daftar materi, tambah materi */
-function ModuleCard({
-  programId,
-  mod,
-  label,
-  isFirst,
-  isLast,
-  groups,
-  batches,
-}: {
-  programId: string;
-  mod: ModuleRow;
-  label: string;
-  isFirst: boolean;
-  isLast: boolean;
-  groups: GroupOption[];
-  batches: { id: string; label: string }[];
-}) {
-  return (
-    <section className="lms-mod">
-      <div className="lms-mod-head">
-        <div className="lms-mod-head-top">
-          <span className="mod-no">{label}</span>
-          <span className="lms-mod-count">
-            {mod.lessons.length} materi
-          </span>
-          <div className="lms-mod-actions">
-            <form action={moveLmsModule}>
-              <input type="hidden" name="id" value={mod.id} />
-              <input type="hidden" name="programId" value={programId} />
-              <input type="hidden" name="dir" value="up" />
-              <button type="submit" className="icon-btn" disabled={isFirst} title="Geser ke atas" aria-label="Geser ke atas">↑</button>
-            </form>
-            <form action={moveLmsModule}>
-              <input type="hidden" name="id" value={mod.id} />
-              <input type="hidden" name="programId" value={programId} />
-              <input type="hidden" name="dir" value="down" />
-              <button type="submit" className="icon-btn" disabled={isLast} title="Geser ke bawah" aria-label="Geser ke bawah">↓</button>
-            </form>
-            <form action={deleteLmsModule}>
-              <input type="hidden" name="id" value={mod.id} />
-              <input type="hidden" name="programId" value={programId} />
-              <ConfirmButton
-                className="icon-btn danger"
-                title="Hapus modul"
-                message={`Hapus modul "${mod.title}" beserta ${mod.lessons.length} materinya? Progres belajar peserta pada modul ini ikut terhapus.`}
-              >
-                Hapus
-              </ConfirmButton>
-            </form>
-          </div>
-        </div>
-
-        <form action={saveLmsModule} className="lms-mod-form">
-          <input type="hidden" name="id" value={mod.id} />
-          <input type="hidden" name="programId" value={programId} />
-          <div className="lms-mod-title-row">
-            <input
-              name="title"
-              defaultValue={mod.title}
-              required
-              title="Klik untuk mengganti nama modul"
-              className="lms-mod-title-input"
-            />
-            <select
-              name="groupId"
-              defaultValue={mod.groupId ?? ""}
-              title="Pindahkan ke kelompok lain"
-              className="lms-mod-group-select"
-            >
-              <option value="">Tanpa kelompok</option>
-              {groups.map((g) => (
-                <option key={g.id} value={g.id}>{g.title}</option>
-              ))}
-            </select>
-            <button type="submit" className="btn btn-sm btn-purple lms-mod-save-btn">Simpan</button>
-          </div>
-
-          <div className="lms-batch-selector">
-            <span className="lms-batch-label">Akses Batch:</span>
-            {batches.length > 0 ? (
-              batches.map((b) => (
-                <label key={b.id} className="lms-batch-chip">
-                  <input
-                    type="checkbox"
-                    name="batchIds"
-                    value={b.id}
-                    defaultChecked={mod.batchLinks.some((bl) => bl.batchId === b.id)}
-                  />
-                  <span>{b.label}</span>
-                </label>
-              ))
-            ) : (
-              <span style={{ fontSize: ".78rem", color: "var(--ink-faint)" }}>Belum ada batch/angkatan.</span>
-            )}
-          </div>
-        </form>
-      </div>
-
-      <div className="lms-lessons">
-        {mod.lessons.length === 0 && (
-          <p style={{ fontSize: ".8rem", color: "var(--ink-faint)", fontStyle: "italic", padding: ".6rem .8rem", margin: 0 }}>
-            Belum ada materi di modul ini.
-          </p>
-        )}
-
-        {mod.lessons.map((les, lesIdx) => {
-          const chip = TYPE_CHIP[les.type] ?? TYPE_CHIP.VIDEO;
-          return (
-            <div key={les.id} className="lms-lesson-item">
-              <div className="lms-lesson-main">
-                <div className="lms-lesson-meta-top">
-                  <span className={`type-chip ${chip.cls}`}>{chip.label}</span>
-                  {les.isPreview && <span className="badge" style={{ fontSize: ".62rem" }}>Preview Gratis</span>}
-                  {les.type === "QUIZ" && (
-                    <span className="l-meta">{les._count.questions} soal</span>
-                  )}
-                  {les.duration && <span className="l-meta">{les.duration}</span>}
-                </div>
-                <Link
-                  href={`/webadmin/program/${programId}/lms/lesson/${les.id}`}
-                  className="lms-lesson-title"
-                  title="Klik untuk mengedit materi"
-                >
-                  {les.title}
-                </Link>
-              </div>
-
-              <div className="lms-lesson-actions">
-                <div className="lms-lesson-reorder">
-                  <form action={moveLmsLesson}>
-                    <input type="hidden" name="id" value={les.id} />
-                    <input type="hidden" name="programId" value={programId} />
-                    <input type="hidden" name="moduleId" value={mod.id} />
-                    <input type="hidden" name="dir" value="up" />
-                    <button type="submit" className="icon-btn" disabled={lesIdx === 0} title="Geser ke atas" aria-label="Geser ke atas">↑</button>
-                  </form>
-                  <form action={moveLmsLesson}>
-                    <input type="hidden" name="id" value={les.id} />
-                    <input type="hidden" name="programId" value={programId} />
-                    <input type="hidden" name="moduleId" value={mod.id} />
-                    <input type="hidden" name="dir" value="down" />
-                    <button type="submit" className="icon-btn" disabled={lesIdx === mod.lessons.length - 1} title="Geser ke bawah" aria-label="Geser ke bawah">↓</button>
-                  </form>
-                </div>
-                <div className="lms-lesson-ops">
-                  <Link href={`/webadmin/program/${programId}/lms/lesson/${les.id}`} className="btn btn-sm lms-btn-edit">
-                    Edit
-                  </Link>
-                  <form action={deleteLmsLesson}>
-                    <input type="hidden" name="id" value={les.id} />
-                    <input type="hidden" name="programId" value={programId} />
-                    <ConfirmButton className="icon-btn danger" title="Hapus materi" message={`Hapus materi "${les.title}"?`}>
-                      Hapus
-                    </ConfirmButton>
-                  </form>
-                </div>
-              </div>
-            </div>
-          );
-        })}
-
-        <div className="lms-add-lesson-btn-wrapper">
-          <Link
-            href={`/webadmin/program/${programId}/lms/lesson/new?module=${mod.id}`}
-            className="btn btn-sm lms-add-lesson-btn"
-          >
-            + Tambah Materi / Tes
-          </Link>
-        </div>
-      </div>
-    </section>
-  );
-}
+import AdminLmsModuleList, { type GroupOption } from "@/components/AdminLmsModuleList";
 
 export default async function AdminLms({
   params,
@@ -339,18 +134,14 @@ export default async function AdminLms({
           </div>
 
           <div className="lms-group-body">
-            {group.modules.map((mod, mIdx) => (
-              <ModuleCard
-                key={mod.id}
-                programId={program.id}
-                mod={mod}
-                label={`${gIdx + 1}.${mIdx + 1}`}
-                isFirst={mIdx === 0}
-                isLast={mIdx === group.modules.length - 1}
-                groups={groupOptions}
-                batches={batchOptions}
-              />
-            ))}
+            <AdminLmsModuleList
+              programId={program.id}
+              groupId={group.id}
+              initialModules={group.modules}
+              groupPrefix={`${gIdx + 1}.`}
+              groups={groupOptions}
+              batches={batchOptions}
+            />
 
             {/* Tambah modul ke kelompok ini */}
             <form action={saveLmsModule} className="lms-add-module-form" style={{ marginTop: group.modules.length > 0 ? "1rem" : 0 }}>
@@ -374,18 +165,13 @@ export default async function AdminLms({
           {program.groups.length > 0 && (
             <h3 style={{ fontSize: ".9rem", color: "var(--ink-soft)", margin: "0 0 .8rem" }}>Modul Tanpa Kelompok</h3>
           )}
-          {program.modules.map((mod, mIdx) => (
-            <ModuleCard
-              key={mod.id}
-              programId={program.id}
-              mod={mod}
-              label={String(mIdx + 1)}
-              isFirst={mIdx === 0}
-              isLast={mIdx === program.modules.length - 1}
-              groups={groupOptions}
-              batches={batchOptions}
-            />
-          ))}
+          <AdminLmsModuleList
+            programId={program.id}
+            groupId={null}
+            initialModules={program.modules}
+            groups={groupOptions}
+            batches={batchOptions}
+          />
         </div>
       )}
 

@@ -468,6 +468,27 @@ export async function moveLmsModule(formData: FormData) {
   revalidatePath(`/webadmin/program/${programId}/lms`);
 }
 
+/** Reorder modul secara massal (Drag & Drop) */
+export async function reorderLmsModulesAction(programId: string, orderedIds: string[]) {
+  await requireAdmin();
+  if (!orderedIds || orderedIds.length === 0) return { ok: true };
+  try {
+    await prisma.$transaction(
+      orderedIds.map((id, index) =>
+        prisma.lmsModule.update({
+          where: { id },
+          data: { order: index + 1 },
+        })
+      )
+    );
+    revalidatePath(`/webadmin/program/${programId}/lms`);
+    return { ok: true };
+  } catch (err: any) {
+    console.error("[reorderLmsModulesAction] Error:", err);
+    return { ok: false, error: err?.message || "Gagal mengubah urutan modul" };
+  }
+}
+
 // ─── Materi (Lesson) ─────────────────────────────────────────────
 
 const LESSON_TYPES = ["VIDEO", "TEXT", "PDF", "QUIZ"] as const;
@@ -550,6 +571,27 @@ export async function moveLmsLesson(formData: FormData) {
   );
 
   revalidatePath(`/webadmin/program/${programId}/lms`);
+}
+
+/** Reorder materi secara massal (Drag & Drop) */
+export async function reorderLmsLessonsAction(programId: string, orderedIds: string[]) {
+  await requireAdmin();
+  if (!orderedIds || orderedIds.length === 0) return { ok: true };
+  try {
+    await prisma.$transaction(
+      orderedIds.map((id, index) =>
+        prisma.lesson.update({
+          where: { id },
+          data: { order: index + 1 },
+        })
+      )
+    );
+    revalidatePath(`/webadmin/program/${programId}/lms`);
+    return { ok: true };
+  } catch (err: any) {
+    console.error("[reorderLmsLessonsAction] Error:", err);
+    return { ok: false, error: err?.message || "Gagal mengubah urutan materi" };
+  }
 }
 
 // ─── Pendaftar ───────────────────────────────────────────────────
@@ -892,6 +934,52 @@ export async function uploadFileAction(formData: FormData): Promise<{ url?: stri
     console.error("[uploadFileAction]", err);
     return { error: `Gagal menyimpan file di server: ${err instanceof Error ? err.message : "kesalahan tak dikenal"}.` };
   }
+}
+
+/**
+ * Upload gambar dari Rich Text Editor:
+ * Otomatis kompres ke WebP (preset "article") dan simpan ke galeri media program jika programId tersedia.
+ */
+export async function uploadMediaImageAction(
+  formData: FormData
+): Promise<{ url?: string; filename?: string; error?: string }> {
+  await requireAdmin();
+  const file = formData.get("file") as File;
+  if (!file || file.size === 0) return { error: "File gambar tidak ditemukan." };
+
+  const programId = (formData.get("programId") as string) || null;
+  // Pastikan target preset adalah article untuk resize & kompresi WebP proporsional
+  if (!formData.has("preset") && !formData.has("target")) {
+    formData.set("target", "article");
+  }
+
+  const res = await uploadFileAction(formData);
+  if (res.error || !res.url) {
+    return { error: res.error || "Gagal mengunggah gambar." };
+  }
+
+  // Jika ada programId, catat langsung ke tabel Media agar bisa dipakai ulang dari galeri
+  if (programId) {
+    try {
+      const cleanName = file.name.replace(/[^a-zA-Z0-9.-]/g, "_");
+      const nameWithoutExt = cleanName.substring(0, cleanName.lastIndexOf(".")) || cleanName;
+      const webpFilename = `${nameWithoutExt}.webp`;
+      await prisma.media.create({
+        data: {
+          programId,
+          filename: webpFilename,
+          url: res.url,
+          mimeType: "image/webp",
+          size: file.size,
+        },
+      });
+      revalidatePath(`/webadmin/program/${programId}/media`);
+    } catch (dbErr) {
+      console.error("[uploadMediaImageAction:saveToGallery]", dbErr);
+    }
+  }
+
+  return { url: res.url, filename: file.name };
 }
 
 // ─── Media Gallery ──────────────────────────────────────────────
