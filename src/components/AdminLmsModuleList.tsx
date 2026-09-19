@@ -205,7 +205,56 @@ export default function AdminLmsModuleList({
                 </div>
 
                 <div className="lms-batch-selector">
-                  <span className="lms-batch-label">Akses Batch:</span>
+                  <div style={{ display: "flex", alignItems: "center", gap: ".5rem", flexWrap: "wrap", width: "100%", marginBottom: ".2rem" }}>
+                    <span className="lms-batch-label">Akses Batch:</span>
+                    {batches.length > 0 && (
+                      <>
+                        {mod.batchLinks.length === 0 ? (
+                          <span
+                            className="lms-batch-status-badge empty"
+                            title="Modul ini hanya dapat dilihat admin dan tersembunyi dari seluruh peserta"
+                          >
+                            🔒 Belum ada batch dipilih (hanya admin)
+                          </span>
+                        ) : mod.batchLinks.length === batches.length ? (
+                          <span className="lms-batch-status-badge all">
+                            ✓ Semua batch ({batches.length})
+                          </span>
+                        ) : (
+                          <span className="lms-batch-status-badge partial">
+                            ✓ {mod.batchLinks.length} dari {batches.length} batch dipilih
+                          </span>
+                        )}
+
+                        <button
+                          type="button"
+                          className="lms-btn-batch-action"
+                          onClick={(e) => {
+                            const form = e.currentTarget.closest("form");
+                            if (!form) return;
+                            const cbs = form.querySelectorAll<HTMLInputElement>('input[name="batchIds"]');
+                            const allChecked = Array.from(cbs).every((cb) => cb.checked);
+                            cbs.forEach((cb) => {
+                              cb.checked = !allChecked;
+                            });
+                          }}
+                          title="Klik untuk memilih atau membatalkan semua batch sekaligus"
+                        >
+                          Pilih Semua / Batal
+                        </button>
+
+                        <button
+                          type="submit"
+                          className="btn btn-xs btn-purple"
+                          style={{ fontSize: ".7rem", padding: ".15rem .6rem", height: "auto", marginLeft: "auto" }}
+                          title="Simpan pengaturan batch modul ini"
+                        >
+                          Simpan Akses
+                        </button>
+                      </>
+                    )}
+                  </div>
+
                   {batches.length > 0 ? (
                     batches.map((b) => (
                       <label key={b.id} className="lms-batch-chip">

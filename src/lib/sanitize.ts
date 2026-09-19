@@ -1,19 +1,13 @@
-// ─── DOMPurify singleton (inisialisasi sekali di module level) ────
-// Dipakai admin server actions (webadmin/actions.ts) & API tulis (/api/v1/*)
-// utk membersihkan HTML dari rich text editor sebelum disimpan.
+import DOMPurify from "isomorphic-dompurify";
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-let purifyInstance: any = null;
+// Inisialisasi hook sekali
+let hooksInitialized = false;
+function initPurifyHooks() {
+  if (hooksInitialized) return;
+  hooksInitialized = true;
 
-async function getPurify() {
-  if (purifyInstance) return purifyInstance;
-  const { JSDOM } = await import("jsdom");
-  const dom = new JSDOM("");
-  const createDOMPurify = await import("isomorphic-dompurify");
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  purifyInstance = createDOMPurify.default(dom.window as any);
-  // Hook: bersihkan javascript: dan data: dari href
-  purifyInstance.addHook("afterSanitizeAttributes", function (node: Element) {
+  // Hook: bersihkan javascript: dan data: dari href & src, validasi iframe video
+  DOMPurify.addHook("afterSanitizeAttributes", function (node: Element) {
     if (node.tagName === "A" && node.getAttribute("href")) {
       const href = node.getAttribute("href")!;
       if (/^\s*(javascript|data|vbscript):/i.test(href)) {
@@ -34,23 +28,87 @@ async function getPurify() {
       }
     }
   });
-  return purifyInstance;
 }
 
-/** Sanitasi HTML dari rich text editor / input eksternal (API) — pakai DOMPurify singleton di atas. */
+/**
+ * Memastikan penomoran daftar berurutan (<ol>) tetap berlanjut meskipun
+ * disisipi gambar (<p><img ...></p>), catatan/paragraf, atau jeda baris.
+ * Penomoran hanya di-reset jika ada Heading (<h1>-<h6>) atau <hr> atau reset eksplisit.
+ */
+export function normalizeListContinuation(html: string): string {
+  if (!html || !html.includes("<ol")) return html;
+
+  const blockRegex = /(<(h[1-6]|hr)\b[^>]*>[\s\S]*?<\/\2>|<hr\s*\/?>)|(<ol\b([^>]*)>([\s\S]*?)<\/ol>)/gi;
+
+  let currentCount = 0;
+  let hasActiveList = false;
+
+  return html.replace(blockRegex, (match, headingBlock, _headingTag, olBlock, olAttrs, olContent) => {
+    // Heading atau HR mereset alur nomor daftar
+    if (headingBlock) {
+      currentCount = 0;
+      hasActiveList = false;
+      return match;
+    }
+
+    if (olBlock) {
+      const attrs = olAttrs || "";
+      const content = olContent || "";
+
+      // Hitung elemen <li>
+      const liMatches = content.match(/<li\b[^>]*>/gi);
+      const liCount = liMatches ? liMatches.length : 1;
+
+      // Cek apakah ada start eksplisit atau kelas reset
+      const startMatch = attrs.match(/\bstart=["']?(\d+)["']?/i);
+      const isExplicitReset = attrs.includes("ql-list-reset") || content.includes("ql-list-reset");
+
+      if (isExplicitReset || (startMatch && startMatch[1] === "1")) {
+        currentCount = 0;
+        hasActiveList = true;
+      }
+
+      let newAttrs = attrs;
+      if (hasActiveList && currentCount > 0 && !startMatch && !isExplicitReset) {
+        const nextStart = currentCount + 1;
+        newAttrs = `${attrs} start="${nextStart}"`.trim();
+      }
+
+      const effectiveStart = startMatch
+        ? parseInt(startMatch[1], 10)
+        : (hasActiveList && currentCount > 0 && !isExplicitReset ? currentCount + 1 : 1);
+
+      currentCount = effectiveStart + liCount - 1;
+      hasActiveList = true;
+
+      return `<ol ${newAttrs}>${content}</ol>`.replace(/\s{2,}/g, " ").replace("<ol >", "<ol>");
+    }
+
+    return match;
+  });
+}
+
+/** Sanitasi HTML dari rich text editor / input eksternal (API) — pakai DOMPurify singleton. */
 export async function sanitizeHtml(html: string | null): Promise<string | null> {
   if (!html) return null;
-  const purify = await getPurify();
-  const cleaned = purify.sanitize(html, {
+  initPurifyHooks();
+
+  const cleaned = DOMPurify.sanitize(html, {
     ALLOWED_TAGS: [
       "p", "br", "b", "i", "u", "s", "strike", "strong", "em", "a", "ul", "ol", "li",
       "h1", "h2", "h3", "h4", "h5", "h6", "img", "iframe", "hr", "blockquote",
       "pre", "code", "span", "div", "table", "thead", "tbody", "tr", "th", "td",
     ],
-    ALLOWED_ATTR: ["href", "src", "alt", "target", "rel", "class", "style", "allow", "allowfullscreen", "frameborder", "width", "height"],
+    ALLOWED_ATTR: [
+      "href", "src", "alt", "target", "rel", "class", "style", "allow",
+      "allowfullscreen", "frameborder", "width", "height", "start", "value",
+    ],
     ALLOW_DATA_ATTR: false,
   });
-  const trimmed = cleaned.trim();
+
+  const normalized = normalizeListContinuation(cleaned);
+  const trimmed = normalized.trim();
   const textOnly = trimmed.replace(/<[^>]*>/g, "").trim();
   return textOnly.length > 0 || /<(img|iframe)\b/i.test(trimmed) ? trimmed : null;
 }
+

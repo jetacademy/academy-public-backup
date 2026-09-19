@@ -297,7 +297,7 @@ describe('checkCertEligibility', () => {
     expect(result).toEqual({ eligible: true });
     const expectedModuleWhere = {
       programId: 'prog-1',
-      OR: [{ batchLinks: { none: {} } }, { batchLinks: { some: { batchId: 'batch-1' } } }],
+      batchLinks: { some: { batchId: 'batch-1' } },
     };
     expect(mockPrisma.lesson.count).toHaveBeenCalledWith({ where: { module: expectedModuleWhere } });
     expect(mockPrisma.completion.count).toHaveBeenCalledWith({

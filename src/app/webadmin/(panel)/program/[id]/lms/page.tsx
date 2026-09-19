@@ -3,12 +3,9 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import {
   saveLmsGroup,
-  deleteLmsGroup,
-  moveLmsGroup,
   saveLmsModule,
 } from "@/app/webadmin/actions";
-import ConfirmButton from "@/components/ConfirmButton";
-import AdminLmsModuleList, { type GroupOption } from "@/components/AdminLmsModuleList";
+import AdminLmsCurriculumManager, { type GroupOption } from "@/components/AdminLmsCurriculumManager";
 
 export default async function AdminLms({
   params,
@@ -83,97 +80,14 @@ export default async function AdminLms({
         </div>
       )}
 
-      {/* Kelompok modul */}
-      {program.groups.map((group, gIdx) => (
-        <section key={group.id} className="lms-group">
-          <div className="lms-group-head">
-            <div className="lms-group-head-top">
-              <span className="group-no">Bagian {gIdx + 1}</span>
-              <span className="lms-group-count">
-                {group.modules.length} modul
-              </span>
-              <div className="lms-group-actions">
-                <form action={moveLmsGroup}>
-                  <input type="hidden" name="id" value={group.id} />
-                  <input type="hidden" name="programId" value={program.id} />
-                  <input type="hidden" name="dir" value="up" />
-                  <button type="submit" className="icon-btn" disabled={gIdx === 0} title="Geser ke atas" aria-label="Geser ke atas">↑</button>
-                </form>
-                <form action={moveLmsGroup}>
-                  <input type="hidden" name="id" value={group.id} />
-                  <input type="hidden" name="programId" value={program.id} />
-                  <input type="hidden" name="dir" value="down" />
-                  <button type="submit" className="icon-btn" disabled={gIdx === program.groups.length - 1} title="Geser ke bawah" aria-label="Geser ke bawah">↓</button>
-                </form>
-                <form action={deleteLmsGroup}>
-                  <input type="hidden" name="id" value={group.id} />
-                  <input type="hidden" name="programId" value={program.id} />
-                  <ConfirmButton
-                    className="icon-btn danger"
-                    title="Hapus kelompok"
-                    message={`Hapus kelompok "${group.title}"? Modul di dalamnya TIDAK ikut terhapus — hanya keluar dari kelompok.`}
-                  >
-                    Hapus
-                  </ConfirmButton>
-                </form>
-              </div>
-            </div>
-
-            <form action={saveLmsGroup} className="lms-group-form">
-              <input type="hidden" name="id" value={group.id} />
-              <input type="hidden" name="programId" value={program.id} />
-              <input
-                name="title"
-                defaultValue={group.title}
-                required
-                title="Klik untuk mengganti nama kelompok"
-                className="lms-group-title-input"
-              />
-              <button type="submit" className="btn btn-sm btn-purple lms-group-save-btn">Simpan Nama</button>
-            </form>
-          </div>
-
-          <div className="lms-group-body">
-            <AdminLmsModuleList
-              programId={program.id}
-              groupId={group.id}
-              initialModules={group.modules}
-              groupPrefix={`${gIdx + 1}.`}
-              groups={groupOptions}
-              batches={batchOptions}
-            />
-
-            {/* Tambah modul ke kelompok ini */}
-            <form action={saveLmsModule} className="lms-add-module-form" style={{ marginTop: group.modules.length > 0 ? "1rem" : 0 }}>
-              <input type="hidden" name="programId" value={program.id} />
-              <input type="hidden" name="groupId" value={group.id} />
-              <input
-                name="title"
-                placeholder={`Nama modul baru di Bagian ${gIdx + 1}…`}
-                required
-                className="lms-add-module-input"
-              />
-              <button type="submit" className="btn btn-sm btn-purple lms-add-module-btn">+ Tambah Modul</button>
-            </form>
-          </div>
-        </section>
-      ))}
-
-      {/* Modul tanpa kelompok */}
-      {program.modules.length > 0 && (
-        <div style={{ marginTop: program.groups.length > 0 ? "1.6rem" : 0 }}>
-          {program.groups.length > 0 && (
-            <h3 style={{ fontSize: ".9rem", color: "var(--ink-soft)", margin: "0 0 .8rem" }}>Modul Tanpa Kelompok</h3>
-          )}
-          <AdminLmsModuleList
-            programId={program.id}
-            groupId={null}
-            initialModules={program.modules}
-            groups={groupOptions}
-            batches={batchOptions}
-          />
-        </div>
-      )}
+      {/* Kurikulum Manajer Terpadu (Dukungan Drag & Drop Pindah Materi Antar Kelompok & Modul) */}
+      <AdminLmsCurriculumManager
+        programId={program.id}
+        initialGroups={program.groups}
+        initialOrphanModules={program.modules}
+        groupOptions={groupOptions}
+        batchOptions={batchOptions}
+      />
 
       {/* Tambah kelompok / modul lepas */}
       <div className="lms-add-mod">

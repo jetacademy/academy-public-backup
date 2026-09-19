@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import "quill/dist/quill.snow.css";
 import MediaPicker from "@/components/MediaPicker";
 import { uploadMediaImageAction } from "@/app/webadmin/actions";
+import { normalizeListContinuation } from "@/lib/sanitize";
 
 interface RichTextEditorProps {
   name?: string;
@@ -42,7 +43,7 @@ export default function RichTextEditor({
   const quillRef = useRef<any>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [htmlValue, setHtmlValue] = useState(defaultValue ?? "");
+  const [htmlValue, setHtmlValue] = useState(defaultValue ? normalizeListContinuation(defaultValue) : "");
   const [isUploading, setIsUploading] = useState(false);
   const [uploadStatus, setUploadStatus] = useState("");
   const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
@@ -106,8 +107,9 @@ export default function RichTextEditor({
         const rootHtml = q.root.innerHTML;
         // Jika hanya berisi paragraf kosong, anggap string kosong
         const cleanVal = rootHtml === "<p><br></p>" ? "" : rootHtml;
-        setHtmlValue(cleanVal);
-        onChange?.(cleanVal);
+        const normalized = normalizeListContinuation(cleanVal);
+        setHtmlValue(normalized);
+        onChange?.(normalized);
       });
     }
 
@@ -118,6 +120,7 @@ export default function RichTextEditor({
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
 
   // Sisipkan media dari MediaPicker / Galeri
   const handleInsertMedia = (url: string) => {
@@ -176,6 +179,35 @@ export default function RichTextEditor({
     setVideoUrlInput("");
   };
 
+  // Toggle reset nomor daftar (mulai dari 1 lagi atau lanjutkan dari sebelumnya)
+  const handleToggleListReset = () => {
+    if (!quillRef.current) return;
+    const q = quillRef.current;
+    const range = q.getSelection(true);
+    if (!range) return;
+
+    const [line] = q.getLine(range.index);
+    if (!line || !line.domNode) return;
+
+    const el = line.domNode as HTMLElement;
+    const li = el.tagName === "LI" ? el : el.closest("li");
+    if (li) {
+      if (li.classList.contains("ql-list-reset")) {
+        li.classList.remove("ql-list-reset");
+      } else {
+        li.classList.add("ql-list-reset");
+      }
+      const rootHtml = q.root.innerHTML;
+      const cleanVal = rootHtml === "<p><br></p>" ? "" : rootHtml;
+      const normalized = normalizeListContinuation(cleanVal);
+      setHtmlValue(normalized);
+      onChange?.(normalized);
+    } else {
+      // Jika kursor bukan di list item, jadikan list item berurutan
+      q.formatLine(range.index, range.length, "list", "ordered");
+    }
+  };
+
   return (
     <div className="lms-quill-wrapper">
       {/* Hidden input untuk Form Submit server action */}
@@ -221,7 +253,17 @@ export default function RichTextEditor({
           >
             <span>🎬</span> Sisipkan Video
           </button>
+
+          <button
+            type="button"
+            className="btn btn-sm lms-rte-action-btn"
+            onClick={handleToggleListReset}
+            title="Klik pada baris nomor untuk beralih antara: Mulai dari 1 lagi ATAU Lanjutkan nomor dari sebelumnya"
+          >
+            <span>🔢</span> Reset / Lanjut Nomor
+          </button>
         </div>
+
 
         {isUploading && (
           <div className="lms-rte-uploading-indicator">

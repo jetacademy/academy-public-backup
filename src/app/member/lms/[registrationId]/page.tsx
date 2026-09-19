@@ -173,10 +173,7 @@ export default async function LmsPage({
   };
   const batchModuleFilter = reg.batchId
     ? {
-        OR: [
-          { batchLinks: { none: {} } },
-          { batchLinks: { some: { batchId: reg.batchId } } },
-        ],
+        batchLinks: { some: { batchId: reg.batchId } },
       }
     : {};
 

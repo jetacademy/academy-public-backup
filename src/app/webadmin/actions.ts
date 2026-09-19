@@ -594,6 +594,126 @@ export async function reorderLmsLessonsAction(programId: string, orderedIds: str
   }
 }
 
+/** Pindahkan materi ke modul/kelompok lain atau ubah urutan materi lintas modul (Drag & Drop) */
+export async function moveLmsLessonAction(
+  programId: string,
+  lessonId: string,
+  targetModuleId: string,
+  targetIndex?: number
+) {
+  await requireAdmin();
+  try {
+    const lesson = await prisma.lesson.findUnique({
+      where: { id: lessonId },
+      include: {
+        module: {
+          select: { id: true, programId: true },
+        },
+      },
+    });
+
+    if (!lesson || lesson.module.programId !== programId) {
+      return { ok: false, error: "Materi tidak ditemukan atau tidak valid" };
+    }
+
+    const targetModule = await prisma.lmsModule.findUnique({
+      where: { id: targetModuleId },
+      select: { id: true, programId: true },
+    });
+
+    if (!targetModule || targetModule.programId !== programId) {
+      return { ok: false, error: "Modul tujuan tidak valid" };
+    }
+
+    const sourceModuleId = lesson.moduleId;
+
+    await prisma.$transaction(async (tx) => {
+      if (sourceModuleId === targetModuleId) {
+        // Reordering dalam modul yang sama
+        const existing = await tx.lesson.findMany({
+          where: { moduleId: targetModuleId },
+          orderBy: { order: "asc" },
+        });
+
+        const currentIdx = existing.findIndex((l) => l.id === lessonId);
+        if (currentIdx === -1) return;
+
+        const maxIdx = existing.length - 1;
+        const newIdx =
+          typeof targetIndex === "number"
+            ? Math.max(0, Math.min(targetIndex, maxIdx))
+            : maxIdx;
+
+        if (currentIdx === newIdx) return;
+
+        const reordered = [...existing];
+        const [moved] = reordered.splice(currentIdx, 1);
+        reordered.splice(newIdx, 0, moved);
+
+        for (let i = 0; i < reordered.length; i++) {
+          if (reordered[i].order !== i + 1) {
+            await tx.lesson.update({
+              where: { id: reordered[i].id },
+              data: { order: i + 1 },
+            });
+          }
+        }
+      } else {
+        // Pindah ke modul/kelompok lain
+        const targetLessons = await tx.lesson.findMany({
+          where: { moduleId: targetModuleId, id: { not: lessonId } },
+          orderBy: { order: "asc" },
+        });
+
+        const insertIdx =
+          typeof targetIndex === "number"
+            ? Math.max(0, Math.min(targetIndex, targetLessons.length))
+            : targetLessons.length;
+
+        // 1. Pindahkan materi ke modul tujuan
+        await tx.lesson.update({
+          where: { id: lessonId },
+          data: {
+            moduleId: targetModuleId,
+            order: insertIdx + 1,
+          },
+        });
+
+        // 2. Rapikan urutan modul tujuan
+        const updatedTarget = [...targetLessons];
+        updatedTarget.splice(insertIdx, 0, { ...lesson, moduleId: targetModuleId, order: insertIdx + 1 });
+        for (let i = 0; i < updatedTarget.length; i++) {
+          await tx.lesson.update({
+            where: { id: updatedTarget[i].id },
+            data: { order: i + 1 },
+          });
+        }
+
+        // 3. Rapikan urutan sisa materi di modul asal
+        const sourceRemaining = await tx.lesson.findMany({
+          where: { moduleId: sourceModuleId, id: { not: lessonId } },
+          orderBy: { order: "asc" },
+        });
+
+        for (let i = 0; i < sourceRemaining.length; i++) {
+          if (sourceRemaining[i].order !== i + 1) {
+            await tx.lesson.update({
+              where: { id: sourceRemaining[i].id },
+              data: { order: i + 1 },
+            });
+          }
+        }
+      }
+    });
+
+    revalidatePath(`/webadmin/program/${programId}/lms`);
+    return { ok: true };
+  } catch (err: any) {
+    console.error("[moveLmsLessonAction] Error:", err);
+    return { ok: false, error: err?.message || "Gagal memindahkan materi" };
+  }
+}
+
 // ─── Pendaftar ───────────────────────────────────────────────────
 
 /** Tandai lunas manual (mis. transfer langsung) + kirim WA akses */

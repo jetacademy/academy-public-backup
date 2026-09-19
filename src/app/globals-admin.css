@@ -669,6 +669,48 @@
   font-weight: 700;
 }
 
+.lms-batch-status-badge {
+  font-size: .7rem;
+  font-weight: 700;
+  padding: .15em .55em;
+  border-radius: 99px;
+  display: inline-flex;
+  align-items: center;
+  gap: .3em;
+}
+.lms-batch-status-badge.empty {
+  background: #FEF2F2;
+  color: #B91C1C;
+  border: 1px solid #FECACA;
+}
+.lms-batch-status-badge.all {
+  background: #ECFDF5;
+  color: #047857;
+  border: 1px solid #A7F3D0;
+}
+.lms-batch-status-badge.partial {
+  background: #EDE9FE;
+  color: #6D28D9;
+  border: 1px solid #DDD6FE;
+}
+
+.lms-btn-batch-action {
+  font-size: .7rem !important;
+  padding: .15rem .5rem !important;
+  height: auto !important;
+  border-radius: 6px !important;
+  background: #F8FAFC !important;
+  border: 1px solid var(--chip) !important;
+  color: var(--ink-soft) !important;
+  cursor: pointer;
+  transition: all .15s ease;
+}
+.lms-btn-batch-action:hover {
+  background: #EEF2F6 !important;
+  color: var(--purple) !important;
+  border-color: var(--purple) !important;
+}
+
 .icon-btn {
   display: inline-grid; place-items: center; min-width: 2rem; height: 2rem; padding: 0 .55em; border-radius: 8px;
   border: 1px solid var(--chip); background: var(--white); cursor: pointer; font-size: .76rem; font-weight: 700; color: var(--ink-soft);
@@ -803,6 +845,96 @@
 .lms-add-lesson-btn:hover {
   background: #F6F4FE !important;
   box-shadow: inset 0 0 0 1.5px var(--purple) !important;
+}
+
+/* ── Cross-Group Lesson Drag & Drop Feedback ── */
+.lms-mod.is-lesson-drop-target {
+  border-color: var(--purple) !important;
+  box-shadow: 0 0 0 2px rgba(108, 92, 231, 0.22) !important;
+}
+
+.lms-add-lesson-btn-wrapper.is-drop-active {
+  transform: scale(1.01);
+}
+
+.lms-lesson-drop-hint {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: .75rem 1rem;
+  background: #F6F4FE;
+  border: 2px dashed var(--purple);
+  border-radius: 8px;
+  color: var(--purple);
+  font-weight: 700;
+  font-size: .85rem;
+  cursor: copy;
+}
+
+.lms-empty-lesson-dropzone {
+  padding: 1.25rem 1rem;
+  border: 1.5px dashed var(--chip);
+  border-radius: 8px;
+  text-align: center;
+  margin-bottom: .5rem;
+  transition: all .15s ease;
+  background: #fafbfc;
+}
+.lms-empty-lesson-dropzone.is-active {
+  border-color: var(--purple);
+  background: #F6F4FE;
+  color: var(--purple);
+  font-weight: 700;
+  border-style: dashed;
+}
+
+.lms-lesson-drop-bar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--purple);
+  border-radius: 3px;
+  z-index: 20;
+  pointer-events: none;
+  box-shadow: 0 0 8px rgba(108, 92, 231, 0.7);
+}
+.lms-lesson-drop-bar.before {
+  top: -4px;
+}
+.lms-lesson-drop-bar.after {
+  bottom: -4px;
+}
+
+.lms-dnd-floating-status {
+  position: fixed;
+  bottom: 1.8rem;
+  right: 1.8rem;
+  z-index: 9999;
+  background: #1E1B4B;
+  color: #EEF2FF;
+  padding: .65rem 1.15rem;
+  border-radius: 99px;
+  font-size: .85rem;
+  font-weight: 600;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.22);
+  display: flex;
+  align-items: center;
+  gap: .65rem;
+  pointer-events: none;
+}
+.lms-dnd-spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: lms-spin 0.8s linear infinite;
+}
+
+@keyframes lms-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
 .type-chip {
@@ -954,6 +1086,21 @@
   color: var(--ink-faint);
   font-style: normal;
 }
+
+/* Fix: Mencegah nomor urut (ordered list) di Quill reset kembali ke 1 setelah gambar / paragraf */
+.lms-quill-wrapper .ql-editor p,
+.lms-quill-wrapper .ql-editor blockquote {
+  counter-set: none !important;
+  counter-reset: none !important;
+}
+
+/* Dukungan tombol Reset Nomor manual jika admin ingin memulai nomor dari 1 lagi */
+.lms-quill-wrapper .ql-editor li.ql-list-reset,
+.lms-quill-wrapper .ql-editor li[data-list-reset="true"] {
+  counter-set: list-0 0 !important;
+  counter-reset: list-0 0 !important;
+}
+
 
 .lms-quill-wrapper .ql-editor img,
 .rt-content img {

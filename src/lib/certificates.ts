@@ -143,7 +143,7 @@ export async function issueCertificate(registrationId: string): Promise<{ number
  */
 function batchModuleWhere(batchId?: string | null) {
   return batchId
-    ? { OR: [{ batchLinks: { none: {} } }, { batchLinks: { some: { batchId } } }] }
+    ? { batchLinks: { some: { batchId } } }
     : {};
 }
 
