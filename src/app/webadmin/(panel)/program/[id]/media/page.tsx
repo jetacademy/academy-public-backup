@@ -41,7 +41,7 @@ export default async function AdminMediaGallery({
         </Link>
       </div>
 
-      <MediaGrid media={media} />
+      <MediaGrid media={media} programId={id} />
 
       <div
         id="upload-inline"

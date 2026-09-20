@@ -1203,13 +1203,124 @@ export async function getMediaGallery(programId: string): Promise<
   });
 }
 
-/** Hapus media dari gallery — file fisik tetap ada di disk, hanya catatan DB yang dihapus. */
+/** Hapus media dari gallery dan disk server. */
+export async function deleteMediaAction(
+  id: string,
+  programId?: string
+): Promise<{ ok: boolean; error?: string }> {
+  await requireAdmin();
+  try {
+    const item = await prisma.media.findUnique({
+      where: { id },
+      select: { id: true, url: true, programId: true },
+    });
+    if (!item) return { ok: false, error: "Media tidak ditemukan." };
+
+    // Hapus fisik jika path lokal di UPLOADS_DIR
+    if (item.url.startsWith("/api/uploads/")) {
+      const filename = item.url.replace("/api/uploads/", "").split("?")[0];
+      if (filename && !filename.includes("..") && !filename.includes("/") && !filename.includes("\\")) {
+        try {
+          const { unlink } = await import("fs/promises");
+          const filePath = join(UPLOADS_DIR, filename);
+          await unlink(filePath).catch(() => {});
+        } catch {
+          // ignore unlink error
+        }
+      }
+    }
+
+    await prisma.media.delete({ where: { id } });
+
+    const targetProgramId = programId || item.programId;
+    if (targetProgramId) {
+      revalidatePath(`/webadmin/program/${targetProgramId}/media`);
+    }
+    return { ok: true };
+  } catch (err) {
+    console.error("[deleteMediaAction]", err);
+    return { ok: false, error: "Gagal menghapus media." };
+  }
+}
+
+/** Hapus media dari gallery — kompatibilitas server action form. */
 export async function deleteMedia(formData: FormData) {
   await requireAdmin();
   const id = String(formData.get("id"));
   const programId = String(formData.get("programId"));
-  await prisma.media.delete({ where: { id } }).catch((err) => console.error("[deleteMedia] Gagal:", err));
-  revalidatePath(`/webadmin/program/${programId}/media`);
+  await deleteMediaAction(id, programId);
+}
+
+/**
+ * Upload file langsung ke galeri media program (gambar, PDF, video, dokumen).
+ * Otomatis kompres gambar ke WebP (preset "article") dan catat ke DB Media.
+ */
+export async function uploadToMediaGalleryAction(
+  formData: FormData
+): Promise<{
+  ok: boolean;
+  item?: {
+    id: string;
+    filename: string;
+    url: string;
+    mimeType: string;
+    size: number;
+    createdAt: Date;
+  };
+  error?: string;
+}> {
+  await requireAdmin();
+  const file = formData.get("file") as File;
+  const programId = String(formData.get("programId") || "").trim();
+  if (!file || file.size === 0) return { ok: false, error: "File tidak ditemukan." };
+  if (!programId) return { ok: false, error: "Program ID diperlukan." };
+
+  const ext = (file.name.split(".").pop() ?? "").toLowerCase();
+  const isImage = ["png", "jpg", "jpeg", "webp"].includes(ext);
+  if (isImage && !formData.has("preset") && !formData.has("target")) {
+    formData.set("target", "article");
+  }
+
+  const res = await uploadFileAction(formData);
+  if (res.error || !res.url) {
+    return { ok: false, error: res.error || "Gagal mengunggah file." };
+  }
+
+  let finalName = file.name;
+  let finalMime = file.type || "application/octet-stream";
+  if (isImage) {
+    const cleanName = file.name.replace(/[^a-zA-Z0-9.-]/g, "_");
+    const nameWithoutExt = cleanName.substring(0, cleanName.lastIndexOf(".")) || cleanName;
+    finalName = `${nameWithoutExt}.webp`;
+    finalMime = "image/webp";
+  }
+
+  try {
+    const media = await prisma.media.create({
+      data: {
+        programId,
+        filename: finalName,
+        url: res.url,
+        mimeType: finalMime,
+        size: file.size,
+      },
+    });
+    revalidatePath(`/webadmin/program/${programId}/media`);
+    return {
+      ok: true,
+      item: {
+        id: media.id,
+        filename: media.filename,
+        url: media.url,
+        mimeType: media.mimeType,
+        size: media.size,
+        createdAt: media.createdAt,
+      },
+    };
+  } catch (dbErr) {
+    console.error("[uploadToMediaGalleryAction:dbErr]", dbErr);
+    return { ok: false, error: "Gagal menyimpan catatan media ke database." };
+  }
 }
 
 export async function saveCertTemplate(programId: string, certBgUrl: string | null, certConfig: unknown) {
