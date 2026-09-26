@@ -496,7 +496,6 @@ model ApiKey {
   lastUsedAt DateTime?
   createdAt  DateTime  @default(now())
 
-  @@index([key])
   @@map("apikey")
 }
 

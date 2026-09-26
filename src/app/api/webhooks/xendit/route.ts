@@ -190,7 +190,7 @@ export async function POST(req: Request) {
                 });
               }
 
-              let pReg = await prisma.registration.findFirst({
+              const pReg = await prisma.registration.findFirst({
                 where: { whatsapp: pWa, programId: reg.programId, batchId: reg.batchId ?? null },
               });
               if (pReg) {
