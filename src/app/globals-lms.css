@@ -215,38 +215,193 @@
   color: var(--ink-soft);
 }
 
-/* Tombol Buka/Tutup Kurikulum */
+/* Tombol Buka/Tutup Kurikulum & Tooltip Anchor */
+.lms-curriculum-anchor {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
 .lms-curriculum-btn {
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
-  padding: 0.38rem 0.75rem;
-  border-radius: var(--r-sm);
-  border: 1px solid var(--border);
-  background: var(--white);
-  color: var(--ink-soft);
-  font-size: 0.78rem;
-  font-weight: 700;
+  gap: 0.45rem;
+  padding: 0.4rem 0.85rem;
+  border-radius: 99px;
+  border: 1.5px solid var(--purple);
+  background: var(--purple-soft, #eaebff);
+  color: var(--purple);
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(35, 33, 118, 0.12);
 }
 .lms-curriculum-btn:hover {
-  background: var(--white);
-  color: var(--purple);
+  background: var(--purple);
+  color: #fff;
   border-color: var(--purple);
+  box-shadow: 0 4px 14px rgba(35, 33, 118, 0.24);
+  transform: translateY(-1px);
+}
+.lms-curriculum-btn:active {
+  transform: translateY(0);
 }
 .lms-curriculum-btn.active {
   background: var(--purple);
   color: #fff;
   border-color: var(--purple);
+  box-shadow: 0 2px 8px rgba(35, 33, 118, 0.2);
 }
 .lms-curriculum-btn svg {
-  width: 0.95rem;
-  height: 0.95rem;
+  width: 1rem;
+  height: 1rem;
+  flex-shrink: 0;
 }
 .lms-curriculum-btn.mobile-only {
   display: none;
+}
+
+/* Pulsing beacon ping indicator pada tombol Materi */
+.lms-btn-ping {
+  position: relative;
+  display: inline-flex;
+  width: 7px;
+  height: 7px;
+  flex-shrink: 0;
+}
+.lms-btn-ping-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 9999px;
+  background-color: var(--purple);
+  position: relative;
+  z-index: 1;
+  transition: background-color 0.2s ease;
+}
+.lms-curriculum-btn:hover .lms-btn-ping-dot,
+.lms-curriculum-btn.active .lms-btn-ping-dot {
+  background-color: #ffffff;
+}
+.lms-btn-ping::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 9999px;
+  background-color: var(--purple);
+  opacity: 0.75;
+  animation: lmsBeaconPing 1.8s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+.lms-curriculum-btn:hover .lms-btn-ping::after,
+.lms-curriculum-btn.active .lms-btn-ping::after {
+  background-color: #ffffff;
+}
+
+@keyframes lmsBeaconPing {
+  0% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  70%, 100% {
+    transform: scale(2.6);
+    opacity: 0;
+  }
+}
+
+/* Tooltips & Callout Petunjuk Buka Materi */
+.lms-materi-callout {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  width: 250px;
+  max-width: calc(100vw - 24px);
+  background: var(--purple-deep, #191756);
+  color: #ffffff;
+  border-radius: 12px;
+  padding: 0.7rem 0.85rem;
+  box-shadow: 0 10px 30px rgba(25, 23, 86, 0.35), 0 2px 6px rgba(0, 0, 0, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  z-index: 300;
+  cursor: pointer;
+  animation: lmsTooltipFloatIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  text-align: left;
+}
+
+@keyframes lmsTooltipFloatIn {
+  0% {
+    opacity: 0;
+    transform: translateY(6px) scale(0.96);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.lms-materi-callout-arrow {
+  position: absolute;
+  top: -6px;
+  right: 22px;
+  width: 12px;
+  height: 12px;
+  background: var(--purple-deep, #191756);
+  border-left: 1px solid rgba(255, 255, 255, 0.16);
+  border-top: 1px solid rgba(255, 255, 255, 0.16);
+  transform: rotate(45deg);
+}
+
+.lms-materi-callout-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.lms-materi-callout-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: #ffe9c7;
+  letter-spacing: -0.01em;
+}
+
+.lms-materi-callout-close {
+  background: rgba(255, 255, 255, 0.14);
+  border: none;
+  color: #ffffff;
+  width: 20px;
+  height: 20px;
+  border-radius: 99px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  cursor: pointer;
+  transition: background 0.15s ease;
+  line-height: 1;
+  padding: 0;
+}
+.lms-materi-callout-close:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.lms-materi-callout-text {
+  margin: 0.35rem 0 0 0;
+  font-size: 0.74rem;
+  line-height: 1.4;
+  color: #e2e1f2;
+}
+
+.lms-materi-callout-text strong {
+  color: #ffffff;
+  font-weight: 700;
 }
 
 /* ═══════════════════════════════════════════════════
