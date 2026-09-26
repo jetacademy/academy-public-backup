@@ -30,9 +30,12 @@ const CERT_REF_WIDTH = 800;
 export default function CertCustomizer({
   program,
   templates = [],
+  backLink = { href: `/webadmin/program/${program.id}`, label: "Kembali ke Edit Program" },
 }: {
   program: ProgramData;
   templates?: any[];
+  /** Tombol di bawah pratinjau. null = sembunyikan (mis. di wizard Kirim Sertifikat yang punya navigasi sendiri). */
+  backLink?: { href: string; label: string } | null;
 }) {
   const materiList = Array.isArray(program.materi) ? (program.materi as string[]) : [];
   const bgInputRef = useRef<HTMLInputElement>(null);
@@ -604,11 +607,13 @@ export default function CertCustomizer({
           </div>
         </div>
 
-        <div style={{ marginTop: "1rem" }}>
-          <Link href={`/webadmin/program/${program.id}`} className="btn btn-sm btn-block" style={{ textAlign: "center" }}>
-            Kembali ke Edit Program
-          </Link>
-        </div>
+        {backLink && (
+          <div style={{ marginTop: "1rem" }}>
+            <Link href={backLink.href} className="btn btn-sm btn-block" style={{ textAlign: "center" }}>
+              {backLink.label}
+            </Link>
+          </div>
+        )}
       </div>
     </div>
   );

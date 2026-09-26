@@ -17,7 +17,7 @@ import { slugify } from "@/lib/slug";
 export async function createOfflineProgram(formData: FormData) {
   await requireAdmin();
   const title = String(formData.get("title") ?? "").trim();
-  if (!title) redirect("/webadmin/kirim-sertifikat?e=title");
+  if (!title) redirect(wizardUrl({ e: "title" }));
 
   const slugBase = slugify(title) || "offline";
   let slug = `offline-${slugBase}`;
@@ -47,7 +47,7 @@ export async function createOfflineProgram(formData: FormData) {
     },
   });
 
-  redirect(`/webadmin/kirim-sertifikat?step=desain&programId=${program.id}`);
+  redirect(wizardUrl({ step: "desain", programId: program.id }));
 }
 
 /**
@@ -60,26 +60,26 @@ export async function importOfflineRecipients(formData: FormData) {
   const programId = String(formData.get("programId") ?? "");
   const raw = String(formData.get("recipients") ?? "");
 
-  if (!programId || !raw) redirect("/webadmin/kirim-sertifikat?e=invalid");
+  if (!programId || !raw) redirect(wizardUrl({ step: "kontak", programId, e: "invalid" }));
 
   let recipients: { name: string; whatsapp: string; email: string }[] = [];
   try {
     recipients = JSON.parse(raw);
   } catch {
-    redirect("/webadmin/kirim-sertifikat?e=invalid");
+    redirect(wizardUrl({ step: "kontak", programId, e: "invalid" }));
   }
   if (!Array.isArray(recipients) || recipients.length === 0) {
-    redirect("/webadmin/kirim-sertifikat?e=empty");
+    redirect(wizardUrl({ step: "kontak", programId, e: "empty" }));
   }
 
   const program = await prisma.program.findUnique({
     where: { id: programId },
     select: { id: true, title: true },
   });
-  if (!program) redirect("/webadmin/kirim-sertifikat?e=program");
+  if (!program) redirect(wizardUrl({ e: "program" }));
 
   const certEnabled = await isCertIssuanceEnabled();
-  if (!certEnabled) redirect("/webadmin/kirim-sertifikat?e=hold");
+  if (!certEnabled) redirect(wizardUrl({ step: "kontak", programId, e: "hold" }));
 
   let imported = 0;
   let skipped = 0;
@@ -148,23 +148,33 @@ export async function importOfflineRecipients(formData: FormData) {
   }
 
   revalidatePath("/webadmin/kirim-sertifikat");
+  // Langsung ke langkah Kirim untuk acara ini — admin bisa lanjut mengirim sertifikat yang baru terbit.
   redirect(
-    `/webadmin/kirim-sertifikat?ok=1&imported=${imported}&skipped=${skipped}&failed=${failed}`,
+    wizardUrl({
+      step: "kirim",
+      programId,
+      ok: "import",
+      imported: String(imported),
+      skipped: String(skipped),
+      failed: String(failed),
+    }),
   );
 }
 
 /**
  * Kirim sertifikat manual via WA atau email.
- * Form: { id: certificateId, via: "wa" | "email" }
+ * Form: { id: certificateId, via: "wa" | "email", programId? }
+ * programId (opsional) menjaga filter acara di langkah Kirim setelah redirect.
  */
 export async function sendOfflineCert(formData: FormData) {
   await requireAdmin();
   const id = String(formData.get("id") ?? "");
   const via = String(formData.get("via") ?? "");
-  const back = String(formData.get("back") ?? "/webadmin/kirim-sertifikat");
+  const programId = String(formData.get("programId") ?? "");
+  const back = (params: Record<string, string>) => wizardUrl({ step: "kirim", programId, ...params });
 
   if (!id || (via !== "wa" && via !== "email")) {
-    redirect(`${back}?e=invalid`);
+    redirect(back({ e: "invalid" }));
   }
 
   const cert = await prisma.certificate.findUnique({
@@ -173,18 +183,24 @@ export async function sendOfflineCert(formData: FormData) {
       registration: { include: { program: true } },
     },
   });
-  if (!cert) redirect(`${back}?e=notfound`);
+  if (!cert) redirect(back({ e: "notfound" }));
 
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? "https://academy.jetschool.id";
   const certUrl = `${baseUrl}/sertifikat/${cert.number}`;
   const reg = cert.registration;
 
+  // redirect() melempar error khusus Next — jangan dipanggil di dalam try/catch ini, kalau
+  // tidak "WA gagal" tertangkap catch dan tampil sebagai "gagal mengirim" generik.
+  let failure: "wafail" | "sendfail" | null = null;
   try {
     if (via === "wa") {
       const target = normalizeWa(reg.whatsapp);
       const ok = await sendWa(target, msgCertificate(reg.name, cert.number, certUrl));
-      if (!ok) redirect(`${back}?e=wafail`);
-      await prisma.certificate.update({ where: { id }, data: { sentWaAt: new Date() } });
+      if (ok) {
+        await prisma.certificate.update({ where: { id }, data: { sentWaAt: new Date() } });
+      } else {
+        failure = "wafail";
+      }
     } else {
       await sendEmail({
         to: reg.email,
@@ -195,9 +211,18 @@ export async function sendOfflineCert(formData: FormData) {
     }
   } catch (err) {
     console.error("[sendOfflineCert]", err);
-    redirect(`${back}?e=sendfail`);
+    failure = "sendfail";
   }
+  if (failure) redirect(back({ e: failure }));
 
   revalidatePath("/webadmin/kirim-sertifikat");
-  redirect(`${back}?ok=1&via=${via}`);
+  redirect(back({ ok: "send", via, name: reg.name }));
+}
+
+/** URL wizard Kirim Sertifikat dengan query param yang di-encode benar (param kosong dibuang). */
+function wizardUrl(params: Record<string, string | undefined>): string {
+  const qs = new URLSearchParams();
+  for (const [k, v] of Object.entries(params)) if (v) qs.set(k, v);
+  const s = qs.toString();
+  return `/webadmin/kirim-sertifikat${s ? `?${s}` : ""}`;
 }
