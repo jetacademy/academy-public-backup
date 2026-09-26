@@ -58,7 +58,7 @@ export default async function AdminDashboard() {
     prisma.registration.findMany({
       orderBy: { createdAt: "desc" },
       take: 10,
-      include: { program: true, payment: true },
+      include: { program: { select: { title: true } } },
     }),
     prisma.$queryRaw<ProgramStatsRaw[]>`
       SELECT 

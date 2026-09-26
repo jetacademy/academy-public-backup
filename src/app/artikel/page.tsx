@@ -5,7 +5,9 @@ import Footer from "@/components/Footer";
 import WaFloat from "@/components/WaFloat";
 import { prisma } from "@/lib/prisma";
 
-export const dynamic = "force-dynamic";
+// ISR 5 menit — halaman publik tanpa data personal; simpan/hapus artikel di admin
+// memanggil revalidatePath("/artikel") jadi perubahan tetap langsung tampil.
+export const revalidate = 300;
 
 export const metadata = {
   title: "Artikel — Tips & Wawasan Seputar AI",

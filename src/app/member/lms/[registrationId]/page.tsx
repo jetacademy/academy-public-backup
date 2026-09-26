@@ -50,7 +50,7 @@ export default async function LmsPage({
 
   const reg = await prisma.registration.findUnique({
     where: { id: registrationId },
-    include: { program: true, completions: true, certificate: true, batch: true },
+    include: { program: true, completions: { select: { lessonId: true } }, certificate: true, batch: true },
   });
 
   if (!reg) redirect("/member");
@@ -60,16 +60,9 @@ export default async function LmsPage({
 
   const program = reg.program;
 
-  // Ambil certClaimOpen via raw SQL (bypass Prisma client cache)
-  let certClaimOpen = false;
-  try {
-    const { Prisma } = await import("@prisma/client");
-    type RawRow = { certClaimOpen: number };
-    const rows = await prisma.$queryRaw<RawRow[]>(
-      Prisma.sql`SELECT certClaimOpen FROM \`program\` WHERE id = ${program.id} LIMIT 1`
-    );
-    if (rows[0]) certClaimOpen = rows[0].certClaimOpen === 1;
-  } catch { /* silent fallback */ }
+  // certClaimOpen sudah ada di Prisma client & ikut ter-include di atas — tidak perlu
+  // query mentah terpisah (dulu 1 round-trip DB tambahan per buka materi).
+  const certClaimOpen = program.certClaimOpen;
 
   // Akses LMS terbuka jika admin sudah buka (certClaimOpen) atau jadwal batch/program sudah mulai.
   // Berlaku utk semua tipe program (dulu KELAS/WORKSHOP/BOOTCAMP dikecualikan dari cek ini —
@@ -159,16 +152,12 @@ export default async function LmsPage({
   const isPreviewMode = reg.status === "REGISTERED" && program.price > 0;
 
   // Kurikulum berjenjang: kelompok → modul → materi (+ modul tanpa kelompok di akhir).
-  // Soal kuis diambil TANPA kunci jawaban.
+  // Daftar materi cuma ambil kolom ringan untuk navigasi — isi (teks/HTML), URL video/PDF
+  // & soal kuis diambil TERPISAH hanya untuk materi yang sedang dibuka (lihat lessonDetail).
   const lessonInclude = {
     lessons: {
       orderBy: { order: "asc" as const },
-      include: {
-        questions: {
-          orderBy: { order: "asc" as const },
-          select: { id: true, text: true, optionA: true, optionB: true, optionC: true, optionD: true },
-        },
-      },
+      select: { id: true, title: true, type: true, duration: true, isPreview: true },
     },
   };
   const batchModuleFilter = reg.batchId
@@ -256,14 +245,30 @@ export default async function LmsPage({
 
   // hasPaid: lunas certPrice (untuk webinar gratis) atau lunas program price
   const hasPaid = hasCertPayment || (program.price === 0 && program.certPrice === 0 && certClaimOpen);
-  const eligibility = reg.certificate ? { eligible: true as const } : await checkCertEligibility(reg.id, program);
-  const canClaim = !reg.certificate && hasPaid && eligibility.eligible && !hideCertUpsell;
 
   // Tentukan materi aktif
-  let currentLesson = allLessons.find((l) => l.id === lessonId);
-  if (!currentLesson) {
-    currentLesson = allLessons.find((l) => !completedLessonIds.has(l.id)) || allLessons[0];
-  }
+  const pickedLesson =
+    allLessons.find((l) => l.id === lessonId) ||
+    allLessons.find((l) => !completedLessonIds.has(l.id)) ||
+    allLessons[0];
+
+  // Isi lengkap materi aktif saja. Soal kuis diambil TANPA kunci jawaban.
+  const [eligibility, lessonDetail] = await Promise.all([
+    reg.certificate ? { eligible: true as const } : checkCertEligibility(reg.id, program),
+    prisma.lesson.findUnique({
+      where: { id: pickedLesson.id },
+      include: {
+        questions: {
+          orderBy: { order: "asc" },
+          select: { id: true, text: true, optionA: true, optionB: true, optionC: true, optionD: true },
+        },
+      },
+    }),
+  ]);
+  // Materi terhapus di antara query daftar & query detail — muat ulang dashboard.
+  if (!lessonDetail) redirect("/member");
+  const currentLesson = lessonDetail;
+  const canClaim = !reg.certificate && hasPaid && eligibility.eligible && !hideCertUpsell;
 
   const embedUrl = getEmbedUrl(currentLesson.videoUrl);
 

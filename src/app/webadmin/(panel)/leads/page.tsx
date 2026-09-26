@@ -40,7 +40,9 @@ export default async function AdminLeads({
   if (source) where.source = source;
   if (due === "1") where.nextFollowUpAt = { lte: now };
 
-  const [leads, total, totalAll, totalActive, dueToday, byStatus, byResult, bySource] = await Promise.all([
+  // Rekap per status/hasil/sumber pakai groupBy (3 query) — dulu 15 count() terpisah,
+  // tiap kunjungan halaman ini menghabiskan ±20 koneksi pool sekaligus.
+  const [leads, total, totalActive, dueToday, statusGroups, resultGroups, sourceGroups] = await Promise.all([
     prisma.lead.findMany({
       where,
       include: { program: { select: { title: true } } },
@@ -49,13 +51,25 @@ export default async function AdminLeads({
       take: limit,
     }),
     prisma.lead.count({ where }),
-    prisma.lead.count(),
     prisma.lead.count({ where: { hasil: { not: { in: ["REGISTERED", "PAID", "CANCELLED", "NO_REPLY"] } } } }),
     prisma.lead.count({ where: { nextFollowUpAt: { lte: now }, hasil: { not: { in: ["REGISTERED", "PAID", "CANCELLED", "NO_REPLY"] } } } }),
-    Promise.all(STATUSES.map(async (s) => ({ status: s, count: await prisma.lead.count({ where: { status: s } }) }))),
-    Promise.all((["ACTIVE", "REGISTERED", "PAID", "CANCELLED", "NO_REPLY"] as LeadResult[]).map(async (r) => ({ hasil: r, count: await prisma.lead.count({ where: { hasil: r } }) }))),
-    Promise.all((["INSTAGRAM", "FACEBOOK", "WHATSAPP", "REFERRAL", "ORGANIC", "OTHER"] as LeadSource[]).map(async (s) => ({ source: s, count: await prisma.lead.count({ where: { source: s } }) }))),
+    prisma.lead.groupBy({ by: ["status"], _count: { _all: true } }),
+    prisma.lead.groupBy({ by: ["hasil"], _count: { _all: true } }),
+    prisma.lead.groupBy({ by: ["source"], _count: { _all: true } }),
   ]);
+  const totalAll = statusGroups.reduce((sum, g) => sum + g._count._all, 0);
+  const byStatus = STATUSES.map((s) => ({
+    status: s,
+    count: statusGroups.find((g) => g.status === s)?._count._all ?? 0,
+  }));
+  const byResult = (["ACTIVE", "REGISTERED", "PAID", "CANCELLED", "NO_REPLY"] as LeadResult[]).map((r) => ({
+    hasil: r,
+    count: resultGroups.find((g) => g.hasil === r)?._count._all ?? 0,
+  }));
+  const bySource = (["INSTAGRAM", "FACEBOOK", "WHATSAPP", "REFERRAL", "ORGANIC", "OTHER"] as LeadSource[]).map((s) => ({
+    source: s,
+    count: sourceGroups.find((g) => g.source === s)?._count._all ?? 0,
+  }));
 
   const totalPages = Math.ceil(total / limit);
   const fmt = (d: Date) =>

@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { prisma } from "@/lib/prisma";
 import { FALLBACK_PROGRAMS, type ProgramData, type ProgramType, type Deliverable } from "@/lib/fallback";
 import type { ContentBlock } from "@/lib/content-blocks";
@@ -6,7 +7,9 @@ import type { ContentBlock } from "@/lib/content-blocks";
  * Ambil program dari MySQL. Jika database belum terhubung / belum di-seed,
  * pakai data contoh supaya website tetap tampil (mode demo).
  */
-const upcomingBatchesInclude = {
+// Fungsi (bukan konstanta modul) supaya `new Date()` dihitung per query — kalau konstanta,
+// tanggal terkunci saat server start dan batch yang sudah lewat terus tampil sampai restart.
+const upcomingBatchesInclude = () => ({
   where: { isActive: true, scheduleAt: { gte: new Date() } },
   orderBy: { scheduleAt: "asc" as const },
   select: {
@@ -26,7 +29,7 @@ const upcomingBatchesInclude = {
     priceOfflineEb: true,
     quotaOfflineEb: true,
   },
-};
+});
 
 export async function getPrograms(): Promise<{ programs: ProgramData[]; demo: boolean }> {
   try {
@@ -35,7 +38,7 @@ export async function getPrograms(): Promise<{ programs: ProgramData[]; demo: bo
       include: {
         category: true,
         batches: {
-          ...upcomingBatchesInclude,
+          ...upcomingBatchesInclude(),
           take: 1,
         },
       },
@@ -49,14 +52,16 @@ export async function getPrograms(): Promise<{ programs: ProgramData[]; demo: bo
   }
 }
 
-export async function getProgramBySlug(slug: string): Promise<{ program: ProgramData | null; demo: boolean }> {
+// cache() React: generateMetadata & page di /program/[slug] memanggil ini dgn slug sama
+// dalam satu render — tanpa ini query program + batch jalan dua kali per render.
+export const getProgramBySlug = cache(async (slug: string): Promise<{ program: ProgramData | null; demo: boolean }> => {
   try {
     const row = await prisma.program.findUnique({
       where: { slug },
       include: {
         category: true,
         batches: {
-          ...upcomingBatchesInclude,
+          ...upcomingBatchesInclude(),
           take: 20,
         },
       },
@@ -68,7 +73,7 @@ export async function getProgramBySlug(slug: string): Promise<{ program: Program
     // DB error — coba pakai fallback
     return { program: FALLBACK_PROGRAMS.find((p) => p.slug === slug) ?? null, demo: true };
   }
-}
+});
 
 function toData(row: {
   id: string; slug: string; type: string; title: string; tagline: string; description: string;

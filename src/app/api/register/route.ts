@@ -10,6 +10,7 @@ import { linkLeadToRegistration } from "@/lib/lead-link";
 import { validateVoucher, consumeVoucher } from "@/lib/voucher";
 import { resolveAffiliateForCheckout, applyAffiliateDiscount, recordAffiliateConversion, getAffiliateRefCookie } from "@/lib/affiliate";
 import { fetchGoogleTokeninfo } from "@/lib/google-tokeninfo";
+import { runAfterResponse } from "@/lib/background";
 
 /**
  * POST /api/register — satu pintu untuk semua tipe program.
@@ -436,21 +437,21 @@ export async function POST(req: Request) {
       // Gabung semua nama peserta untuk keperluan notifikasi
       const allNames = [name, ...participants.map((p) => p.name)];
 
-      await sendWa(
+      runAfterResponse("register:wa-gratis", () => sendWa(
         whatsapp,
         msgWelcome(name, program.title, formattedJadwal, activeZoomLink, activeWaGroupLink)
-      );
+      ));
 
       const pesertaInfo = participantCount > 1
         ? `\n\n📋 Total peserta: ${participantCount} orang (${allNames.join(", ")})`
         : "";
 
-      await sendEmail({
+      runAfterResponse("register:email-gratis", () => sendEmail({
         to: email,
         subject: `Pendaftaran Berhasil: ${program.title}`,
         html: getWelcomeEmailHtml(name, program.title, formattedJadwal, activeWaGroupLink ?? "")
           .replace("</div>", `${pesertaInfo}</div>`),
-      }).catch((err) => console.error("Gagal mengirim email pendaftaran gratis:", err));
+      }));
 
       // Buat akun dan registrasi mandiri untuk setiap peserta tambahan
       for (const p of participants) {
@@ -499,16 +500,16 @@ export async function POST(req: Request) {
             });
           }
 
-          await sendWa(
+          runAfterResponse("register:wa-peserta-tambahan", () => sendWa(
             p.whatsapp,
             msgWelcome(p.name, program.title, formattedJadwal, activeZoomLink, activeWaGroupLink)
-          ).catch((err) => console.error("Gagal mengirim WA peserta tambahan:", err));
+          ));
 
-          await sendEmail({
+          runAfterResponse("register:email-peserta-tambahan", () => sendEmail({
             to: p.email,
             subject: `Pendaftaran Berhasil: ${program.title}`,
             html: getWelcomeEmailHtml(p.name, program.title, formattedJadwal, activeWaGroupLink ?? ""),
-          }).catch((err) => console.error("Gagal mengirim email pendaftaran peserta tambahan:", err));
+          }));
         } catch (err) {
           console.error("Gagal memproses peserta tambahan gratis:", err);
         }
@@ -574,7 +575,7 @@ export async function POST(req: Request) {
         prisma.registration.update({ where: { id: reg.id }, data: { status: "PAID" } }),
       ]);
       if (affiliateId) await recordAffiliateConversion(payment.id);
-      await sendWa(whatsapp, msgAccess({
+      runAfterResponse("register:wa-akses", () => sendWa(whatsapp, msgAccess({
         name,
         programTitle: program.title,
         schedule: formatJadwal(program.scheduleAt),
@@ -582,12 +583,12 @@ export async function POST(req: Request) {
         waGroupLink: program.waGroupLink,
         lmsLink: program.lmsLink,
         memberUrl: `${baseUrl}/member`,
-      }));
-      await sendEmail({
+      })));
+      runAfterResponse("register:email-akses", () => sendEmail({
         to: email,
         subject: `Pembayaran Berhasil: Akses Pelatihan ${program.title}`,
         html: getPaidEmailHtml(name, program.title, `${baseUrl}/member`, program.zoomLink, program.waGroupLink, program.lmsLink)
-      }).catch((err) => console.error("Gagal mengirim email pembayaran dev:", err));
+      }));
 
       // Buat akun & registrasi lunas untuk setiap peserta tambahan di mode dev
       for (const p of participants) {
@@ -636,7 +637,7 @@ export async function POST(req: Request) {
             });
           }
 
-          await sendWa(p.whatsapp, msgAccess({
+          runAfterResponse("register:wa-akses-peserta-tambahan", () => sendWa(p.whatsapp, msgAccess({
             name: p.name,
             programTitle: program.title,
             schedule: formatJadwal(program.scheduleAt),
@@ -644,13 +645,13 @@ export async function POST(req: Request) {
             waGroupLink: program.waGroupLink,
             lmsLink: program.lmsLink,
             memberUrl: `${baseUrl}/member`,
-          })).catch((err) => console.error("Gagal mengirim WA akses peserta tambahan dev:", err));
+          })));
 
-          await sendEmail({
+          runAfterResponse("register:email-akses-peserta-tambahan", () => sendEmail({
             to: p.email,
             subject: `Pembayaran Berhasil: Akses Pelatihan ${program.title}`,
             html: getPaidEmailHtml(p.name, program.title, `${baseUrl}/member`, program.zoomLink, program.waGroupLink, program.lmsLink),
-          }).catch((err) => console.error("Gagal mengirim email peserta tambahan dev:", err));
+          }));
         } catch (err) {
           console.error("Gagal memproses peserta tambahan dev:", err);
         }
@@ -695,11 +696,11 @@ export async function POST(req: Request) {
       }),
     ]);
 
-    await sendEmail({
+    runAfterResponse("register:email-invoice", () => sendEmail({
       to: email,
       subject: `Selesaikan Pembayaran: ${program.title}`,
       html: getInvoiceEmailHtml({ name, programTitle: program.title, price: chargeAmount, invoiceUrl: invoice.invoice_url }),
-    }).catch((err) => console.error("Gagal mengirim email invoice:", err));
+    }));
 
     return NextResponse.json({
       ok: true,

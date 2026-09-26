@@ -25,6 +25,12 @@ function getTransporter() {
       port,
       secure: port === 465,
       auth: { user, pass },
+      // Pakai ulang koneksi SMTP (bukan handshake TLS baru per email) & batasi paralel
+      // supaya lonjakan pendaftaran tidak membanjiri server mail.
+      pool: true,
+      maxConnections: 3,
+      connectionTimeout: 15_000,
+      socketTimeout: 30_000,
     });
   }
   return transporter;

@@ -7,6 +7,7 @@ import { sendEmail, getPaidEmailHtml, getInvoiceExpiredEmailHtml, getInvoiceFail
 import { recordAffiliateConversion, settleWithdrawalConversions, notifyWithdrawalResult } from "@/lib/affiliate";
 import { linkLeadToRegistration } from "@/lib/lead-link";
 import { sendCapiEvent, buildPurchaseEvent } from "@/lib/capi";
+import { runAfterResponse } from "@/lib/background";
 
 /**
  * POST /api/webhooks/xendit — dipanggil server Xendit untuk 2 jenis event yang beda bentuk payload:
@@ -134,7 +135,7 @@ export async function POST(req: Request) {
 
         if (reg.program.price > 0) {
           // program berbayar → kirim semua akses (grup, LMS, Zoom/Offline) + link post-test
-          await sendWa(reg.whatsapp, msgAccess({
+          runAfterResponse("webhook:wa-akses", () => sendWa(reg.whatsapp, msgAccess({
             name: reg.name,
             programTitle: reg.program.title,
             schedule: scheduleStr,
@@ -144,18 +145,18 @@ export async function POST(req: Request) {
             memberUrl,
             attendanceType: regAny.attendanceType,
             venue: regAny.batch?.offlineVenue || "Coworking Space Kota Bekasi",
-          }));
+          })));
         } else {
           // webinar gratis → yang dibayar adalah paket sertifikat, kirim link post-test
-          await sendWa(reg.whatsapp, msgPaid(reg.name, reg.program.title, memberUrl));
+          runAfterResponse("webhook:wa-lunas", () => sendWa(reg.whatsapp, msgPaid(reg.name, reg.program.title, memberUrl)));
         }
 
-        // Kirim email pembayaran sukses — best-effort
-        await sendEmail({
+        // Kirim email pembayaran sukses — best-effort, setelah Xendit dapat balasan
+        runAfterResponse("webhook:email-lunas", () => sendEmail({
           to: reg.email,
           subject: `Pembayaran Berhasil: Akses Pelatihan ${reg.program.title}`,
           html: getPaidEmailHtml(reg.name, reg.program.title, memberUrl, zoomLinkVal, waGroupLinkVal, lmsLinkVal),
-        }).catch((err) => console.error("Gagal mengirim email webhook lunas:", err));
+        }));
 
         // Buat akun & registrasi lunas untuk setiap peserta tambahan
         if (reg.participants) {
@@ -220,7 +221,7 @@ export async function POST(req: Request) {
               }
 
               if (reg.program.price > 0) {
-                await sendWa(pWa, msgAccess({
+                runAfterResponse("webhook:wa-akses-peserta-tambahan", () => sendWa(pWa, msgAccess({
                   name: p.name,
                   programTitle: reg.program.title,
                   schedule: scheduleStr,
@@ -228,16 +229,16 @@ export async function POST(req: Request) {
                   waGroupLink: waGroupLinkVal,
                   lmsLink: lmsLinkVal,
                   memberUrl,
-                })).catch((err) => console.error("Gagal mengirim WA peserta tambahan webhook:", err));
+                })));
               } else {
-                await sendWa(pWa, msgPaid(p.name, reg.program.title, memberUrl)).catch((err) => console.error("Gagal mengirim WA peserta tambahan webhook:", err));
+                runAfterResponse("webhook:wa-lunas-peserta-tambahan", () => sendWa(pWa, msgPaid(p.name, reg.program.title, memberUrl)));
               }
 
-              await sendEmail({
+              runAfterResponse("webhook:email-peserta-tambahan", () => sendEmail({
                 to: pEmail,
                 subject: `Pembayaran Berhasil: Akses Pelatihan ${reg.program.title}`,
                 html: getPaidEmailHtml(p.name, reg.program.title, memberUrl, zoomLinkVal, waGroupLinkVal, lmsLinkVal),
-              }).catch((err) => console.error("Gagal mengirim email peserta tambahan webhook:", err));
+              }));
             }
           } catch (err) {
             console.error("Gagal memproses peserta tambahan di webhook Xendit:", err);
@@ -251,7 +252,7 @@ export async function POST(req: Request) {
       ]);
       // Notifikasi email invoice kedaluwarsa — best-effort
       const reg = payment.registration;
-      await sendEmail({
+      runAfterResponse("webhook:email-expired", () => sendEmail({
         to: reg.email,
         subject: `Invoice Kedaluwarsa: ${reg.program.title}`,
         html: getInvoiceExpiredEmailHtml({
@@ -259,7 +260,7 @@ export async function POST(req: Request) {
           programTitle: reg.program.title,
           registerUrl: `${baseUrl}/program/${reg.program.slug}`,
         }),
-      }).catch((err) => console.error("[webhook] Gagal kirim email EXPIRED:", err));
+      }));
     } else if (event.status === "FAILED" && payment.status !== "PAID" && isCurrentInvoice) {
       await prisma.$transaction([
         prisma.payment.update({ where: { id: payment.id }, data: { status: "FAILED" } }),
@@ -267,7 +268,7 @@ export async function POST(req: Request) {
       ]);
       // Notifikasi email pembayaran gagal — best-effort
       const regFailed = payment.registration;
-      await sendEmail({
+      runAfterResponse("webhook:email-failed", () => sendEmail({
         to: regFailed.email,
         subject: `Pembayaran Gagal: ${regFailed.program.title}`,
         html: getInvoiceFailedEmailHtml({
@@ -275,7 +276,7 @@ export async function POST(req: Request) {
           programTitle: regFailed.program.title,
           registerUrl: `${baseUrl}/program/${regFailed.program.slug}`,
         }),
-      }).catch((err) => console.error("[webhook] Gagal kirim email FAILED:", err));
+      }));
     } else {
       console.warn("[webhook] Status tidak dikenal / stale callback:", event.status);
       return NextResponse.json({ error: `Status tidak dikenal: ${event.status}` }, { status: 202 });

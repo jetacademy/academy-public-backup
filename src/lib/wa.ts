@@ -102,6 +102,8 @@ export async function sendWaDetailed(to: string, text: string): Promise<SendWaDe
       method: "POST",
       headers: { "Content-Type": "application/json", apikey },
       body: JSON.stringify({ number: validation.normalized, text }),
+      // Tanpa batas waktu, Evolution API yang macet bikin request/tugas latar menggantung selamanya.
+      signal: AbortSignal.timeout(15_000),
     });
 
     let resBody: Record<string, unknown> | null = null;

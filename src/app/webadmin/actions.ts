@@ -138,6 +138,7 @@ export async function saveProgram(formData: FormData) {
     throw err;
   }
   revalidatePath("/");
+  revalidatePath("/program");
   revalidatePath("/webadmin/program");
   redirect("/webadmin/program?ok=1");
 }
@@ -252,6 +253,7 @@ export async function toggleProgram(formData: FormData) {
   if (cur) await prisma.program.update({ where: { id }, data: { isActive: !cur.isActive } });
   revalidatePath("/webadmin/program");
   revalidatePath("/");
+  revalidatePath("/program");
 }
 
 /** Buka / tutup klaim sertifikat secara manual — dari daftar program atau form edit */
@@ -278,6 +280,7 @@ export async function deleteProgram(formData: FormData) {
   }
   revalidatePath("/webadmin/program");
   revalidatePath("/");
+  revalidatePath("/program");
 }
 
 // ─── Soal kuis ───────────────────────────────────────────────────
@@ -1428,6 +1431,7 @@ export async function saveCategory(formData: FormData) {
   }
 
   revalidatePath("/");
+  revalidatePath("/program");
   revalidatePath("/webadmin/kategori");
   redirect("/webadmin/kategori?ok=1");
 }
@@ -1437,6 +1441,7 @@ export async function deleteCategory(formData: FormData) {
   const id = String(formData.get("id"));
   await prisma.category.delete({ where: { id } }).catch((err) => console.error("[deleteCategory] Gagal:", err));
   revalidatePath("/");
+  revalidatePath("/program");
   revalidatePath("/webadmin/kategori");
   redirect("/webadmin/kategori?deleted=1");
 }

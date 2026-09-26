@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { saveUser, deleteUser } from "../../actions";
 import ConfirmButton from "@/components/ConfirmButton";
@@ -17,27 +18,43 @@ interface UserItem {
 export default async function AdminUserList({
   searchParams,
 }: {
-  searchParams: Promise<{ id?: string; e?: string; ok?: string; deleted?: string; role?: string }>;
+  searchParams: Promise<{ id?: string; e?: string; ok?: string; deleted?: string; role?: string; q?: string; page?: string }>;
 }) {
-  const { id, e, ok, deleted, role: roleFilter } = await searchParams;
+  const { id, e, ok, deleted, role: roleFilter, q, page } = await searchParams;
+
+  const currentPage = Math.max(1, Number(page ?? "1") || 1);
+  const limit = 50;
 
   // Query conditions
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const whereClause: any = {};
+  const whereClause: Prisma.UserWhereInput = {};
   if (roleFilter && ["ADMIN", "TEACHER", "STUDENT"].includes(roleFilter)) {
-    whereClause.role = roleFilter;
+    whereClause.role = roleFilter as UserItem["role"];
+  }
+  if (q) {
+    whereClause.OR = [{ name: { contains: q } }, { email: { contains: q } }, { whatsapp: { contains: q } }];
   }
 
-  // Fetch all users matching filters
-  const users = await prisma.user.findMany({
-    where: whereClause,
-    orderBy: { createdAt: "desc" },
-  }) as UserItem[];
+  // Dipaginasi — dengan puluhan ribu user, memuat semua baris sekaligus bikin halaman
+  // ini lambat & HTML-nya membengkak berukuran megabyte.
+  const [users, totalCount, editUser] = await Promise.all([
+    prisma.user.findMany({
+      where: whereClause,
+      orderBy: { createdAt: "desc" },
+      select: { id: true, name: true, email: true, whatsapp: true, role: true, createdAt: true },
+      skip: (currentPage - 1) * limit,
+      take: limit,
+    }) as Promise<UserItem[]>,
+    prisma.user.count({ where: whereClause }),
+    id ? prisma.user.findUnique({ where: { id } }) : null,
+  ]);
+  const totalPages = Math.ceil(totalCount / limit);
 
-  // If editing, fetch the specific user
-  const editUser = id
-    ? await prisma.user.findUnique({ where: { id } })
-    : null;
+  const pageHref = (p: number) =>
+    `/webadmin/user?${new URLSearchParams({
+      ...(roleFilter ? { role: roleFilter } : {}),
+      ...(q ? { q } : {}),
+      page: String(p),
+    }).toString()}`;
 
   return (
     <>
@@ -59,6 +76,13 @@ export default async function AdminUserList({
         </div>
       </div>
 
+      <form method="get" className="adm-filter-row">
+        {roleFilter && <input type="hidden" name="role" value={roleFilter} />}
+        <input name="q" defaultValue={q} placeholder="Cari nama / email / WA..." style={{ flexBasis: "16rem" }} />
+        <button type="submit" className="btn btn-sm">Cari</button>
+        <span className="muted" style={{ fontSize: ".82rem" }}>{totalCount.toLocaleString("id-ID")} user</span>
+      </form>
+
       {ok === "1" && <div className="adm-alert ok">User berhasil disimpan.</div>}
       {deleted === "1" && <div className="adm-alert ok">User berhasil dihapus.</div>}
       {e === "duplikat" && (
@@ -69,6 +93,7 @@ export default async function AdminUserList({
 
       <div className="adm-split">
         {/* Kolom Kiri: Tabel User */}
+        <div>
         <div className="tbl-wrap">
           <table className="tbl">
             <thead>
@@ -123,6 +148,20 @@ export default async function AdminUserList({
               )}
             </tbody>
           </table>
+        </div>
+        {totalPages > 1 && (
+          <div style={{ display: "flex", gap: ".8rem", alignItems: "center", marginTop: "1.4rem", justifyContent: "center" }}>
+            {currentPage > 1 && (
+              <Link href={pageHref(currentPage - 1)} className="btn btn-sm">← Sebelum</Link>
+            )}
+            <span style={{ fontSize: ".85rem", fontWeight: 600, color: "var(--ink-soft)" }}>
+              Halaman {currentPage} dari {totalPages}
+            </span>
+            {currentPage < totalPages && (
+              <Link href={pageHref(currentPage + 1)} className="btn btn-sm">Sesudah →</Link>
+            )}
+          </div>
+        )}
         </div>
 
         {/* Kolom Kanan: Form Tambah/Edit */}

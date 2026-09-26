@@ -99,6 +99,7 @@ model Program {
   updatedAt          DateTime           @updatedAt
 
   @@index([categoryId])
+  @@index([isActive, scheduleAt]) // katalog publik: WHERE isActive ORDER BY scheduleAt
   @@map("program")
 }
 
@@ -234,6 +235,7 @@ model Payment {
   updatedAt           DateTime             @updatedAt
 
   @@index([status])
+  @@index([status, paidAt]) // grafik pendapatan harian/bulanan: WHERE status='PAID' AND paidAt >= ...
   @@index([voucherId])
   @@index([affiliateId])
   @@map("payment")

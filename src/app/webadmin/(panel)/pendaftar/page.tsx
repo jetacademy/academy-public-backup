@@ -48,7 +48,14 @@ export default async function AdminPendaftar({ searchParams }: {
     }),
     prisma.registration.findMany({
       where,
-      include: { program: true, batch: true, payment: { include: { voucher: { select: { code: true } } } }, certificate: true },
+      // program/batch cukup kolom yang dirender — include penuh ikut menarik contentBlocks,
+      // description & certConfig program untuk tiap baris (50 baris × kolom besar per halaman).
+      include: {
+        program: { select: { title: true } },
+        batch: { select: { scheduleAt: true } },
+        payment: { include: { voucher: { select: { code: true } } } },
+        certificate: { select: { id: true, number: true } },
+      },
       orderBy: { createdAt: "desc" },
       skip: (currentPage - 1) * limit,
       take: limit,

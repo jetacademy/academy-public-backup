@@ -47,7 +47,16 @@ export default async function MemberDashboardPage() {
       OR: [{ email: sessionVal }, { whatsapp: sessionVal }],
     },
     include: {
-      program: { include: { modules: { take: 1 } } },
+      // Hanya kolom yang dirender — kolom besar (contentBlocks, description, certConfig,
+      // certBgUrl) tidak ikut ditarik per pendaftaran.
+      program: {
+        select: {
+          id: true, slug: true, title: true, tagline: true, type: true, mentorName: true,
+          scheduleAt: true, durationLabel: true, price: true, certPrice: true,
+          zoomLink: true, waGroupLink: true, lmsLink: true, certPublished: true,
+          modules: { take: 1, select: { id: true } },
+        },
+      },
       payment: true,
       certificate: true,
       batch: true,
@@ -78,35 +87,20 @@ export default async function MemberDashboardPage() {
     }
   }
 
-  // Ambil certClaimOpen via raw SQL (field baru, mungkin belum ada di Prisma client cache)
-  const programIds = [...new Set(registrations.map((r) => r.program.id))];
-  const certClaimMap = new Map<string, boolean>();
-  if (programIds.length > 0) {
-    try {
-      type RawRow = { id: string; certClaimOpen: number };
-      // Prisma.join aman untuk IN clause
-      const { Prisma: PrismaLib } = await import("@prisma/client");
-      const rows = await prisma.$queryRaw<RawRow[]>(
-        PrismaLib.sql`SELECT id, certClaimOpen FROM \`program\` WHERE id IN (${PrismaLib.join(programIds)})`
-      );
-      for (const row of rows) {
-        certClaimMap.set(row.id, row.certClaimOpen === 1);
-      }
-    } catch {
-      // Gagal silent — fallback ke false (terkunci) untuk keamanan
-    }
-  }
-
   const memberName = registrations[0]?.name ?? "Member";
   const memberEmail = registrations[0]?.email ?? "";
   const memberWhatsapp = (registrations[0]?.whatsapp ?? "").replace(/^628/, "08");
   const memberInstitution = registrations[0]?.institution ?? "";
-  const isSuperadmin = await isAdmin();
 
-  const memberUser = await prisma.user.findFirst({ where: { OR: [{ email: sessionVal }, { whatsapp: sessionVal }] }, select: { id: true } });
-  const affiliate = memberUser
-    ? await prisma.affiliate.findUnique({ where: { userId: memberUser.id }, select: { status: true } })
-    : null;
+  // Paralel — sebelumnya 3 round-trip DB berurutan per kunjungan dashboard.
+  const [isSuperadmin, memberAffiliate] = await Promise.all([
+    isAdmin(),
+    prisma.user.findFirst({
+      where: { OR: [{ email: sessionVal }, { whatsapp: sessionVal }] },
+      select: { affiliate: { select: { status: true } } },
+    }),
+  ]);
+  const affiliate = memberAffiliate?.affiliate ?? null;
 
   return (
     <>
