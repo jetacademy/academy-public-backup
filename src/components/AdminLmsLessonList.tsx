@@ -30,7 +30,7 @@ interface AdminLmsLessonListProps {
 
 export default function AdminLmsLessonList({
   programId,
-  moduleId,
+  moduleId: _moduleId,
   initialLessons,
 }: AdminLmsLessonListProps) {
   const [lessons, setLessons] = useState<LessonRow[]>(initialLessons);

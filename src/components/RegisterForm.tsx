@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { motion } from "framer-motion";
 import Icon from "@/components/Icon";
 import GoogleAuthModal from "@/components/GoogleAuthModal";
 import { useRouter } from "next/navigation";
@@ -63,7 +62,7 @@ export default function RegisterForm({
   programTitle,
   jadwal,
   price,
-  priceLabel,
+  priceLabel: _priceLabel,
   batches,
   attendanceOptions,
 }: {
@@ -149,7 +148,7 @@ export default function RegisterForm({
       ? (attendanceType === "OFFLINE" ? attendanceOptions.priceOffline : attendanceOptions.priceOnline)
       : (currentBatch?.priceOnline ?? price);
 
-  const currentUnitPriceOld = currentBatch?.effectivePriceOld !== undefined
+  const _currentUnitPriceOld = currentBatch?.effectivePriceOld !== undefined
     ? currentBatch.effectivePriceOld
     : (attendanceType === "OFFLINE" ? attendanceOptions?.priceOfflineOld : attendanceOptions?.priceOnlineOld);
 
@@ -157,7 +156,7 @@ export default function RegisterForm({
     ? currentBatch.isEbActive
     : (attendanceType === "OFFLINE" ? attendanceOptions?.isOfflineEbActive : attendanceOptions?.isOnlineEbActive);
 
-  const isCurrentSoldOut = currentBatch?.isSoldOut !== undefined
+  const _isCurrentSoldOut = currentBatch?.isSoldOut !== undefined
     ? currentBatch.isSoldOut
     : (attendanceType === "OFFLINE" ? attendanceOptions?.isOfflineSoldOut : false);
 

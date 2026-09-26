@@ -28,7 +28,7 @@ interface AdminLmsModuleListProps {
 
 export default function AdminLmsModuleList({
   programId,
-  groupId,
+  groupId: _groupId,
   initialModules,
   groupPrefix,
   groups,
