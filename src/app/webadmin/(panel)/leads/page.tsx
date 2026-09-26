@@ -87,7 +87,7 @@ export default async function AdminLeads({
       {ok === "deleted" && <div className="adm-alert ok">Lead dihapus.</div>}
 
       {/* Statistik funnel */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))", gap: ".7rem", marginBottom: "1.2rem" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(118px,1fr))", gap: ".7rem", marginBottom: "1.2rem" }}>
         {[
           { l: "Total Lead", v: totalAll, color: "var(--ink)" },
           { l: "Aktif (dikejar)", v: totalActive, color: "var(--purple)" },
