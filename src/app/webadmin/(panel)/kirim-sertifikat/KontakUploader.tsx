@@ -92,19 +92,18 @@ export default function KontakUploader({ programId }: { programId: string }) {
           <div className="tbl-wrap kc-preview">
             <table className="tbl">
               <thead>
-                <tr><th>#</th><th>Nama</th><th>WhatsApp</th><th>Email</th></tr>
+                <tr><th>Nama</th><th>WhatsApp</th><th>Email</th></tr>
               </thead>
               <tbody>
                 {rows.slice(0, 50).map((r, i) => (
                   <tr key={i}>
-                    <td data-label="#" className="muted">{i + 1}</td>
                     <td data-label="Nama">{r.name}</td>
                     <td data-label="WhatsApp">{r.whatsapp || <span className="muted">—</span>}</td>
                     <td data-label="Email">{r.email || <span className="muted">—</span>}</td>
                   </tr>
                 ))}
                 {rows.length > 50 && (
-                  <tr><td colSpan={4} className="muted">… dan {rows.length - 50} lainnya</td></tr>
+                  <tr><td colSpan={3} className="muted">… dan {rows.length - 50} lainnya</td></tr>
                 )}
               </tbody>
             </table>

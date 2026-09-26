@@ -132,11 +132,11 @@ export default async function AdminBatch({
                       </strong>
                     </div>
                   </td>
-                  <td data-label="Jadwal">
+                  <td data-label="Jadwal" className="c-mid">
                     {formatJadwal(b.scheduleAt)}
                     {past && <div className="muted">Sudah lewat</div>}
                   </td>
-                  <td data-label="Harga &amp; Promo">
+                  <td data-label="Harga &amp; Promo" className="c-mid">
                     <div style={{ fontSize: "0.8rem", display: "flex", flexDirection: "column", gap: "0.2rem" }}>
                       <div>
                         <span className="muted">Normal:</span> <strong>Rp {currentNormalPrice.toLocaleString("id-ID")}</strong>

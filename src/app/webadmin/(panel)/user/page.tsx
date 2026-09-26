@@ -91,7 +91,7 @@ export default async function AdminUserList({
       {e === "lengkapi" && <div className="adm-alert err">Nama dan email wajib diisi.</div>}
       {e === "password-wajib" && <div className="adm-alert err">Password wajib diisi untuk Admin/Pengajar baru.</div>}
 
-      <div className="adm-split">
+      <div className={`adm-split wide-table${editUser ? " form-first" : ""}`}>
         {/* Kolom Kiri: Tabel User */}
         <div>
         <div className="tbl-wrap">
@@ -109,7 +109,7 @@ export default async function AdminUserList({
             <tbody>
               {users.map((u: UserItem) => (
                 <tr key={u.id}>
-                  <td data-label="Nama" style={{ fontWeight: 600 }}>{u.name}</td>
+                  <td data-label="Nama" className="c-mid" style={{ fontWeight: 600 }}>{u.name}</td>
                   <td data-label="Email">{u.email}</td>
                   <td data-label="WhatsApp" className="muted">{u.whatsapp || "-"}</td>
                   <td data-label="Role">
@@ -124,7 +124,7 @@ export default async function AdminUserList({
                       year: "numeric"
                     })}
                   </td>
-                  <td data-label="Aksi">
+                  <td data-label="Aksi" className="c-nowrap">
                     <div style={{ display: "flex", gap: ".4rem" }}>
                       <Link href={`/webadmin/user?id=${u.id}${roleFilter ? `&role=${roleFilter}` : ""}`} className="btn btn-sm">
                         Edit

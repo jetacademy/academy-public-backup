@@ -114,13 +114,13 @@ export default async function AdminPendaftar({ searchParams }: {
               const b = STATUS_BADGE[r.status] ?? { cls: "dim", label: r.status };
               return (
                 <tr key={r.id}>
-                  <td data-label="Nama" style={{ fontWeight: 600 }}>{r.name}
+                  <td data-label="Nama" className="c-mid" style={{ fontWeight: 600 }}>{r.name}
                     {r.institution && <div style={{ fontSize: "0.75rem", color: "var(--purple)", fontWeight: "normal" }}>Lembaga: {r.institution}</div>}
                     <div className="muted">{new Intl.DateTimeFormat("id-ID", { day: "numeric", month: "short", year: "numeric", timeZone: "Asia/Jakarta" }).format(r.createdAt)}</div>
                   </td>
                   <td data-label="Kontak">{r.whatsapp}<div className="muted">{r.email}</div></td>
-                  <td data-label="Program" className="muted">{r.program.title}</td>
-                  <td data-label="Batch" className="muted">
+                  <td data-label="Program" className="muted c-wide"><span className="clamp-2" title={r.program.title}>{r.program.title}</span></td>
+                  <td data-label="Batch" className="muted c-mid">
                     {r.batch ? formatHariTanggal(r.batch.scheduleAt) : <span className="muted">—</span>}
                     <div style={{ marginTop: "0.3rem" }}>
                       {(r as any).attendanceType === "OFFLINE" ? (
@@ -157,7 +157,7 @@ export default async function AdminPendaftar({ searchParams }: {
                       <span className="badge dim">Belum Terbit</span>
                     )}
                   </td>
-                  <td data-label="Pembayaran">
+                  <td data-label="Pembayaran" className="c-nowrap">
                     {r.payment
                       ? <>
                           {r.payment.discountAmount > 0 && r.payment.originalAmount ? (
@@ -182,7 +182,7 @@ export default async function AdminPendaftar({ searchParams }: {
                         </>
                       : <span className="muted">—</span>}
                   </td>
-                  <td data-label="Aksi">
+                  <td data-label="Aksi" className="c-actions">
                     <div style={{ display: "flex", gap: ".4rem", flexWrap: "wrap" }}>
                       <Link href={`/webadmin/pendaftar/${r.id}`} className="btn btn-sm">Edit</Link>
                       {['REGISTERED', 'EXPIRED', 'FAILED'].includes(r.status) && (
