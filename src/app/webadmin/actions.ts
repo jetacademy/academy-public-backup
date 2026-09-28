@@ -420,6 +420,8 @@ export async function saveLmsModule(formData: FormData) {
   const hasGroupField = formData.has("groupId");
   const groupId = optStr(formData, "groupId");
   const rawBatchIds = formData.getAll("batchIds").map((v) => String(v));
+  // "Semua batch" — modul otomatis ikut di batch baru. Modul baru default ke semua batch.
+  const allBatches = id ? formData.get("allBatches") === "on" : true;
 
   if (!programId || !title) redirect(`/webadmin/program/${programId}/lms?e=lengkapi`);
 
@@ -428,12 +430,12 @@ export async function saveLmsModule(formData: FormData) {
   if (id) {
     await prisma.lmsModule.update({
       where: { id },
-      data: hasGroupField ? { title, groupId } : { title },
+      data: hasGroupField ? { title, groupId, allBatches } : { title, allBatches },
     });
     moduleId = id;
   } else {
     const last = await prisma.lmsModule.findFirst({ where: { programId, groupId }, orderBy: { order: "desc" } });
-    const created = await prisma.lmsModule.create({ data: { programId, groupId, title, order: (last?.order ?? 0) + 1 } });
+    const created = await prisma.lmsModule.create({ data: { programId, groupId, title, allBatches, order: (last?.order ?? 0) + 1 } });
     moduleId = created.id;
   }
 

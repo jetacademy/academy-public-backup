@@ -141,9 +141,9 @@ export async function issueCertificate(registrationId: string): Promise<{ number
  *  HARUS tetap disinkronkan, supaya progress yang ditampilkan ke peserta (100%) selalu konsisten
  *  dengan syarat yang dipakai untuk menerbitkan sertifikat.
  */
-function batchModuleWhere(batchId?: string | null) {
+export function batchModuleWhere(batchId?: string | null) {
   return batchId
-    ? { batchLinks: { some: { batchId } } }
+    ? { OR: [{ allBatches: true }, { batchLinks: { some: { batchId } } }] }
     : {};
 }
 

@@ -372,6 +372,7 @@ model LmsModule {
   groupId    String?
   title      String
   order      Int           @default(0)
+  allBatches Boolean       @default(false) // true = tampil di SEMUA batch (termasuk batch baru), batchLinks diabaikan
   lessons    Lesson[]
   batchLinks BatchModule[]
 

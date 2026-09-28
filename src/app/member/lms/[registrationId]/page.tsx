@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { getMemberSession } from "@/lib/member-auth";
-import { checkCertEligibility } from "@/lib/certificates";
+import { checkCertEligibility, batchModuleWhere } from "@/lib/certificates";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import WaFloat from "@/components/WaFloat";
@@ -64,85 +64,11 @@ export default async function LmsPage({
   // query mentah terpisah (dulu 1 round-trip DB tambahan per buka materi).
   const certClaimOpen = program.certClaimOpen;
 
-  // Akses LMS terbuka jika admin sudah buka (certClaimOpen) atau jadwal batch/program sudah mulai.
-  // Berlaku utk semua tipe program (dulu KELAS/WORKSHOP/BOOTCAMP dikecualikan dari cek ini —
-  // itu yang bikin peserta bisa akses LMS & dapat sertifikat sebelum batch-nya mulai).
+  // Materi LMS terbuka SEJAK daftar (sebelum batch mulai) supaya peserta bisa persiapan &
+  // belajar duluan. Klaim sertifikat tetap dijaga gerbang waktu di checkCertEligibility
+  // (certificates.ts) — jadi membuka materi lebih awal tidak membuat sertifikat terbit lebih awal.
   const sessionAt = reg.batch?.scheduleAt ?? program.scheduleAt;
   const now = new Date();
-  const isLmsOpen = certClaimOpen || now >= sessionAt;
-
-  if (!isLmsOpen) {
-    const formattedJadwal = new Intl.DateTimeFormat("id-ID", {
-      weekday: "long",
-      day: "numeric",
-      month: "long",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-      timeZone: "Asia/Jakarta",
-      timeZoneName: "short"
-    }).format(sessionAt);
-
-    return (
-      <>
-        <Navbar minimal ctaHref="/member" ctaLabel="Dashboard Saya" />
-        <section className="section" style={{ minHeight: "85vh", display: "grid", placeItems: "center", background: "var(--bg-warm)" }}>
-          <div className="bento" style={{
-            textAlign: "center",
-            maxWidth: "36rem",
-            padding: "3.5rem 2rem",
-            background: "var(--white)",
-            border: "1px solid var(--border)",
-            borderRadius: "var(--r-md)",
-            boxShadow: "var(--shadow-md)"
-          }}>
-            <span style={{ fontSize: "3.5rem" }}>📅</span>
-            <span className="type-tag type-webinar" style={{ display: "inline-block", margin: "1.5rem 0 0.8rem" }}>{program.type === "WEBINAR" ? "Sesi Belum Dimulai" : "Batch Belum Dimulai"}</span>
-            <h2 style={{ fontSize: "1.75rem", fontWeight: 800, color: "var(--ink)" }}>Akses LMS Belum Dibuka</h2>
-            <p style={{ color: "var(--ink-soft)", fontSize: "1rem", lineHeight: 1.6, marginTop: "1rem" }}>
-              Halo <strong>{reg.name}</strong>, akses pembelajaran mandiri &amp; klaim sertifikat untuk program <strong>{program.title}</strong> akan terbuka secara otomatis setelah {program.type === "WEBINAR" ? "sesi live webinar dimulai" : "batch Anda dimulai"} pada:
-            </p>
-            <div style={{
-              background: "rgba(108, 92, 231, 0.05)",
-              border: "1px solid rgba(108, 92, 231, 0.15)",
-              borderRadius: "var(--r-sm)",
-              padding: "1rem",
-              margin: "1.5rem 0",
-              fontWeight: 700,
-              fontSize: "1.05rem",
-              color: "var(--purple)"
-            }}>
-              {formattedJadwal}
-            </div>
-            {(() => {
-              const batchWaLink = reg.batch ? (reg.batch.waGroupLink || null) : program.waGroupLink;
-              return batchWaLink ? (
-                <div style={{ marginBottom: "1.5rem" }}>
-                  <a
-                    href={batchWaLink}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="btn btn-line"
-                    style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem" }}
-                  >
-                    💬 Gabung Grup WA Pelatihan
-                  </a>
-                </div>
-              ) : null;
-            })()}
-            {program.type === "WEBINAR" && (
-              <p style={{ color: "var(--ink-faint)", fontSize: "0.85rem", marginBottom: "2rem" }}>
-                Silakan pantau grup WhatsApp peserta untuk mendapatkan tautan Zoom Meeting live.
-              </p>
-            )}
-            <Link href="/member" className="btn btn-purple btn-lg" style={{ display: "inline-block" }}>Kembali ke Dashboard</Link>
-          </div>
-        </section>
-        <Footer />
-        <WaFloat />
-      </>
-    );
-  }
 
   // Gerbang pembayaran:
   // - Program berbayar: REGISTERED = preview mode
@@ -160,11 +86,8 @@ export default async function LmsPage({
       select: { id: true, title: true, type: true, duration: true, isPreview: true },
     },
   };
-  const batchModuleFilter = reg.batchId
-    ? {
-        batchLinks: { some: { batchId: reg.batchId } },
-      }
-    : {};
+  // Filter sama persis dengan syarat sertifikat (certificates.ts) — satu sumber.
+  const batchModuleFilter = batchModuleWhere(reg.batchId);
 
   const [groups, ungrouped] = await Promise.all([
     prisma.lmsGroup.findMany({
