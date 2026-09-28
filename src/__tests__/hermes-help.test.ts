@@ -360,3 +360,17 @@ describe("prompt-first (Hermes Desktop tanpa terminal)", () => {
     expect(p).not.toContain("Cara CLI/terminal cukup disebut sebagai alternatif");
   });
 });
+
+describe("panduan kanal kelas", () => {
+  it("WhatsApp biasa (scan QR) diutamakan, Cloud API tidak disarankan", async () => {
+    const { buildAnswerPrompt, docWeight } = await import("@/lib/hermes-help/prompts");
+    const p = buildAnswerPrompt("", "");
+    expect(p).toContain("WhatsApp BIASA");
+    expect(p).toContain("Linked Devices");
+    expect(p).toContain("JANGAN menyarankan WhatsApp Business Cloud API");
+    const base = { section: "user-guide", title: "WhatsApp", heading: "", content: "" };
+    expect(docWeight({ ...base, url: "https://h/docs/user-guide/messaging/whatsapp" })).toBeGreaterThan(
+      docWeight({ ...base, url: "https://h/docs/user-guide/messaging/whatsapp-cloud" }),
+    );
+  });
+});

@@ -16,6 +16,10 @@ export function docWeight(doc: { section: string; url: string; title: string; he
   let w = sectionWeight(doc.section);
   // OpenRouter: halaman integrasi Hermes, FAQ (akun/kredit/billing) & quickstart paling berguna bagi peserta.
   if (/openrouter\.ai\/docs\/(faq|quickstart|cookbook\/coding-agents\/hermes-integration)/.test(doc.url)) w *= 1.2;
+  // Kelas memakai WhatsApp biasa (bridge Baileys, scan QR) — dahulukan halamannya di atas
+  // WhatsApp Business Cloud API (Meta app) yang tidak diajarkan.
+  if (/\/docs\/user-guide\/messaging\/whatsapp(#|$)/.test(doc.url)) w *= 1.25;
+  else if (/\/docs\/user-guide\/messaging\/whatsapp-cloud/.test(doc.url)) w *= 0.6;
   if (/desktop/i.test(`${doc.url} ${doc.title} ${doc.heading}`)) w *= 1.3;
   else if (/hermes desktop|desktop app|dashboard/i.test(doc.content)) w *= 1.1;
   return w;
@@ -170,6 +174,21 @@ export const AI_EMPLOYEE_METHOD = `METODE KELAS — MEMBANGUN KARYAWAN AI BIDANG
 2. Latih dengan skill yang relevan dengan pekerjaannya (lewat prompt: minta Hermes membuat/memasang skill berisi SOP, pengetahuan produk, gaya bahasa). Bila pekerjaannya kompleks, terjunkan lebih dari 2 agent yang berbagi tugas (mis. satu mengumpulkan data, satu menulis, satu memeriksa).
 3. Hubungkan dengan tools/kanal yang dibutuhkan lewat prompt: WhatsApp, Telegram, email, Google (Gmail, Calendar, Drive, Sheets), dan lainnya.`;
 
+/**
+ * Cara kelas menghubungkan kanal — selalu disertakan ke AI. Kelas mengajarkan WhatsApp BIASA
+ * (bridge Baileys, scan QR yang ditampilkan Hermes di terminal-nya, semuanya diminta lewat prompt),
+ * BUKAN WhatsApp Business Cloud API (butuh Meta app, Phone Number ID, Access Token, App Secret).
+ */
+export const CLASS_CHANNEL_GUIDE = `PANDUAN KELAS — MENGHUBUNGKAN KANAL:
+- WhatsApp: kelas memakai WhatsApp BIASA lewat bridge bawaan Hermes (Baileys) — tanpa akun Meta Developer, tanpa Phone Number ID/Access Token/App Secret. Peserta cukup meminta lewat prompt: Hermes menjalankan setup WhatsApp untuk profile yang dimaksud dan menampilkan QR code di terminal Hermes Desktop; peserta memindainya dari HP lewat WhatsApp → Settings → Linked Devices → Link a Device (QR berganti ±20 detik; bila kedaluwarsa, minta Hermes menampilkan QR baru).
+  • Di dalam prompt, tulis permintaannya persis: "tampilkan QR code WhatsApp-nya di terminal" (bukan di chat).
+  • Mode: "bot" dengan nomor WhatsApp khusus (disarankan) atau "self-chat" dengan nomor sendiri (untuk uji coba).
+  • Akses: untuk karyawan CS yang melayani pelanggan, izinkan semua pengirim (WHATSAPP_ALLOWED_USERS=*); untuk asisten pribadi, isi nomor peserta sendiri (kode negara tanpa +, mis. 628xxx).
+  • Setelah terhubung, minta Hermes me-restart gateway dan mengonfirmasi; sesi tersimpan, scan ulang hanya bila koneksi putus.
+  • Ingatkan: pakai nomor khusus bot, jangan kirim pesan massal, jangan memulai chat ke orang yang belum chat duluan (risiko pembatasan akun).
+  • JANGAN menyarankan WhatsApp Business Cloud API / Meta app kecuali peserta menanyakannya secara khusus.
+- Telegram: bot dari @BotFather (atau fitur Create with QR); token ditempel peserta ke Hermes lewat prompt; satu bot hanya untuk satu profile.`;
+
 export type AnswerMode = "guide" | "business";
 
 /**
@@ -198,7 +217,7 @@ CARA PESERTA MEMAKAI HERMES (WAJIB DIPATUHI):
 Semua peserta memakai HERMES DESKTOP dan mengendalikan SEGALANYA dengan mengetik PROMPT di chat Hermes Desktop — Hermes Agent sendiri yang menjalankan pekerjaannya (membuat profile, memasang/melatih skill, menghubungkan Telegram/WhatsApp/email/Google, menjadwalkan tugas, mengubah pengaturan, dll). Peserta TIDAK diajari terminal.
 - JANGAN PERNAH memberi perintah terminal/CLI (mis. \`hermes ...\`, \`cat\`, \`export\`, PowerShell) untuk diketik peserta, dan jangan menyuruh mengedit file konfigurasi.
 - Jangan juga memberi langkah klik-klik menu. Bentuk jawaban = PROMPT SIAP SALIN yang peserta tempel ke chat Hermes Desktop.
-- Tulis setiap prompt di blok kode berlabel prompt (\`\`\`prompt ... \`\`\`), dalam bahasa Indonesia yang jelas: sebut tujuannya, detail yang dibutuhkan (nama profile, peran, data bisnis), dan minta Hermes menjelaskan/konfirmasi hasilnya. Bila ada yang harus ditampilkan ke peserta (mis. QR untuk dipindai, link login), minta Hermes menampilkannya di chat. Bila Hermes butuh data dari peserta (mis. token bot, API key), tulis tempatnya sebagai [TEMPEL_TOKEN_DI_SINI] dan jelaskan cara mendapatkannya.
+- Tulis setiap prompt di blok kode berlabel prompt (\`\`\`prompt ... \`\`\`), dalam bahasa Indonesia yang jelas: sebut tujuannya, detail yang dibutuhkan (nama profile, peran, data bisnis), dan minta Hermes menjelaskan/konfirmasi hasilnya. Bila ada yang harus ditampilkan ke peserta, minta Hermes menampilkannya (QR WhatsApp: di terminal Hermes Desktop — lihat PANDUAN KELAS; link login/hasil lain: di chat). Bila Hermes butuh data dari peserta (mis. token bot, API key), tulis tempatnya sebagai [TEMPEL_TOKEN_DI_SINI] dan jelaskan cara mendapatkannya.
 - Gunakan DOKUMEN untuk memastikan prompt meminta hal yang memang bisa dilakukan Hermes dan menyertakan informasi yang dibutuhkan (mis. Telegram butuh token bot dari @BotFather). Nama fitur/config dari dokumen boleh disebut di dalam prompt supaya Hermes paham maksudnya.
 - Langkah manual hanya untuk hal di LUAR Hermes: mendaftar/top-up OpenRouter, membuat bot di @BotFather, memindai QR di HP, mengunduh & memasang aplikasi Hermes Desktop. Tulis langkah manual itu secara umum (mis. "pindai QR-nya dengan HP") — jangan mengarang jalur menu aplikasi lain yang tidak tertulis di dokumen.
 - Semua yang terjadi DI DALAM Hermes — termasuk membuat/menduplikasi profile, memasang skill, mengubah model, menghubungkan kanal — SELALU berupa prompt, bukan langkah manual atau menu dashboard. Bila langkah sebelumnya belum dilakukan (mis. profile belum ada), berikan prompt untuk langkah itu juga, berurutan.
@@ -207,9 +226,11 @@ Semua peserta memakai HERMES DESKTOP dan mengendalikan SEGALANYA dengan mengetik
 - Dokumen bertanda "MATERI KELAS" adalah panduan dari instruktur Jetschool. Jadikan rujukan utama bila relevan; bila berbeda dengan dokumentasi resmi, ikuti materi kelas.
 
 ${AI_EMPLOYEE_METHOD}
+
+${CLASS_CHANNEL_GUIDE}
 ${mode === "business" ? `\n${BUSINESS_MODE}\n` : ""}
 ATURAN WAJIB:
-1. Fakta tentang Hermes & OpenRouter HANYA dari DOKUMEN, METODE KELAS, dan CATATAN INSTRUKTUR di bawah. Jangan memakai pengetahuanmu sendiri tentang fitur/perintah Hermes maupun OpenRouter.
+1. Fakta tentang Hermes & OpenRouter HANYA dari DOKUMEN, METODE KELAS, PANDUAN KELAS, dan CATATAN INSTRUKTUR. Jangan memakai pengetahuanmu sendiri tentang fitur/perintah Hermes maupun OpenRouter.
 2. Jika dokumen tidak memuat jawabannya, katakan terus terang bahwa informasi itu tidak ada di dokumentasi maupun materi kelas, lalu sebutkan halaman dokumen yang paling dekat. Jangan menebak.
 3. Nama fitur, config key, dan environment variable yang kamu sebut HARUS persis seperti di dokumen. Jangan mengarang fitur atau kemampuan Hermes yang tidak ada di dokumen.
 4. Beri sitasi [n] di akhir kalimat/langkah yang bersumber dari dokumen nomor n.

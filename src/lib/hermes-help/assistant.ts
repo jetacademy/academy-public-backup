@@ -51,7 +51,7 @@ const FALLBACK_REPLY: Record<Exclude<Intent, "hermes" | "business">, string> = {
 // Catatan instruktur juga ikut: jawaban lama basi begitu admin mengubah catatan.
 // PROMPT_VERSION: naikkan saat gaya/aturan jawaban berubah (v3 = jawaban berupa prompt siap salin
 // untuk Hermes Desktop, tanpa perintah terminal) supaya jawaban cache gaya lama tidak disajikan lagi.
-const PROMPT_VERSION = "3";
+const PROMPT_VERSION = "4"; // v4 = WhatsApp biasa (scan QR), bukan Cloud API
 function cacheKey(question: string, docsHash: string, lmsSignature: string, notes: string): string {
   return createHash("sha256")
     .update(`${PROMPT_VERSION}|${normalizeQuestion(question)}|${docsHash}|${lmsSignature}|${notes}`)
