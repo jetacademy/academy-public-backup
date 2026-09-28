@@ -783,3 +783,81 @@ model Lead {
   @@index([whatsapp])
   @@map("lead")
 }
+
+// ============================================================
+// BANTUAN AI — chat panduan Hermes Agent di LMS (RAG atas dokumentasi resmi)
+// Dokumentasi (llms-full.txt) dipotong-potong ke HelpDocChunk; pencarian BM25 di memori,
+// hanya 4–6 potongan relevan yang dikirim ke LLM (OpenRouter) per pertanyaan.
+// ============================================================
+
+model HelpDocChunk {
+  id        String   @id @default(cuid())
+  url       String   @db.VarChar(500) // URL halaman + #anchor heading
+  section   String   @db.VarChar(100) // getting-started | user-guide | guides | ...
+  title     String   @db.VarChar(300)
+  heading   String   @db.VarChar(500)
+  content   String   @db.MediumText
+  order     Int
+  createdAt DateTime @default(now())
+
+  @@map("helpdocchunk")
+}
+
+// Singleton pengaturan + status sinkron dokumentasi.
+model HelpChatSettings {
+  id             String    @id @default("singleton")
+  enabled        Boolean   @default(true)
+  dailyQuota     Int       @default(30) // pertanyaan (non-cache) per member per hari WIB
+  docsHash       String?   @db.VarChar(64) // sha256 llms-full.txt terakhir
+  docsSyncedAt   DateTime? // terakhir dicek (berubah/tidak)
+  docsChunkCount Int       @default(0)
+  docsTopics     String?   @db.Text // daftar judul halaman — konteks utk rewrite query
+  syncError      String?   @db.Text
+  // Catatan/rekomendasi instruktur yang SELALU disertakan ke AI (mis. metode pembayaran OpenRouter).
+  // null = pakai teks bawaan DEFAULT_INSTRUCTOR_NOTES di prompts.ts.
+  instructorNotes String?  @db.Text
+  updatedAt      DateTime  @updatedAt
+
+  @@map("helpchatsettings")
+}
+
+// Jawaban yang sudah terverifikasi untuk pertanyaan identik (tanpa gambar & tanpa riwayat).
+// Key = sha256(pertanyaan ternormalisasi + docsHash) → otomatis basi saat dokumentasi berubah.
+model HelpChatCache {
+  id        String   @id @default(cuid())
+  key       String   @unique @db.VarChar(64)
+  question  String   @db.Text
+  answer    String   @db.MediumText
+  sources   Json
+  hits      Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("helpchatcache")
+}
+
+model HelpChatLog {
+  id               String   @id @default(cuid())
+  identifier       String   @db.VarChar(191) // email/whatsapp sesi member
+  registrationId   String?  @db.VarChar(191)
+  question         String   @db.Text
+  answer           String?  @db.MediumText
+  sources          Json?
+  intent           String   @default("hermes") @db.VarChar(20) // hermes | smalltalk | offtopic | error
+  cached           Boolean  @default(false)
+  cacheKey         String?  @db.VarChar(64)
+  hasImage         Boolean  @default(false)
+  unverified       Json? // perintah di jawaban yang TIDAK ditemukan persis di dokumen
+  model            String?  @db.VarChar(100)
+  promptTokens     Int      @default(0)
+  completionTokens Int      @default(0)
+  costUsd          Float    @default(0)
+  latencyMs        Int      @default(0)
+  feedback         Int? // 1 = membantu, -1 = tidak
+  error            String?  @db.Text
+  createdAt        DateTime @default(now())
+
+  @@index([identifier, createdAt])
+  @@index([createdAt])
+  @@map("helpchatlog")
+}

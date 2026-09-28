@@ -183,6 +183,15 @@ const SIDEBAR_SECTIONS: SidebarSection[] = [
         )
       },
       {
+        href: "/webadmin/bantuan-ai",
+        label: "Asisten Hermes (AI)",
+        icon: (
+          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M8 10h8M8 14h5m-9 6 2.6-2.6A2 2 0 0 1 8 17h10a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v14z" />
+          </svg>
+        )
+      },
+      {
         href: "/webadmin/integrasi",
         label: "Integrasi API",
         icon: (

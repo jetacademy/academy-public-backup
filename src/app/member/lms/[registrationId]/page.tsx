@@ -12,6 +12,8 @@ import ClaimCertButton from "@/components/ClaimCertButton";
 import MemberPayCertButton from "@/components/MemberPayCertButton";
 import LessonVideoPlayer from "@/components/LessonVideoPlayer";
 import LmsViewContainer from "@/components/LmsViewContainer";
+import HermesHelpChat from "@/components/HermesHelpChat";
+import { isHelpChatEnabled } from "@/lib/hermes-help/docs-store";
 import dynamicImport from "next/dynamic";
 
 // PDF viewer (~1.5 MB react-pdf/pdfjs) di-lazy-load — hanya dimuat saat lesson bertipe PDF,
@@ -275,6 +277,8 @@ export default async function LmsPage({
   const nextLessonObj = nextLesson
     ? { id: nextLesson.id, title: nextLesson.title }
     : null;
+
+  const helpChatEnabled = await isHelpChatEnabled();
 
   return (
     <>
@@ -573,6 +577,8 @@ export default async function LmsPage({
           </div>
         )}
       </LmsViewContainer>
+
+      {helpChatEnabled && <HermesHelpChat registrationId={registrationId} />}
     </>
   );
 }
