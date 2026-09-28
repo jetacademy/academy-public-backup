@@ -10,8 +10,9 @@ import { sendOtp, verifyOtp } from "@/lib/otp";
 import { normalizeWa, normalizeIdentifier } from "@/lib/wa";
 import { sendEmail, getWelcomeMemberEmailHtml } from "@/lib/email";
 import { createInvoice, isXenditConfigured } from "@/lib/xendit";
-import { findActiveAffiliateByCode, applyAffiliateDiscount, recordAffiliateConversion, getAffiliateRefCookie } from "@/lib/affiliate";
+import { findActiveAffiliateByCode, resolveAffiliateForCheckout, applyAffiliateDiscount, recordAffiliateConversion, getAffiliateRefCookie } from "@/lib/affiliate";
 import { linkLeadToRegistration } from "@/lib/lead-link";
+import { validateVoucher } from "@/lib/voucher";
 
 async function loginByIdentifier(cleanVal: string): Promise<{ ok?: boolean; error?: string; isAdmin?: boolean }> {
   // 1. Cari User record terlebih dahulu — user yang baru daftar akun
@@ -630,4 +631,34 @@ export async function initiateCertificateCheckout(registrationId: string) {
   });
 
   return { redirectUrl: invoice.invoice_url };
+}
+
+/**
+ * Pratinjau potongan kode voucher/affiliate di form pendaftaran — HANYA untuk tampilan.
+ * Harga final tetap dihitung ulang server di /api/register & /api/checkout (urutan prioritas
+ * sama: affiliate dulu, lalu voucher), jadi `amount` dari client tidak dipercaya untuk tagihan.
+ */
+export async function previewDiscountCode(
+  codeInput: string,
+  amount: number
+): Promise<{ ok: true; kind: "affiliate" | "voucher"; code: string; discountAmount: number; finalAmount: number } | { error: string }> {
+  const hdrs = await headers();
+  const ip = hdrs.get("x-forwarded-for") ?? hdrs.get("x-real-ip") ?? "discount-preview";
+  if (!checkRateLimit(`discount-preview:${ip}`, 15, 60_000).ok) {
+    return { error: "Terlalu banyak percobaan. Coba lagi sebentar lagi." };
+  }
+
+  const code = codeInput.trim();
+  if (!code) return { error: "Masukkan kode terlebih dahulu." };
+  if (!Number.isFinite(amount) || amount <= 0) return { error: "Kode hanya berlaku untuk program berbayar." };
+
+  const affiliate = await resolveAffiliateForCheckout(code, await getAffiliateRefCookie());
+  if (affiliate) {
+    const applied = applyAffiliateDiscount(affiliate, amount);
+    return { ok: true, kind: "affiliate", code: affiliate.code, discountAmount: applied.discountAmount, finalAmount: applied.finalAmount };
+  }
+
+  const voucher = await validateVoucher(code, amount);
+  if ("error" in voucher) return { error: voucher.error };
+  return { ok: true, kind: "voucher", code: voucher.voucher.code, discountAmount: voucher.discountAmount, finalAmount: voucher.finalAmount };
 }

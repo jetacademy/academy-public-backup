@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Icon from "@/components/Icon";
 import GoogleAuthModal from "@/components/GoogleAuthModal";
 import { useRouter } from "next/navigation";
-import { memberLogout, getProgramRegistrationStatusAction } from "@/app/member/actions";
+import { memberLogout, getProgramRegistrationStatusAction, previewDiscountCode } from "@/app/member/actions";
 import { formatJadwal, rupiah } from "@/lib/format";
 import Link from "next/link";
 
@@ -126,6 +126,14 @@ export default function RegisterForm({
   const [jumlahPeserta, setJumlahPeserta] = useState(1);
   const [additionalParticipants, setAdditionalParticipants] = useState<{ name: string; email: string; whatsapp: string }[]>([]);
   const [voucherVal, setVoucherVal] = useState("");
+  // Hasil cek kode (pratinjau saja — tagihan final tetap dihitung server). Disimpan bersama
+  // kode & total saat dicek, supaya otomatis tidak berlaku lagi kalau kode/jumlah peserta berubah.
+  const [discount, setDiscount] = useState<
+    | { code: string; amount: number; kind: "affiliate" | "voucher"; appliedCode: string; discountAmount: number; finalAmount: number }
+    | { code: string; amount: number; error: string }
+    | null
+  >(null);
+  const [checkingCode, setCheckingCode] = useState(false);
   const [hasCompletedProfile, setHasCompletedProfile] = useState(false);
 
   // Filter batch berdasarkan tipe kehadiran
@@ -161,7 +169,12 @@ export default function RegisterForm({
     : (attendanceType === "OFFLINE" ? attendanceOptions?.isOfflineSoldOut : false);
 
   const currentTotalPrice = currentUnitPrice * jumlahPeserta;
-  const currentPriceLabel = currentUnitPrice === 0 ? "GRATIS" : rupiah(currentTotalPrice);
+  const activeDiscount =
+    discount && discount.code === voucherVal.trim() && discount.amount === currentTotalPrice ? discount : null;
+  const appliedDiscount = activeDiscount && !("error" in activeDiscount) ? activeDiscount : null;
+  const currentPriceLabel = currentUnitPrice === 0
+    ? "GRATIS"
+    : rupiah(appliedDiscount ? appliedDiscount.finalAmount : currentTotalPrice);
   const isPaid = currentUnitPrice > 0;
 
   // Halaman /program/[slug] di-cache (ISR) demi hemat resource server, jadi
@@ -383,21 +396,69 @@ export default function RegisterForm({
     });
   }
 
+  async function applyDiscountCode() {
+    const code = voucherVal.trim();
+    if (!code || checkingCode) return;
+    setCheckingCode(true);
+    try {
+      const res = await previewDiscountCode(code, currentTotalPrice);
+      setDiscount(
+        "error" in res
+          ? { code, amount: currentTotalPrice, error: res.error }
+          : { code, amount: currentTotalPrice, kind: res.kind, appliedCode: res.code, discountAmount: res.discountAmount, finalAmount: res.finalAmount }
+      );
+    } catch {
+      setDiscount({ code, amount: currentTotalPrice, error: "Gagal mengecek kode. Coba lagi." });
+    } finally {
+      setCheckingCode(false);
+    }
+  }
+
   function renderVoucherField() {
     if (!isPaid) return null;
     return (
       <div className="field">
         <label htmlFor="fVoucher">Kode Voucher / Afiliasi (opsional)</label>
-        <input
-          id="fVoucher"
-          type="text"
-          placeholder="cth: DISKON20 atau kode affiliate"
-          value={voucherVal}
-          onChange={(e) => setVoucherVal(e.target.value)}
-        />
-        <span style={{ fontSize: "0.76rem", color: "var(--ink-faint)", marginTop: "0.35rem", display: "block" }}>
-          Datang lewat link referral affiliate? Diskon Anda terdeteksi otomatis — kolom ini boleh dikosongkan.
-        </span>
+        <div style={{ display: "flex", gap: "0.5rem" }}>
+          <input
+            id="fVoucher"
+            type="text"
+            placeholder="cth: DISKON20 atau kode affiliate"
+            value={voucherVal}
+            onChange={(e) => setVoucherVal(e.target.value.toUpperCase())}
+            onKeyDown={(e) => {
+              // Enter di kolom ini = cek kode, bukan submit pendaftaran
+              if (e.key === "Enter") {
+                e.preventDefault();
+                applyDiscountCode();
+              }
+            }}
+            style={{ flex: 1, minWidth: 0 }}
+          />
+          <button
+            type="button"
+            className="btn btn-line"
+            onClick={applyDiscountCode}
+            disabled={!voucherVal.trim() || checkingCode}
+            style={{ flexShrink: 0, padding: "0 1rem" }}
+          >
+            {checkingCode ? "Mengecek..." : "Pakai"}
+          </button>
+        </div>
+        {appliedDiscount ? (
+          <span style={{ fontSize: "0.8rem", color: "#16a34a", fontWeight: 700, marginTop: "0.4rem", display: "block" }}>
+            ✓ {appliedDiscount.kind === "affiliate" ? "Kode affiliate" : "Voucher"} {appliedDiscount.appliedCode} dipakai — hemat {rupiah(appliedDiscount.discountAmount)}
+            {appliedDiscount.appliedCode !== voucherVal.trim().toUpperCase() && " (dari link referral; tidak bisa digabung dengan voucher)"}
+          </span>
+        ) : activeDiscount && "error" in activeDiscount ? (
+          <span style={{ fontSize: "0.8rem", color: "#dc2626", fontWeight: 700, marginTop: "0.4rem", display: "block" }}>
+            {activeDiscount.error}
+          </span>
+        ) : (
+          <span style={{ fontSize: "0.76rem", color: "var(--ink-faint)", marginTop: "0.35rem", display: "block" }}>
+            Datang lewat link referral affiliate? Diskon Anda terdeteksi otomatis — kolom ini boleh dikosongkan.
+          </span>
+        )}
       </div>
     );
   }
