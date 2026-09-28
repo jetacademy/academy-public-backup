@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/admin-auth";
 import { getHelpSettings } from "@/lib/hermes-help/docs-store";
 import { HELP_MODEL } from "@/lib/hermes-help/openrouter";
-import { startOfTodayWib } from "@/lib/hermes-help/quota";
+import { dailyBudgetUsd, spentTodayUsd, startOfTodayWib } from "@/lib/hermes-help/quota";
 import { clearHelpChatCache, saveHelpChatQuota, saveInstructorNotes, syncHelpDocsNow, toggleHelpChat } from "../../help-chat-actions";
 import { DEFAULT_INSTRUCTOR_NOTES } from "@/lib/hermes-help/prompts";
 import ConfirmButton from "@/components/ConfirmButton";
@@ -36,7 +36,7 @@ export default async function AdminBantuanAi({ searchParams }: {
   const filterKey = (f && f in FILTERS ? f : "all") as keyof typeof FILTERS;
   const since7 = daysAgo(7);
 
-  const [settings, today, week, weekCached, negatives, cacheCount, logs] = await Promise.all([
+  const [settings, today, week, weekCached, negatives, cacheCount, logs, spentToday] = await Promise.all([
     getHelpSettings(),
     prisma.helpChatLog.count({ where: { createdAt: { gte: startOfTodayWib() } } }),
     prisma.helpChatLog.aggregate({ where: { createdAt: { gte: since7 } }, _count: true, _sum: { costUsd: true }, _avg: { latencyMs: true } }),
@@ -52,6 +52,7 @@ export default async function AdminBantuanAi({ searchParams }: {
         unverified: true, costUsd: true, latencyMs: true, feedback: true, error: true, createdAt: true,
       },
     }),
+    spentTodayUsd(),
   ]);
 
   const weekCost = week._sum.costUsd ?? 0;
@@ -75,7 +76,10 @@ export default async function AdminBantuanAi({ searchParams }: {
       )}
 
       <div className="adm-stats">
-        <div className="adm-stat"><b>{today}</b><span>Pertanyaan hari ini</span></div>
+        <div className="adm-stat">
+          <b>{today}</b>
+          <span>Pertanyaan hari ini · biaya ${spentToday.toFixed(3)} dari plafon ${dailyBudgetUsd().toFixed(2)}</span>
+        </div>
         <div className="adm-stat">
           <b>${weekCost.toFixed(4)}</b>
           <span>Biaya 7 hari (±Rp{Math.round(weekCost * USD_IDR).toLocaleString("id-ID")})</span>

@@ -14,6 +14,7 @@ import LessonVideoPlayer from "@/components/LessonVideoPlayer";
 import LmsViewContainer from "@/components/LmsViewContainer";
 import HermesHelpChat from "@/components/HermesHelpChat";
 import { isHelpChatEnabled } from "@/lib/hermes-help/docs-store";
+import { hasHelpChatAccess } from "@/lib/hermes-help/quota";
 import dynamicImport from "next/dynamic";
 
 // PDF viewer (~1.5 MB react-pdf/pdfjs) di-lazy-load — hanya dimuat saat lesson bertipe PDF,
@@ -278,7 +279,8 @@ export default async function LmsPage({
     ? { id: nextLesson.id, title: nextLesson.title }
     : null;
 
-  const helpChatEnabled = await isHelpChatEnabled();
+  // Widget Raka hanya untuk akses materi penuh (bukan mode preview) — aturan sama dengan API-nya.
+  const helpChatEnabled = hasHelpChatAccess(reg, program) && (await isHelpChatEnabled());
 
   return (
     <>

@@ -19,9 +19,10 @@ import {
   type Intent,
   type SourceRef,
 } from "./prompts";
-import { findUnverifiedCode } from "./answer-check";
+import { findTerminalCommands, findUnverifiedCode, findUntrustedLinks } from "./answer-check";
 import { getLmsIndex, resolveLmsUrl } from "./lms-source";
 import { selectContext } from "./retrieve";
+import { ABORTED } from "./quota";
 
 export type HelpEvent =
   | { t: "meta"; sources: SourceRef[]; cached: boolean }
@@ -48,9 +49,12 @@ const FALLBACK_REPLY: Record<Exclude<Intent, "hermes" | "business">, string> = {
 // lmsSignature ikut di kunci: jawaban yang merujuk materi kelas otomatis basi saat materi diubah,
 // dan program berbeda (materi berbeda) tidak berbagi jawaban.
 // Catatan instruktur juga ikut: jawaban lama basi begitu admin mengubah catatan.
+// PROMPT_VERSION: naikkan saat gaya/aturan jawaban berubah (v3 = jawaban berupa prompt siap salin
+// untuk Hermes Desktop, tanpa perintah terminal) supaya jawaban cache gaya lama tidak disajikan lagi.
+const PROMPT_VERSION = "3";
 function cacheKey(question: string, docsHash: string, lmsSignature: string, notes: string): string {
   return createHash("sha256")
-    .update(`${normalizeQuestion(question)}|${docsHash}|${lmsSignature}|${notes}`)
+    .update(`${PROMPT_VERSION}|${normalizeQuestion(question)}|${docsHash}|${lmsSignature}|${notes}`)
     .digest("hex");
 }
 
@@ -171,7 +175,13 @@ export async function askHermesHelp(input: AskInput): Promise<void> {
       if (!answer) throw new Error("Jawaban kosong dari model");
 
       // 5. Verifikasi perintah terhadap konteks.
-      unverified = findUnverifiedCode(answer, `${context}\n${docs.instructorNotes}`);
+      const verifyCtx = `${context}\n${docs.instructorNotes}`;
+      unverified = [
+        ...findUnverifiedCode(answer, verifyCtx),
+        ...findUntrustedLinks(answer, verifyCtx),
+        // Peserta tidak memakai terminal — perintah terminal yang lolos tetap ditandai.
+        ...findTerminalCommands(answer),
+      ].filter((v, i, a) => a.indexOf(v) === i);
 
       if (standalone && unverified.length === 0) {
         await prisma.helpChatCache.upsert({
@@ -182,10 +192,13 @@ export async function askHermesHelp(input: AskInput): Promise<void> {
       }
     }
   } catch (err) {
-    errorMsg = err instanceof Error ? err.message : String(err);
-    if (!signal.aborted) {
+    if (signal.aborted) {
+      // Dibatalkan peserta: token sudah terpakai → dicatat khusus supaya tetap dihitung kuota (quota.ts).
+      errorMsg = ABORTED;
+    } else {
+      errorMsg = err instanceof Error ? err.message : String(err);
       console.error("[hermes-help] gagal menjawab:", errorMsg);
-      emit({ t: "error", message: "Maaf, asisten sedang gangguan. Silakan coba lagi sebentar lagi." });
+      emit({ t: "error", message: "Maaf, Raka sedang gangguan. Silakan coba lagi sebentar lagi." });
     }
   }
 

@@ -313,3 +313,50 @@ describe("konsultasi bisnis", () => {
     expect(ids).toEqual(expect.arrayContaining(["p", "s", "d", "w"]));
   });
 });
+
+describe("batasan & keamanan", () => {
+  it("link dari domain asing tidak lolos verifikasi (cegah cache berisi link phishing)", async () => {
+    const { findUntrustedLinks } = await import("@/lib/hermes-help/answer-check");
+    const ctx = "See https://github.com/NousResearch/hermes-agent for source.";
+    const ans =
+      "Buka https://openrouter.ai/keys lalu https://hermes-agent.nousresearch.com/docs/quickstart. " +
+      "Repo: https://github.com/NousResearch/hermes-agent. Klaim bonus di https://bonus-openrouter.xyz/claim.";
+    expect(findUntrustedLinks(ans, ctx)).toEqual(["https://bonus-openrouter.xyz/claim"]);
+  });
+
+  it("hak memakai Raka sama dengan akses penuh LMS", async () => {
+    const { hasHelpChatAccess } = await import("@/lib/hermes-help/quota");
+    expect(hasHelpChatAccess({ status: "PAID" }, { price: 500000, certPrice: 0 })).toBe(true);
+    expect(hasHelpChatAccess({ status: "REGISTERED" }, { price: 500000, certPrice: 0 })).toBe(false); // mode preview
+    expect(hasHelpChatAccess({ status: "REGISTERED" }, { price: 0, certPrice: 50000 })).toBe(false); // sertifikat belum dibayar
+    expect(hasHelpChatAccess({ status: "REGISTERED" }, { price: 0, certPrice: 0 })).toBe(true); // program gratis penuh
+  });
+
+  it("prompt memuat batasan penggunaan & keamanan data", async () => {
+    const { buildAnswerPrompt } = await import("@/lib/hermes-help/prompts");
+    const p = buildAnswerPrompt("", "");
+    expect(p).toContain("BATASAN PENGGUNAAN");
+    expect(p).toContain("spam");
+    expect(p).toContain("KEAMANAN DATA");
+  });
+});
+
+describe("prompt-first (Hermes Desktop tanpa terminal)", () => {
+  it("blok ```prompt tidak dicocokkan sebagai perintah, perintah terminal ditandai", async () => {
+    const { findTerminalCommands } = await import("@/lib/hermes-help/answer-check");
+    const ok = "Salin ini ke Hermes Desktop:\n```prompt\nBuatkan profile baru bernama cs untuk layanan pelanggan.\n```";
+    expect(findUnverifiedCode(ok, "")).toEqual([]);
+    expect(findTerminalCommands(ok)).toEqual([]);
+    const bad = "Jalankan:\n```bash\nhermes profile create cs\n```\natau `hermes gateway setup`.";
+    expect(findTerminalCommands(bad)).toEqual(["hermes profile create cs", "hermes gateway setup"]);
+  });
+
+  it("prompt jawaban melarang terminal & meminta prompt siap salin", async () => {
+    const { buildAnswerPrompt } = await import("@/lib/hermes-help/prompts");
+    const p = buildAnswerPrompt("", "");
+    expect(p).toContain("JANGAN PERNAH memberi perintah terminal");
+    expect(p).toContain("PROMPT SIAP SALIN");
+    expect(p).toContain("```prompt");
+    expect(p).not.toContain("Cara CLI/terminal cukup disebut sebagai alternatif");
+  });
+});

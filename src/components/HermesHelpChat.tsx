@@ -25,12 +25,12 @@ type Msg = {
 
 const STORE_KEY = "jsa-hermes-help";
 const SUGGESTIONS = [
-  "Cara install Hermes Desktop di Windows",
-  "Cara menghubungkan Hermes Desktop ke OpenRouter",
+  "Prompt untuk membuat profile karyawan CS",
+  "Prompt menghubungkan profile CS ke Telegram",
+  "Prompt melatih karyawan AI dengan SOP bisnisku",
+  "Prompt menghubungkan Hermes ke WhatsApp",
   "Cara top up kredit OpenRouter",
-  "Cara memilih model AI di Hermes Desktop",
-  "Cara menghubungkan Hermes Desktop ke Telegram",
-  "Apa itu skills dan bagaimana cara membuatnya?",
+  "Saya punya bisnis, karyawan AI apa yang cocok?",
 ];
 
 const uid = () => Math.random().toString(36).slice(2, 10);
@@ -264,7 +264,7 @@ export default function HermesHelpChat({ registrationId }: { registrationId: str
               <div className="hh-empty">
                 <p>
                   Halo! Tanyakan apa saja tentang cara install, konfigurasi, atau memakai <strong>Hermes Agent</strong> dan <strong>OpenRouter</strong>.
-                  Kamu juga bisa melampirkan screenshot error.
+                  Raka akan memberimu prompt siap salin untuk Hermes Desktop. Kamu juga bisa melampirkan screenshot error.
                 </p>
                 <div className="hh-chips">
                   {SUGGESTIONS.map((s) => (
@@ -295,7 +295,7 @@ export default function HermesHelpChat({ registrationId }: { registrationId: str
 
                   {!m.pending && m.unverified && m.unverified.length > 0 && (
                     <p className="hh-warn">
-                      Sebagian perintah di atas tidak ditemukan persis di dokumentasi. Cocokkan dulu dengan halaman sumber sebelum dijalankan.
+                      Sebagian isi jawaban ini belum terverifikasi dari dokumentasi resmi atau bukan cara yang diajarkan di kelas (Hermes Desktop lewat prompt). Cek halaman sumber, atau tanyakan ulang ke Raka.
                     </p>
                   )}
 

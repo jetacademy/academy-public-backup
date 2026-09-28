@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getMemberSession } from "@/lib/member-auth";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 /**
  * POST — 👍/👎 atas satu jawaban. 👎 langsung membuang jawaban itu dari cache supaya
@@ -9,6 +10,9 @@ import { getMemberSession } from "@/lib/member-auth";
 export async function POST(req: Request) {
   const identifier = await getMemberSession();
   if (!identifier) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const limited = checkRateLimit(`help-chat-feedback:${identifier}`, 20, 60_000);
+  if (!limited.ok) return NextResponse.json({ error: limited.error }, { status: limited.status });
 
   let body: { logId?: unknown; value?: unknown };
   try {

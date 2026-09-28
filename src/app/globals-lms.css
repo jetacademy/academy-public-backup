@@ -1633,6 +1633,32 @@
   white-space: pre;
 }
 
+/* Prompt siap salin untuk Hermes Desktop — kartu terang, teks membungkus */
+.hh-code.is-prompt {
+  background: var(--purple-soft);
+  border: 1px solid #D6D5EE;
+}
+.hh-code.is-prompt .hh-code-bar {
+  background: var(--purple);
+  color: #fff;
+  font-weight: 700;
+}
+.hh-code.is-prompt .hh-code-bar button {
+  padding: 0.15rem 0.55rem;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.16);
+}
+.hh-code.is-prompt .hh-code-bar button:hover { background: rgba(255, 255, 255, 0.28); }
+.hh-code.is-prompt pre { overflow-x: visible; }
+.hh-code.is-prompt pre code {
+  color: var(--ink);
+  font-family: inherit;
+  font-size: 0.84rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
 .hh-table-wrap { overflow-x: auto; margin: 0 0 0.6rem; }
 .hh-table-wrap table { border-collapse: collapse; font-size: 0.8rem; }
 .hh-table-wrap th, .hh-table-wrap td { border: 1px solid var(--border); padding: 0.3rem 0.5rem; text-align: left; vertical-align: top; }

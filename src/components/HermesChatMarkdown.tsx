@@ -65,11 +65,14 @@ function CodeBlock({ code, lang }: { code: string; lang: string }) {
       setTimeout(() => setCopied(false), 1500);
     } catch {}
   };
+  // Blok ```prompt = prompt siap salin untuk chat Hermes Desktop (cara belajar peserta):
+  // tampil sebagai kartu terang dengan teks membungkus, bukan terminal gelap yang harus digulir.
+  const isPrompt = lang.toLowerCase() === "prompt";
   return (
-    <div className="hh-code">
+    <div className={`hh-code${isPrompt ? " is-prompt" : ""}`}>
       <div className="hh-code-bar">
-        <span>{lang || "kode"}</span>
-        <button type="button" onClick={copy}>{copied ? "Tersalin" : "Salin"}</button>
+        <span>{isPrompt ? "Prompt untuk Hermes Desktop" : lang || "kode"}</span>
+        <button type="button" onClick={copy}>{copied ? "Tersalin ✓" : isPrompt ? "Salin prompt" : "Salin"}</button>
       </div>
       <pre><code>{code}</code></pre>
     </div>

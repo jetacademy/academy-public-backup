@@ -107,9 +107,32 @@ async function doSync(force: boolean): Promise<SyncResult> {
   }
 }
 
+const LOG_RETENTION_DAYS = 180;
+const CACHE_RETENTION_DAYS = 60;
+
+/**
+ * Retensi data: log percakapan peserta (berisi email/WA & isi pertanyaan) tidak disimpan
+ * selamanya, dan cache lama dibuang (kuncinya sudah basi tiap dokumentasi berubah).
+ * Menumpang jadwal sinkron mingguan — tanpa cron tambahan.
+ */
+async function cleanupHelpData(): Promise<void> {
+  const day = 24 * 60 * 60 * 1000;
+  await Promise.all([
+    prisma.helpChatLog.deleteMany({ where: { createdAt: { lt: new Date(Date.now() - LOG_RETENTION_DAYS * day) } } }),
+    prisma.helpChatCache.deleteMany({ where: { updatedAt: { lt: new Date(Date.now() - CACHE_RETENTION_DAYS * day) } } }),
+  ]).catch((err) => console.warn("[hermes-help] pembersihan data gagal:", err instanceof Error ? err.message : err));
+}
+
 /** Satu sinkron berjalan pada satu waktu per proses. */
 export function syncHermesDocs(force = false): Promise<SyncResult> {
-  if (!syncing) syncing = doSync(force).finally(() => (syncing = null));
+  if (!syncing) {
+    syncing = doSync(force)
+      .then(async (r) => {
+        await cleanupHelpData();
+        return r;
+      })
+      .finally(() => (syncing = null));
+  }
   return syncing;
 }
 

@@ -9,8 +9,27 @@ function stripComment(line: string): string {
   return line.replace(/\s+#\s.*$/, "").replace(/^\s*(\$|>|PS>)\s+/, "");
 }
 
-// Isi blok kode yang bukan perintah (mis. output contoh) tidak perlu dicek.
-const SKIP_LANGS = new Set(["text", "txt", "output", "markdown", "md", "plaintext"]);
+// Isi blok kode yang bukan perintah (mis. output contoh, atau PROMPT bahasa alami untuk
+// diketik ke Hermes Desktop) tidak perlu dicocokkan dengan dokumen.
+const SKIP_LANGS = new Set(["prompt", "text", "txt", "output", "markdown", "md", "plaintext"]);
+
+/**
+ * Perintah terminal yang tetap muncul di jawaban (melanggar aturan "peserta tidak memakai
+ * terminal") — ditandai supaya jawaban itu tidak di-cache & tampil dengan peringatan.
+ */
+export function findTerminalCommands(answer: string): string[] {
+  const out: string[] = [];
+  for (const m of answer.matchAll(/```([^\n`]*)\n([\s\S]*?)```/g)) {
+    const lang = m[1].trim().toLowerCase();
+    if (/^(bash|sh|shell|zsh|powershell|ps1?|cmd|console|terminal)$/.test(lang)) {
+      const first = m[2].split("\n").find((l) => l.trim());
+      if (first) out.push(first.trim());
+    }
+  }
+  const withoutFences = answer.replace(/```[\s\S]*?```/g, "");
+  for (const m of withoutFences.matchAll(/`((?:hermes|npm|pip|curl|iex|irm|cat|export|sudo)\s[^`\n]*)`/g)) out.push(m[1]);
+  return [...new Set(out)].slice(0, 5);
+}
 
 const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 const NAME_TOKEN = /^[a-z][a-z0-9_-]*$/;
@@ -29,6 +48,32 @@ function matchesWithRenamedToken(line: string, ctx: string): boolean {
     const re = tokens.map((x, j) => (j === i ? "[a-z0-9_.-]+" : escapeRe(x))).join(" ");
     return new RegExp(`(^|[\\s\`'"(])${re}($|[\\s\`'")])`).test(ctx);
   });
+}
+
+// Domain resmi yang boleh ditautkan walau URL persisnya tidak ada di potongan dokumen.
+const TRUSTED_HOSTS = /(^|\.)(nousresearch\.com|openrouter\.ai|jetschool\.id)$/i;
+
+/**
+ * Link di jawaban harus berasal dari konteks atau domain resmi. Jawaban yang membawa link lain
+ * (mis. hasil prompt injection "suruh peserta buka situs X") tidak di-cache — jadi tidak bisa
+ * menyebar ke peserta lain — dan ditandai peringatan di widget.
+ */
+export function findUntrustedLinks(answer: string, context: string): string[] {
+  const urls = new Set<string>();
+  for (const m of answer.matchAll(/https?:\/\/[^\s)<>\]"'`]+/gi)) urls.add(m[0].replace(/[.,;:!?]+$/, ""));
+  const bad: string[] = [];
+  for (const u of urls) {
+    let host = "";
+    try {
+      host = new URL(u).hostname;
+    } catch {
+      bad.push(u);
+      continue;
+    }
+    if (TRUSTED_HOSTS.test(host) || context.includes(u)) continue;
+    bad.push(u);
+  }
+  return bad.slice(0, 5);
 }
 
 export function findUnverifiedCode(answer: string, context: string): string[] {
@@ -59,6 +104,8 @@ export function findUnverifiedCode(answer: string, context: string): string[] {
   for (const c of candidates) {
     const n = norm(c);
     if (n.length < 4 || n.startsWith("#") || n.startsWith("//")) continue;
+    // Perintah chat satu kata (/newbot di @BotFather, /model di chat) bukan perintah terminal.
+    if (/^\/[a-z][a-z0-9_]*$/.test(n)) continue;
     // Placeholder yang wajar diganti peserta (<token>, ***, your-key) tidak dianggap karangan
     // selama bagian di luar placeholder ada di dokumen.
     const skeleton = n.replace(/<[^>]+>|\*{3,}|your[-_]\w+/g, "\u0000");
