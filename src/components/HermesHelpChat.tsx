@@ -1,6 +1,7 @@
 "use client";
 
-// Widget "Tanya Hermes" di LMS: chat bantuan penggunaan Hermes Agent berbasis dokumentasi resmi.
+// Widget "Tanya Raka" (Raka - Jetschool Assistant) di LMS: chat bantuan Hermes Agent & OpenRouter
+// berbasis dokumentasi resmi + materi kelas.
 // Jawaban mengalir (stream NDJSON dari /api/member/help-chat), bisa melampirkan screenshot,
 // dan tiap jawaban bisa dinilai 👍/👎 (👎 membuang jawaban itu dari cache server).
 
@@ -103,7 +104,7 @@ export default function HermesHelpChat({ registrationId }: { registrationId: str
       .then((d) => {
         if (!d) return;
         setRemaining(d.remaining);
-        if (!d.enabled) setNotice("Asisten Hermes sedang dinonaktifkan admin.");
+        if (!d.enabled) setNotice("Raka sedang dinonaktifkan admin.");
       })
       .catch(() => {});
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
@@ -227,19 +228,19 @@ export default function HermesHelpChat({ registrationId }: { registrationId: str
   return (
     <>
       {!open && (
-        <button type="button" className="hh-fab" onClick={() => setOpen(true)} aria-label="Buka Asisten Hermes">
+        <button type="button" className="hh-fab" onClick={() => setOpen(true)} aria-label="Buka Raka - Jetschool Assistant">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} aria-hidden="true">
             <path strokeLinecap="round" strokeLinejoin="round" d="M8 10h8M8 14h5m-9 6 2.6-2.6A2 2 0 0 1 8 17h10a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v14z" />
           </svg>
-          <span>Tanya Hermes</span>
+          <span>Tanya Raka</span>
         </button>
       )}
 
       {open && (
-        <section className="hh-panel" role="dialog" aria-label="Asisten Hermes">
+        <section className="hh-panel" role="dialog" aria-label="Raka - Jetschool Assistant">
           <header className="hh-head">
             <div>
-              <strong>Asisten Hermes</strong>
+              <strong>Raka - Jetschool Assistant</strong>
               <small>Panduan Hermes Agent &amp; OpenRouter</small>
             </div>
             <div className="hh-head-actions">

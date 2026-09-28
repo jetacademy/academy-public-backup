@@ -66,7 +66,7 @@ function headers() {
     Authorization: `Bearer ${key}`,
     "Content-Type": "application/json",
     "HTTP-Referer": process.env.NEXT_PUBLIC_BASE_URL ||"https://jetschool.id",
-    "X-Title": "Jetschool Academy - Asisten Hermes",
+    "X-Title": "Jetschool Academy - Raka Assistant",
   };
 }
 

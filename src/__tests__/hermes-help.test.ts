@@ -196,7 +196,7 @@ describe("materi LMS & prioritas Hermes Desktop", () => {
   });
 
   it("selectLmsHits hanya mengambil materi yang benar-benar relevan", async () => {
-    const { selectLmsHits } = await import("@/lib/hermes-help/lms-source");
+    const { selectLmsHits } = await import("@/lib/hermes-help/retrieve");
     const docs = [
       { id: "a", url: "lms://a", section: "lms", title: "Setup Provider di Hermes Desktop", heading: "", content: "Buka Hermes Desktop, klik Settings lalu Providers, tempel API key OpenRouter." },
       { id: "b", url: "lms://b", section: "lms", title: "Pengantar Kelas", heading: "", content: "Selamat datang di kelas Zero Human Company. Hermes adalah agen AI." },
@@ -268,5 +268,48 @@ Install the Python SDK with pip install openrouter and call the chat endpoint fr
     const p = buildAnswerPrompt("[1] x", DEFAULT_INSTRUCTOR_NOTES);
     expect(p).toContain("CATATAN INSTRUKTUR");
     expect(p).toContain("blu by BCA Digital");
+  });
+});
+
+describe("answer-check: nama milik peserta", () => {
+  const ctx = "```bash\nhermes profile create coder       # creates profile + \"coder\" command alias\ncoder setup\ncoder chat\n```\nRun `hermes gateway setup` then pick WhatsApp.";
+
+  it("menerima nama profile peserta & alias perintahnya", () => {
+    const ans = "```bash\nhermes profile create katering\nkatering setup\nkatering chat\nhermes gateway setup\n```";
+    expect(findUnverifiedCode(ans, ctx)).toEqual([]);
+  });
+
+  it("tetap menandai subperintah karangan", () => {
+    const ans = "```bash\nhermes profile publish katering\nkatering deploy\nhermes gateway connect whatsapp\n```";
+    expect(findUnverifiedCode(ans, ctx)).toEqual(["hermes profile publish katering", "katering deploy", "hermes gateway connect whatsapp"]);
+  });
+});
+
+describe("konsultasi bisnis", () => {
+  it("parseRewrite mengenali intent business", () => {
+    expect(parseRewrite("INTENT: business\nQ: WhatsApp gateway").intent).toBe("business");
+  });
+
+  it("prompt bisnis memuat metode kelas & persona Raka", async () => {
+    const { buildAnswerPrompt } = await import("@/lib/hermes-help/prompts");
+    const biz = buildAnswerPrompt("[1] x", "", "business");
+    expect(biz).toContain("Raka, Jetschool Assistant");
+    expect(biz).toContain("Buat profile Hermes");
+    expect(biz).toContain("MODE: KONSULTASI BISNIS");
+    expect(buildAnswerPrompt("[1] x", "")).not.toContain("MODE: KONSULTASI BISNIS");
+  });
+
+  it("selectContext menyertakan anchor profile/skills/delegasi untuk pertanyaan bisnis", async () => {
+    const { selectContext } = await import("@/lib/hermes-help/retrieve");
+    const mk = (id: string, url: string, title: string, content: string) => ({ id, url, section: "user-guide", title, heading: "", content });
+    const docs = [
+      mk("p", "https://h/docs/user-guide/profiles", "Profiles: Running Multiple Agents", "Create a profile to run multiple agents, each profile has its own memory."),
+      mk("s", "https://h/docs/user-guide/features/skills", "Skills System", "Install skills or create a skill for your agent."),
+      mk("d", "https://h/docs/user-guide/features/delegation", "Subagent Delegation", "Delegate work to multiple agents in parallel."),
+      mk("w", "https://h/docs/user-guide/messaging/whatsapp", "WhatsApp", "Connect the WhatsApp gateway to chat with customers."),
+    ];
+    const picked = selectContext({ docsIndex: new Bm25Index(docs), lmsIndex: null, question: "toko kue saya", queries: ["WhatsApp gateway customers"], intent: "business" });
+    const ids = picked.map((d) => d.id);
+    expect(ids).toEqual(expect.arrayContaining(["p", "s", "d", "w"]));
   });
 });

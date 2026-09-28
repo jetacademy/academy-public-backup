@@ -759,6 +759,39 @@
   margin-top: 1px;
 }
 
+/* Materi video: tombol play oranye (aksen brand) di kanan baris + ikon kecil di meta */
+.lms-meta-video-icon {
+  width: 12px;
+  height: 12px;
+  margin-right: 3px;
+  vertical-align: -2px;
+  color: var(--orange);
+}
+.lms-video-badge {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--orange);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(247, 148, 29, 0.35);
+  transition: transform 0.12s ease;
+}
+.lms-video-badge svg {
+  width: 14px;
+  height: 14px;
+  margin-left: 2px; /* segitiga play tampak di tengah secara optik */
+}
+.lms-nav-lesson-row:hover .lms-video-badge {
+  transform: scale(1.08);
+}
+.lms-nav-lesson-row.is-active .lms-video-badge {
+  background: var(--purple);
+  box-shadow: 0 2px 8px rgba(35, 33, 118, 0.3);
+}
+
 /* ═══════════════════════════════════════════════════
    MOBILE DRAWER (SINGLE SOURCE OF TRUTH)
    ═══════════════════════════════════════════════════ */
@@ -1693,7 +1726,19 @@
 .hh-icon-btn svg, .hh-send svg { width: 20px; height: 20px; }
 .hh-foot { display: block; margin-top: 0.4rem; font-size: 0.7rem; color: var(--ink-faint); }
 
+/* Tombol chat melayang di pojok kanan bawah menutupi materi terakhir di sidebar kurikulum
+   (dan tombol "Tandai Selesai"). Selama widget tampil, beri ruang ekstra di bawah supaya
+   isi terakhir bisa di-scroll sampai ke atas tombol. */
+body:has(.hh-fab) .lms-sidebar-pane,
+body:has(.hh-fab) .lms-content-scroll {
+  padding-bottom: 5.5rem;
+}
+
 @media (max-width: 900px) {
+  /* bottom bar LMS (50px) + tombol chat di atasnya */
+  body:has(.hh-fab) .lms-content-scroll { padding-bottom: 9rem; }
+  /* drawer kurikulum (z-index 200) tampil di atas tombol chat (160) — tidak perlu ruang tambahan */
+
   /* di atas bottom bar LMS (50px) */
   .hh-fab { bottom: calc(62px + env(safe-area-inset-bottom, 0px)); right: 16px; padding: 0.65rem 0.95rem; }
 }

@@ -1,4 +1,4 @@
-// Materi LMS (panduan buatan instruktur) sebagai sumber rujukan kedua Asisten Hermes.
+// Materi LMS (panduan buatan instruktur) sebagai sumber rujukan kedua Raka (Jetschool Assistant).
 // Cakupannya persis materi yang BOLEH dilihat peserta di halaman LMS: program & batch
 // pendaftarannya, dan hanya materi preview bila belum bayar — asisten tidak boleh jadi jalan
 // pintas membaca materi berbayar. Hanya konten teks materi (PDF sudah sama dengan dokumentasi resmi).
@@ -7,7 +7,7 @@ import { createHash } from "crypto";
 import { prisma } from "@/lib/prisma";
 import { batchModuleWhere } from "@/lib/certificates";
 import { chunkMarkdown } from "./chunker";
-import { Bm25Index, tokenize, type SearchDoc, type SearchHit } from "./search";
+import { Bm25Index, type SearchDoc } from "./search";
 import { LMS_SECTION } from "./prompts";
 
 /** URL potongan materi disimpan netral (tanpa registrationId) supaya jawaban cache bisa dipakai
@@ -103,30 +103,4 @@ export async function getLmsIndex(registrationId: string): Promise<LmsIndex | nu
   if (cache.size >= MAX_CACHE) cache.delete(cache.keys().next().value!);
   cache.set(key, built);
   return built;
-}
-
-/**
- * Pilih potongan materi yang BENAR-BENAR relevan. Skor BM25 di korpus sekecil ini tidak bisa
- * dibandingkan secara absolut, jadi dipakai cakupan kata: minimal 2 kata penting dari
- * pertanyaan (atau salah satu query rewrite) muncul, dan ≥ 40% dari kata pentingnya.
- */
-// Kata yang muncul di hampir semua materi kursus Hermes — tidak menandakan relevansi.
-const GENERIC_TERMS = new Set(["hermes", "agent", "desktop", "app", "aplikasi", "ai", "nous", "research"]);
-
-export function selectLmsHits(hits: SearchHit<SearchDoc>[], queries: string[], max = 2): SearchDoc[] {
-  const querySets = queries
-    .map((q) => new Set(tokenize(q).filter((t) => !GENERIC_TERMS.has(t))))
-    .filter((s) => s.size > 0);
-  const out: SearchDoc[] = [];
-  for (const { doc } of hits) {
-    const docTokens = new Set(tokenize(`${doc.title} ${doc.heading} ${doc.content}`));
-    const relevant = querySets.some((qs) => {
-      let matched = 0;
-      for (const t of qs) if (docTokens.has(t)) matched++;
-      return matched >= 2 && matched / qs.size >= 0.4;
-    });
-    if (relevant) out.push(doc);
-    if (out.length >= max) break;
-  }
-  return out;
 }

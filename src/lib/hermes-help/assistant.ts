@@ -13,9 +13,6 @@ import {
   formatContext,
   normalizeQuestion,
   parseRewrite,
-  pickContext,
-  docWeight,
-  isDesktopDoc,
   toSourceRefs,
   trimHistory,
   type ChatTurn,
@@ -23,7 +20,8 @@ import {
   type SourceRef,
 } from "./prompts";
 import { findUnverifiedCode } from "./answer-check";
-import { getLmsIndex, resolveLmsUrl, selectLmsHits } from "./lms-source";
+import { getLmsIndex, resolveLmsUrl } from "./lms-source";
+import { selectContext } from "./retrieve";
 
 export type HelpEvent =
   | { t: "meta"; sources: SourceRef[]; cached: boolean }
@@ -42,9 +40,9 @@ export type AskInput = {
   emit: (e: HelpEvent) => void;
 };
 
-const FALLBACK_REPLY: Record<Exclude<Intent, "hermes">, string> = {
-  smalltalk: "Halo! Saya Asisten Hermes. Silakan tanya apa saja seputar instalasi, konfigurasi, atau penggunaan Hermes Agent.",
-  offtopic: "Maaf, saya khusus membantu seputar penggunaan Hermes Agent. Silakan ajukan pertanyaan tentang Hermes, ya.",
+const FALLBACK_REPLY: Record<Exclude<Intent, "hermes" | "business">, string> = {
+  smalltalk: "Halo! Saya Raka, Jetschool Assistant. Silakan tanya apa saja seputar Hermes Agent, OpenRouter, atau ide membangun karyawan AI untuk bisnismu.",
+  offtopic: "Maaf, saya khusus membantu seputar Hermes Agent, OpenRouter, dan penerapan karyawan AI untuk bisnis. Silakan ajukan pertanyaan seputar itu, ya.",
 };
 
 // lmsSignature ikut di kunci: jawaban yang merujuk materi kelas otomatis basi saat materi diubah,
@@ -131,7 +129,7 @@ export async function askHermesHelp(input: AskInput): Promise<void> {
       console.warn("[hermes-help] rewrite gagal:", err instanceof Error ? err.message : err);
     }
 
-    if (intent !== "hermes") {
+    if (intent === "smalltalk" || intent === "offtopic") {
       answer = reply || FALLBACK_REPLY[intent];
       emit({ t: "meta", sources: [], cached: false });
       emit({ t: "delta", v: answer });
@@ -142,29 +140,14 @@ export async function askHermesHelp(input: AskInput): Promise<void> {
         const prevUser = [...history].reverse().find((t) => t.role === "user");
         if (prevUser) queries = [`${prevUser.content} ${question}`];
       }
-      // Materi kelas (bahasa Indonesia) dicari dengan pertanyaan asli + query rewrite; maksimal
-      // 2 potongan yang benar-benar relevan, ditaruh paling depan. Sisa slot untuk dokumentasi resmi.
-      const allQueries = [question, ...queries];
-      const lmsPicked = lms ? selectLmsHits(lms.index.search(allQueries, 6), allQueries) : [];
-      const lmsChars = lmsPicked.reduce((n, d) => n + d.content.length, 0);
-      const hits = docs.index.search([...queries, question], 20, docWeight);
-      const docPicked = pickContext(hits, 6 - lmsPicked.length, Math.max(4000, 9000 - lmsChars));
-
-      // Peserta memakai Hermes Desktop: bila rewrite membuat query Desktop tapi belum ada potongan
-      // Desktop yang terpilih (kalah skor dari halaman CLI yang lebih panjang), sisipkan yang terbaik.
-      const desktopQuery = queries.find((q) => /desktop/i.test(q));
-      if (desktopQuery && !docPicked.some(isDesktopDoc)) {
-        // Dahulukan halaman panduan utama Hermes Desktop di antara 5 kandidat teratas — halaman lain
-        // yang sekadar menyebut "desktop" (Buzz Desktop, LM Studio) jarang yang dimaksud peserta.
-        // Maks 2 potongan: satu bagian panduan sering terpecah (mis. "Settings & onboarding" = 3 potongan).
-        const candidates = docs.index.search([desktopQuery], 60, docWeight).filter((h) => isDesktopDoc(h.doc)).slice(0, 6);
-        const main = candidates.filter((h) => /\/docs\/user-guide\/desktop(#|$)/.test(h.doc.url));
-        const chosen = (main.length ? main : candidates).slice(0, 2).map((h) => h.doc);
-        const slots = 6 - lmsPicked.length;
-        while (docPicked.length > 0 && docPicked.length + chosen.length > slots) docPicked.pop();
-        docPicked.push(...chosen);
-      }
-      const picked = [...lmsPicked, ...docPicked];
+      // Materi kelas + dokumentasi resmi (+ slot Hermes Desktop / anchor metode kelas) — lihat retrieve.ts.
+      const picked = selectContext({
+        docsIndex: docs.index,
+        lmsIndex: lms?.index ?? null,
+        question,
+        queries,
+        intent,
+      });
       const context = formatContext(picked);
       sources = toSourceRefs(picked);
       emit({ t: "meta", sources: publicSources(sources), cached: false });
@@ -173,11 +156,11 @@ export async function askHermesHelp(input: AskInput): Promise<void> {
       const res = await streamComplete(
         {
           messages: [
-            { role: "system", content: buildAnswerPrompt(context, docs.instructorNotes) },
+            { role: "system", content: buildAnswerPrompt(context, docs.instructorNotes, intent === "business" ? "business" : "guide") },
             ...history.map((t): ChatMessage => ({ role: t.role, content: t.content })),
             userMessage(question, image),
           ],
-          maxTokens: 1500,
+          maxTokens: intent === "business" ? 2000 : 1500,
           temperature: 0.2,
           signal,
         },

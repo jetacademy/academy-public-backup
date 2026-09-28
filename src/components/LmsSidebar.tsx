@@ -250,10 +250,25 @@ export default function LmsSidebar({
                                 {highlightMatch(les.title, query)}
                               </span>
                               <span className="lms-nav-lesson-meta">
+                                {les.type === "VIDEO" && (
+                                  <svg className="lms-meta-video-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                                    <path d="M4 6.5A2.5 2.5 0 0 1 6.5 4h7A2.5 2.5 0 0 1 16 6.5v1.8l3.4-2.3A1 1 0 0 1 21 6.8v10.4a1 1 0 0 1-1.6.8L16 15.7v1.8a2.5 2.5 0 0 1-2.5 2.5h-7A2.5 2.5 0 0 1 4 17.5z" />
+                                  </svg>
+                                )}
                                 {TYPE_LABEL[les.type] ?? les.type}
                                 {les.duration ? ` · ${les.duration}` : ""}
                               </span>
                             </div>
+
+                            {/* Video (termasuk rekaman) diberi tombol play mencolok supaya mudah
+                                dibedakan dari materi teks/PDF saat memindai kurikulum. */}
+                            {les.type === "VIDEO" && (
+                              <span className="lms-video-badge" aria-label="Materi video" title="Materi video">
+                                <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                                  <path d="M8 5.6v12.8a1 1 0 0 0 1.5.9l10.2-6.4a1 1 0 0 0 0-1.8L9.5 4.7A1 1 0 0 0 8 5.6z" />
+                                </svg>
+                              </span>
+                            )}
                           </Link>
                         );
                       })}

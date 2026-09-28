@@ -61,7 +61,7 @@ export default async function AdminBantuanAi({ searchParams }: {
   return (
     <>
       <div className="adm-head">
-        <h1>Asisten Hermes (Bantuan AI)</h1>
+        <h1>Raka - Jetschool Assistant</h1>
       </div>
 
       {ok === "quota" && <div className="adm-alert ok">Kuota harian disimpan.</div>}
@@ -102,7 +102,7 @@ export default async function AdminBantuanAi({ searchParams }: {
           <div>
             <strong>Widget di LMS: {settings.enabled ? "Aktif" : "Nonaktif"}</strong>
             <p className="muted" style={{ margin: ".3rem 0 .7rem", fontSize: ".82rem" }}>
-              Tombol &quot;Tanya Hermes&quot; di pojok kanan bawah halaman materi LMS.
+              Tombol &quot;Tanya Raka&quot; di pojok kanan bawah halaman materi LMS.
             </p>
             <form action={toggleHelpChat}>
               <button type="submit" className={`btn btn-sm ${settings.enabled ? "btn-line" : "btn-purple"}`}>

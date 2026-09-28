@@ -23,7 +23,7 @@ export async function GET() {
 }
 
 /**
- * POST — tanya Asisten Hermes. Respons berupa NDJSON stream (satu event JSON per baris):
+ * POST — tanya Raka (Jetschool Assistant). Respons berupa NDJSON stream (satu event JSON per baris):
  * meta (sumber) → delta… (potongan jawaban) → done | error.
  */
 export async function POST(req: Request) {
@@ -32,7 +32,7 @@ export async function POST(req: Request) {
 
   const settings = await getHelpSettings();
   if (!settings.enabled) {
-    return NextResponse.json({ error: "Asisten Hermes sedang dinonaktifkan admin." }, { status: 503 });
+    return NextResponse.json({ error: "Raka sedang dinonaktifkan admin." }, { status: 503 });
   }
 
   const limited = checkRateLimit(`help-chat:${identifier}`, 6, 60_000);

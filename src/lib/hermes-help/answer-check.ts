@@ -12,9 +12,38 @@ function stripComment(line: string): string {
 // Isi blok kode yang bukan perintah (mis. output contoh) tidak perlu dicek.
 const SKIP_LANGS = new Set(["text", "txt", "output", "markdown", "md", "plaintext"]);
 
+const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+const NAME_TOKEN = /^[a-z][a-z0-9_-]*$/;
+
+/**
+ * Model wajar mengganti NAMA contoh di dokumen dengan nama milik peserta
+ * (`hermes profile create coder` → `hermes profile create katering`). Diterima bila tepat SATU
+ * kata nama — yang tidak ada di dokumen, bukan flag — menggantikan satu kata, dan perintahnya
+ * minimal 3 kata (sisa ≥ 2 kata tetap harus cocok persis, jadi subperintah karangan tetap tertangkap).
+ */
+function matchesWithRenamedToken(line: string, ctx: string): boolean {
+  const tokens = line.split(" ");
+  if (tokens.length < 3 || tokens.length > 12) return false;
+  return tokens.some((t, i) => {
+    if (!NAME_TOKEN.test(t) || ctx.includes(t)) return false;
+    const re = tokens.map((x, j) => (j === i ? "[a-z0-9_.-]+" : escapeRe(x))).join(" ");
+    return new RegExp(`(^|[\\s\`'"(])${re}($|[\\s\`'")])`).test(ctx);
+  });
+}
+
 export function findUnverifiedCode(answer: string, context: string): string[] {
   const ctx = norm(context);
   const candidates: string[] = [];
+
+  // Nama profile jadi alias perintah (`hermes profile create katering` → perintah `katering setup`).
+  // Alias di jawaban dipetakan ke alias contoh di dokumen (`coder setup`) sebelum dicocokkan.
+  const answerAliases = new Set([...norm(answer).matchAll(/hermes profile create ([a-z0-9_-]+)/g)].map((m) => m[1]));
+  const docAliases = [...new Set([...ctx.matchAll(/hermes profile create ([a-z0-9_-]+)/g)].map((m) => m[1]))];
+  const viaDocAlias = (n: string) => {
+    const [first, ...rest] = n.split(" ");
+    if (!answerAliases.has(first) || !rest.length) return false;
+    return docAliases.some((a) => ctx.includes(`${a} ${rest.join(" ")}`));
+  };
 
   for (const m of answer.matchAll(/```([^\n`]*)\n([\s\S]*?)```/g)) {
     if (SKIP_LANGS.has(m[1].trim().toLowerCase())) continue;
@@ -35,7 +64,7 @@ export function findUnverifiedCode(answer: string, context: string): string[] {
     const skeleton = n.replace(/<[^>]+>|\*{3,}|your[-_]\w+/g, "\u0000");
     const ok = skeleton.includes("\u0000")
       ? skeleton.split("\u0000").every((part) => !part.trim() || ctx.includes(part.trim()))
-      : ctx.includes(n);
+      : ctx.includes(n) || viaDocAlias(n) || matchesWithRenamedToken(n, ctx);
     if (!ok && !bad.includes(c.trim())) bad.push(c.trim());
   }
   return bad.slice(0, 10);

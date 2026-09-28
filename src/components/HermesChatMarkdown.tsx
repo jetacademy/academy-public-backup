@@ -1,6 +1,6 @@
 "use client";
 
-// Renderer markdown mini untuk jawaban Asisten Hermes. Membangun elemen React langsung
+// Renderer markdown mini untuk jawaban Raka (Jetschool Assistant). Membangun elemen React langsung
 // (tanpa dangerouslySetInnerHTML) → teks dari model tidak pernah bisa menyisipkan HTML/script.
 // Mendukung: paragraf, **tebal**, _miring_, `kode`, blok kode + tombol salin, daftar, tabel,
 // link http(s), dan sitasi [n] yang menaut ke sumber dokumentasi.
