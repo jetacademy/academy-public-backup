@@ -387,7 +387,7 @@ export default async function MemberDashboardPage() {
                           )}
                           {hasInternalLms ? (
                             <Link href={`/member/lms/${reg.id}`} className="btn btn-purple btn-block" style={{ textAlign: "center" }}>
-                              📚 Lanjut Belajar &amp; Tes
+                              📚 Akses LMS
                             </Link>
                           ) : hasExternalLms && !batchLabel ? (
                             <a href={batchRecordingLink!} target="_blank" rel="noopener noreferrer" className="btn btn-purple btn-block" style={{ textAlign: "center" }}>
