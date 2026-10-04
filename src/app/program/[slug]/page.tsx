@@ -1185,6 +1185,129 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
             </div>
           </section>
 
+          {/* Section 2.5: LIVE DEMO VIDEO — Jetschool Headquarter & 6 AI Crew Visualizer */}
+          <section id="demo-headquarter" className="section" style={{ paddingTop: "2.5rem", paddingBottom: "3.5rem" }}>
+            <div className="container">
+              <div className="section-head center" style={{ marginBottom: "2rem" }}>
+                <span style={{ display: "inline-flex", alignItems: "center", gap: "0.45rem", background: "linear-gradient(135deg, var(--orange), #d97706)", color: "#fff", fontWeight: 800, fontSize: "0.75rem", letterSpacing: "0.04em", padding: "0.4rem 1.1rem", borderRadius: "999px", marginBottom: "1rem", boxShadow: "0 4px 14px rgba(247,148,29,0.3)" }}>
+                  <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#fff", display: "inline-block" }} />
+                  LIVE DEMO EKOSISTEM
+                </span>
+                <h2 style={{ fontSize: "clamp(1.8rem, 4vw, 2.6rem)", lineHeight: 1.2 }}>
+                  Saksikan 6 Karyawan AI Bekerja<br />
+                  <span className="hero-h1-accent">di Kantor Virtual Jetschool</span>
+                </h2>
+                <p style={{ maxWidth: "36rem", marginInline: "auto", color: "var(--ink-soft)", lineHeight: 1.6 }}>
+                  Bukan sekadar konsep di atas kertas. Tonton rekaman langsung bagaimana 6 AI Agent berkoordinasi, bertukar tugas, dan mengeksekusi operasional bisnis dalam satu ekosistem kantor virtual.
+                </p>
+              </div>
+
+              {/* Video Player Card */}
+              <div
+                style={{
+                  position: "relative",
+                  width: "100%",
+                  maxWidth: "60rem",
+                  marginInline: "auto",
+                  borderRadius: "24px",
+                  overflow: "hidden",
+                  background: "#080c18",
+                  border: "1.5px solid rgba(35, 33, 118, 0.25)",
+                  boxShadow: "0 28px 70px rgba(15, 23, 42, 0.38), 0 0 0 1px rgba(255, 255, 255, 0.05)",
+                }}
+              >
+                {/* Top Window Bar for Realistic App Frame Feel */}
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    padding: "0.75rem 1.25rem",
+                    background: "linear-gradient(180deg, #131b2e 0%, #0d1322 100%)",
+                    borderBottom: "1px solid rgba(255, 255, 255, 0.08)",
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                    <span style={{ width: "11px", height: "11px", borderRadius: "50%", background: "#ef4444", display: "inline-block" }} />
+                    <span style={{ width: "11px", height: "11px", borderRadius: "50%", background: "#f59e0b", display: "inline-block" }} />
+                    <span style={{ width: "11px", height: "11px", borderRadius: "50%", background: "#10b981", display: "inline-block" }} />
+                    <span style={{ marginLeft: "0.6rem", fontSize: "0.78rem", fontWeight: 700, color: "rgba(255, 255, 255, 0.8)", letterSpacing: "0.02em" }}>
+                      JETSCHOOL HEADQUARTER — AI Crew Visualizer
+                    </span>
+                  </div>
+                  <span style={{ fontSize: "0.72rem", fontWeight: 700, color: "#10b981", background: "rgba(16, 185, 129, 0.12)", border: "1px solid rgba(16, 185, 129, 0.25)", padding: "0.2rem 0.65rem", borderRadius: "999px", display: "inline-flex", alignItems: "center", gap: "0.35rem" }}>
+                    <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#10b981" }} />
+                    6 Agent Aktif
+                  </span>
+                </div>
+
+                {/* Aspect Ratio Responsive Video Frame */}
+                <div style={{ position: "relative", width: "100%", aspectRatio: "16 / 9" }}>
+                  <iframe
+                    src="https://iframe.mediadelivery.net/embed/707807/5ede62bd-83d5-4875-abdd-651825a8eda0?autoplay=false&loop=false&muted=false&preload=true&responsive=true"
+                    title="Jetschool Headquarter — Demo 6 Karyawan AI Bekerja"
+                    loading="lazy"
+                    allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;"
+                    allowFullScreen
+                    style={{ position: "absolute", inset: 0, width: "100%", height: "100%", border: "none" }}
+                  />
+                </div>
+              </div>
+
+              {/* Highlights below video */}
+              <div
+                style={{
+                  marginTop: "1.8rem",
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
+                  gap: "1rem",
+                  maxWidth: "60rem",
+                  marginInline: "auto",
+                }}
+              >
+                {[
+                  {
+                    icon: "🏢",
+                    title: "Ruang Kantor Virtual 3D",
+                    desc: "Setiap AI Agent memiliki peran spesifik di meja kerja, lounge, dan lobby.",
+                  },
+                  {
+                    icon: "🤖",
+                    title: "Direktori 6 Kru Otonom",
+                    desc: "CS, Closer Sales, Lead Marketing, Strategist, Content Creator, dan Auditor.",
+                  },
+                  {
+                    icon: "📊",
+                    title: "Log Aktivitas Real-time",
+                    desc: "Transparansi penuh atas setiap aksi, percakapan, dan hasil yang dikerjakan agen.",
+                  },
+                ].map((item, i) => (
+                  <div
+                    key={i}
+                    style={{
+                      background: "var(--white)",
+                      border: "1px solid var(--border)",
+                      borderRadius: "16px",
+                      padding: "1.1rem 1.25rem",
+                      display: "flex",
+                      alignItems: "flex-start",
+                      gap: "0.85rem",
+                      boxShadow: "0 4px 15px rgba(35,33,118,0.04)",
+                    }}
+                  >
+                    <span style={{ fontSize: "1.3rem", lineHeight: 1 }}>{item.icon}</span>
+                    <div>
+                      <b style={{ fontSize: "0.88rem", color: "var(--ink)", display: "block" }}>{item.title}</b>
+                      <span style={{ fontSize: "0.78rem", color: "var(--ink-soft)", lineHeight: 1.45, display: "block", marginTop: "0.2rem" }}>
+                        {item.desc}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+
           {/* Section 3: Bukan Sekadar Chatbot */}
           <section className="section" style={{ background: "var(--chip)", paddingBottom: "3.5rem" }}>
             <div className="container">
