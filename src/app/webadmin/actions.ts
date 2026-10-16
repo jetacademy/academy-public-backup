@@ -9,7 +9,8 @@ import { hashPassword, generateApiKey } from "@/lib/crypto";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { sendWa, msgAccess, msgPaid, normalizeWa, sendWaDetailed } from "@/lib/wa";
 import { formatJadwal, parseWIB } from "@/lib/format";
-import { sendEmail, getPaidEmailHtml } from "@/lib/email";
+import { sendEmail, getPaidEmailHtml, getPaymentReminderEmailHtml } from "@/lib/email";
+import { createInvoice, isXenditConfigured } from "@/lib/xendit";
 import { recordAffiliateConversion, voidAffiliateConversion } from "@/lib/affiliate";
 import { linkLeadToRegistration } from "@/lib/lead-link";
 import { isCertIssuanceEnabled, issueCertificate, checkCertEligibility, isScheduleGateOpen } from "@/lib/certificates";
@@ -847,6 +848,132 @@ export async function deleteRegistration(formData: FormData) {
   revalidatePath("/webadmin/pendaftar");
   revalidatePath("/webadmin");
 }
+
+/**
+ * Mengirim email pengingat pembayaran ke pendaftar dengan sapaan "Kaka",
+ * menyertakan link invoice Xendit resmi, dan mendukung generate ulang jika expired.
+ */
+export async function sendPaymentReminderAction(data: {
+  registrationId: string;
+  forceRegenerate?: boolean;
+}): Promise<{ ok: boolean; message?: string; invoiceUrl?: string }> {
+  await requireAdmin();
+
+  const reg = await prisma.registration.findUnique({
+    where: { id: data.registrationId },
+    include: { program: true, batch: true, payment: true },
+  });
+
+  if (!reg) {
+    return { ok: false, message: "Pendaftar tidak ditemukan." };
+  }
+
+  if (["PAID", "PASSED"].includes(reg.status)) {
+    return { ok: false, message: "Pendaftar ini sudah berstatus lunas." };
+  }
+
+  if (!reg.email) {
+    return { ok: false, message: "Pendaftar tidak memiliki alamat email." };
+  }
+
+  const chargeAmount =
+    reg.payment?.amount ||
+    (reg.program.price > 0 ? reg.program.price : reg.program.certPrice);
+
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? "http://localhost:3000";
+  let invoiceUrl = reg.payment?.invoiceUrl;
+
+  const shouldRegenerate =
+    Boolean(data.forceRegenerate) ||
+    !invoiceUrl ||
+    reg.status === "EXPIRED" ||
+    reg.payment?.status === "EXPIRED";
+
+  if (shouldRegenerate) {
+    if (isXenditConfigured()) {
+      try {
+        const typeLabel =
+          (reg as any).attendanceType === "OFFLINE" ? " [Offline Bekasi]" : " [Online]";
+        const invoiceDesc = `${reg.program.title}${typeLabel} (${reg.name})`;
+        const externalId = `ACADEMY-${reg.id}-${Date.now()}`;
+
+        const invoice = await createInvoice({
+          externalId,
+          amount: chargeAmount,
+          payerEmail: reg.email,
+          description: invoiceDesc,
+          successRedirectUrl: `${baseUrl}/member`,
+        });
+
+        invoiceUrl = invoice.invoice_url;
+
+        await prisma.$transaction([
+          prisma.payment.upsert({
+            where: { registrationId: reg.id },
+            create: {
+              registrationId: reg.id,
+              amount: chargeAmount,
+              status: "PENDING",
+              xenditInvoiceId: invoice.id,
+              invoiceUrl: invoice.invoice_url,
+            },
+            update: {
+              xenditInvoiceId: invoice.id,
+              invoiceUrl: invoice.invoice_url,
+              status: "PENDING",
+            },
+          }),
+          prisma.registration.update({
+            where: { id: reg.id },
+            data: { status: "REGISTERED" },
+          }),
+        ]);
+      } catch (err: any) {
+        console.error("[sendPaymentReminderAction] Gagal buat invoice Xendit:", err);
+        return {
+          ok: false,
+          message: `Gagal membuat invoice Xendit baru: ${err?.message || "Koneksi gateway pembayaran terganggu"}`,
+        };
+      }
+    } else {
+      invoiceUrl = invoiceUrl || `${baseUrl}/checkout/mock-invoice?regId=${reg.id}`;
+    }
+  }
+
+  if (!invoiceUrl) {
+    return { ok: false, message: "Tautan invoice belum tersedia." };
+  }
+
+  try {
+    await sendEmail({
+      to: reg.email,
+      subject: `[Pengingat] Selesaikan Pembayaran Program: ${reg.program.title}`,
+      html: getPaymentReminderEmailHtml({
+        name: reg.name,
+        programTitle: reg.program.title,
+        batchName: reg.batch?.name,
+        price: chargeAmount,
+        invoiceUrl,
+      }),
+    });
+
+    revalidatePath("/webadmin");
+    revalidatePath("/webadmin/pendaftar");
+
+    return {
+      ok: true,
+      message: `Email pengingat dengan invoice berhasil dikirim ke ${reg.email}!`,
+      invoiceUrl,
+    };
+  } catch (err: any) {
+    console.error("[sendPaymentReminderAction] Gagal kirim email:", err);
+    return {
+      ok: false,
+      message: `Gagal mengirim email: ${err?.message || "Server SMTP tidak merespons"}`,
+    };
+  }
+}
+
 
 export async function saveRegistration(formData: FormData) {
   await requireAdmin();

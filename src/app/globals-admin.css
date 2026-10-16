@@ -74,10 +74,9 @@
   background: var(--white);
   border-radius: var(--r-md);
   box-shadow: var(--shadow);
-  padding: 1.2rem 1.4rem;
+  padding: 1rem 1.15rem;
   position: relative;
   min-width: 0;
-  overflow: hidden;
   box-sizing: border-box;
 }
 @media (max-width: 640px) {
@@ -89,7 +88,7 @@
 
 .adm-stat b, .adm-stat-val {
   display: block;
-  font-size: clamp(1.05rem, 3.8vw, 1.65rem);
+  font-size: clamp(0.98rem, 1.35vw, 1.25rem);
   font-weight: 800;
   letter-spacing: -.02em;
   min-width: 0;
@@ -120,16 +119,22 @@
   display: flex;
   align-items: center;
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
   flex: 1;
+}
+.adm-stat-sublabel {
+  font-size: 0.72rem;
+  color: var(--ink-soft);
+  margin: 0.15rem 0 0.35rem 0;
+  line-height: 1.35;
+  white-space: normal;
+  word-break: break-word;
 }
 .adm-stat-val.masked {
   letter-spacing: 0.15em;
   color: var(--ink-soft);
   font-family: inherit;
   user-select: none;
-  font-size: clamp(0.95rem, 3.4vw, 1.4rem);
+  font-size: clamp(0.95rem, 3.4vw, 1.25rem);
 }
 .adm-stat-eye-btn {
   display: inline-flex;

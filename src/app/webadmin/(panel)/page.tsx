@@ -4,6 +4,7 @@ import { rupiah } from "@/lib/format";
 import { TYPE_LABEL, type ProgramType } from "@/lib/fallback";
 import AdminStats from "@/components/AdminStats";
 import RevenueBreakdownSection from "@/components/RevenueBreakdownSection";
+import RemindPaymentButton from "@/components/RemindPaymentButton";
 import {
   getDailyRevenueData,
   getMonthlyRevenueData,
@@ -58,7 +59,11 @@ export default async function AdminDashboard() {
     prisma.registration.findMany({
       orderBy: { createdAt: "desc" },
       take: 10,
-      include: { program: { select: { title: true } } },
+      include: {
+        program: { select: { id: true, title: true, price: true, certPrice: true } },
+        batch: { select: { id: true, name: true, scheduleAt: true } },
+        payment: { select: { id: true, amount: true, status: true, invoiceUrl: true, xenditInvoiceId: true } },
+      },
     }),
     prisma.$queryRaw<ProgramStatsRaw[]>`
       SELECT 
@@ -131,13 +136,10 @@ export default async function AdminDashboard() {
                 <span
                   style={{
                     display: "block",
-                    textOverflow: "ellipsis",
-                    overflow: "hidden",
-                    whiteSpace: "nowrap",
                     color: "var(--ink-faint)",
-                    fontSize: "0.7rem",
+                    fontSize: "0.72rem",
+                    lineHeight: 1.3,
                   }}
-                  title={`${nearestBatch.batchName} · ${nearestBatch.programTitle}`}
                 >
                   {nearestBatch.batchName} · {nearestBatch.programTitle}
                 </span>
@@ -191,22 +193,82 @@ export default async function AdminDashboard() {
       <div className="tbl-wrap">
         <table className="tbl">
           <thead>
-            <tr><th>Nama</th><th>WhatsApp</th><th>Program</th><th>Status</th><th>Waktu</th></tr>
+            <tr>
+              <th>Nama</th>
+              <th>WhatsApp</th>
+              <th>Program</th>
+              <th>Status</th>
+              <th>Waktu</th>
+              <th style={{ textAlign: "center" }}>Aksi</th>
+            </tr>
           </thead>
           <tbody>
             {latest.map((r) => {
               const b = STATUS_BADGE[r.status] ?? { cls: "dim", label: r.status };
+              const isPaid = ["PAID", "PASSED"].includes(r.status);
+              const tagihan = r.payment?.amount || (r.program.price > 0 ? r.program.price : r.program.certPrice);
+
               return (
                 <tr key={r.id}>
-                  <td data-label="Nama" style={{ fontWeight: 600 }}>{r.name}</td>
+                  <td data-label="Nama" style={{ fontWeight: 600 }}>
+                    {r.name}
+                    {r.email && (
+                      <div className="muted" style={{ fontSize: "0.74rem", fontWeight: 400 }}>
+                        {r.email}
+                      </div>
+                    )}
+                  </td>
                   <td data-label="WhatsApp">{r.whatsapp}</td>
-                  <td data-label="Program" className="muted">{r.program.title}</td>
-                  <td data-label="Status"><span className={`badge ${b.cls}`}>{b.label}</span></td>
-                  <td data-label="Waktu" className="muted">{new Intl.DateTimeFormat("id-ID", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "Asia/Jakarta" }).format(r.createdAt)}</td>
+                  <td data-label="Program" className="muted">
+                    {r.program.title}
+                    {r.batch?.name && (
+                      <span style={{ display: "block", fontSize: "0.72rem", color: "var(--purple)" }}>
+                        {r.batch.name}
+                      </span>
+                    )}
+                  </td>
+                  <td data-label="Status">
+                    <span className={`badge ${b.cls}`}>{b.label}</span>
+                  </td>
+                  <td data-label="Waktu" className="muted">
+                    {new Intl.DateTimeFormat("id-ID", {
+                      day: "numeric",
+                      month: "short",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                      timeZone: "Asia/Jakarta",
+                    }).format(r.createdAt)}
+                  </td>
+                  <td data-label="Aksi" style={{ textAlign: "center" }}>
+                    {!isPaid ? (
+                      <RemindPaymentButton
+                        registrationId={r.id}
+                        name={r.name}
+                        email={r.email}
+                        whatsapp={r.whatsapp}
+                        programTitle={r.program.title}
+                        batchName={r.batch?.name}
+                        status={r.status}
+                        hasInvoiceUrl={Boolean(r.payment?.invoiceUrl)}
+                        invoiceUrl={r.payment?.invoiceUrl}
+                        amount={tagihan}
+                      />
+                    ) : (
+                      <span className="badge g" style={{ fontSize: "0.72rem", fontWeight: 700 }}>
+                        Lunas ✅
+                      </span>
+                    )}
+                  </td>
                 </tr>
               );
             })}
-            {latest.length === 0 && <tr><td colSpan={5} className="muted">Belum ada pendaftar.</td></tr>}
+            {latest.length === 0 && (
+              <tr>
+                <td colSpan={6} className="muted" style={{ textAlign: "center", padding: "1.5rem" }}>
+                  Belum ada pendaftar.
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>

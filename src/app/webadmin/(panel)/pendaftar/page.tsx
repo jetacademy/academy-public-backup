@@ -4,6 +4,7 @@ import { rupiah, formatHariTanggal } from "@/lib/format";
 import { markPaid, deleteRegistration, deleteCertificate } from "../../actions";
 import ConfirmButton from "@/components/ConfirmButton";
 import RefundButton from "@/components/RefundButton";
+import RemindPaymentButton from "@/components/RemindPaymentButton";
 
 const STATUS_BADGE: Record<string, { cls: string; label: string }> = {
   REGISTERED: { cls: "dim", label: "Terdaftar" },
@@ -51,8 +52,8 @@ export default async function AdminPendaftar({ searchParams }: {
       // program/batch cukup kolom yang dirender — include penuh ikut menarik contentBlocks,
       // description & certConfig program untuk tiap baris (50 baris × kolom besar per halaman).
       include: {
-        program: { select: { title: true } },
-        batch: { select: { scheduleAt: true } },
+        program: { select: { id: true, title: true, price: true, certPrice: true } },
+        batch: { select: { id: true, name: true, scheduleAt: true } },
         payment: { include: { voucher: { select: { code: true } } } },
         certificate: { select: { id: true, number: true } },
       },
@@ -193,16 +194,19 @@ export default async function AdminPendaftar({ searchParams }: {
                           </button>
                         </form>
                       )}
-                      {r.status === 'REGISTERED' && r.whatsapp && (
-                        <a
-                          href={'https://wa.me/' + r.whatsapp.replace(/^0+/, '62') + '?text=' + encodeURIComponent('Halo ' + r.name + ', mau ingetin pendaftaran Zero Human Company masih pending nih. Early bird Rp225rb — jangan sampai kelewat ya Kak 😊')}
-                          target='_blank'
-                          rel='noopener noreferrer'
-                          className='btn btn-sm btn-line'
-                          title='Ingatkan via WA'
-                        >
-                          Ingatkan
-                        </a>
+                      {['REGISTERED', 'EXPIRED', 'FAILED'].includes(r.status) && (
+                        <RemindPaymentButton
+                          registrationId={r.id}
+                          name={r.name}
+                          email={r.email}
+                          whatsapp={r.whatsapp}
+                          programTitle={r.program.title}
+                          batchName={r.batch?.name}
+                          status={r.status}
+                          hasInvoiceUrl={Boolean(r.payment?.invoiceUrl)}
+                          invoiceUrl={r.payment?.invoiceUrl}
+                          amount={r.payment?.amount || (r.program.price > 0 ? r.program.price : r.program.certPrice)}
+                        />
                       )}
                       {r.status === 'REGISTERED' && r.whatsapp && r.payment?.invoiceUrl && (
                         <a

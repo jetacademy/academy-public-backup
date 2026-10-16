@@ -38,7 +38,6 @@ export default function AdminStats({ stats, className = "" }: AdminStatsProps) {
                 title={isVisible ? String(stat.value) : "Disembunyikan"}
               >
                 {isVisible ? stat.value : "*****"}
-                {isVisible && stat.sublabel}
               </b>
               <button
                 type="button"
@@ -78,6 +77,9 @@ export default function AdminStats({ stats, className = "" }: AdminStatsProps) {
                 )}
               </button>
             </div>
+            {isVisible && stat.sublabel && (
+              <div className="adm-stat-sublabel">{stat.sublabel}</div>
+            )}
             <span>{stat.label}</span>
           </div>
         );

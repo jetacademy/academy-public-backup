@@ -328,3 +328,82 @@ export function getWelcomeMemberEmailHtml(name: string, loginUrl: string): strin
     </div>
   `;
 }
+
+export function getPaymentReminderEmailHtml(params: {
+  name: string;
+  programTitle: string;
+  batchName?: string | null;
+  price: number;
+  invoiceUrl: string;
+}): string {
+  const safeName = escapeHtml(params.name);
+  const safeTitle = escapeHtml(params.programTitle);
+  const safeBatch = params.batchName ? escapeHtml(params.batchName) : null;
+  const priceFormatted = new Intl.NumberFormat("id-ID", {
+    style: "currency",
+    currency: "IDR",
+    maximumFractionDigits: 0,
+  }).format(params.price);
+
+  return `
+    <div style="font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #eaeaea; border-radius: 12px; color: #17161a; background: #ffffff;">
+      <div style="text-align: center; margin-bottom: 20px;">
+        <span style="display: inline-block; background: rgba(35, 33, 118, 0.08); color: #232176; font-size: 0.78rem; font-weight: 700; padding: 4px 14px; border-radius: 99px; letter-spacing: 0.04em;">
+          PENGINGAT PEMBAYARAN RESMI
+        </span>
+      </div>
+
+      <h2 style="color: #232176; margin-top: 0; font-size: 1.35rem; text-align: center;">
+        Halo Kaka ${safeName} 👋
+      </h2>
+
+      <p style="font-size: 0.96rem; line-height: 1.6; color: #374151;">
+        Semoga harimu menyenangkan! Kami ingin menginfokan bahwa pendaftaran Kaka untuk program <strong>${safeTitle}</strong>${safeBatch ? ` (${safeBatch})` : ""} saat ini masih menunggu penyelesaian pembayaran.
+      </p>
+
+      <div style="background: #f8fafc; border: 1px solid #e2e8f0; padding: 18px; border-radius: 10px; margin: 20px 0;">
+        <div style="margin-bottom: 8px;">
+          <span style="color: #64748b; font-size: 0.85rem;">Program Pelatihan:</span><br/>
+          <strong style="color: #1e293b; font-size: 0.95rem;">${safeTitle}</strong>
+        </div>
+        ${safeBatch ? `
+        <div style="margin-bottom: 8px;">
+          <span style="color: #64748b; font-size: 0.85rem;">Batch:</span><br/>
+          <strong style="color: #232176; font-size: 0.9rem;">${safeBatch}</strong>
+        </div>
+        ` : ""}
+        <div style="border-top: 1px dashed #cbd5e1; padding-top: 10px; margin-top: 10px; display: flex; justify-content: space-between; align-items: baseline;">
+          <span style="color: #1e293b; font-weight: 600; font-size: 0.9rem;">Total Tagihan:</span>
+          <strong style="color: #232176; font-size: 1.25rem;">${priceFormatted}</strong>
+        </div>
+      </div>
+
+      <p style="font-size: 0.92rem; color: #374151; line-height: 1.5;">
+        Kaka dapat langsung menyelesaikan pembayaran melalui tautan invoice resmi Xendit di bawah ini:
+      </p>
+
+      <div style="text-align: center; margin: 28px 0;">
+        <a href="${params.invoiceUrl}" style="background: #f7941d; color: #ffffff; padding: 14px 34px; border-radius: 99px; text-decoration: none; font-weight: 800; font-size: 1rem; display: inline-block; box-shadow: 0 4px 14px rgba(247, 148, 29, 0.35);">
+          Bayar Sekarang via Invoice →
+        </a>
+      </div>
+
+      <p style="font-size: 0.84rem; color: #64748b; line-height: 1.5; text-align: center;">
+        Jika tombol di atas tidak dapat diklik, salin tautan invoice berikut ke browser:<br/>
+        <a href="${params.invoiceUrl}" style="color: #232176; word-break: break-all; font-weight: 600;">${params.invoiceUrl}</a>
+      </p>
+
+      <div style="background: #fffbeb; border: 1px solid #fef3c7; border-radius: 8px; padding: 12px; margin-top: 22px;">
+        <p style="margin: 0; font-size: 0.82rem; color: #92400e; line-height: 1.5;">
+          💡 <em>Setelah pembayaran berhasil dikonfirmasi, Kaka akan otomatis menerima email akses materi, grup koordinasi, dan dashboard pelatihan.</em>
+        </p>
+      </div>
+
+      <hr style="border: 0; border-top: 1px solid #eaeaea; margin: 26px 0;"/>
+      <p style="font-size: 0.78rem; color: #94a3b8; text-align: center; margin: 0;">
+        Jetschool Academy &copy; ${new Date().getFullYear()}. Jika Kaka memerlukan bantuan atau memiliki pertanyaan seputar pembayaran, silakan hubungi tim kami.
+      </p>
+    </div>
+  `;
+}
+

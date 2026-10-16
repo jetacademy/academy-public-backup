@@ -44,3 +44,29 @@ describe("getDaysLeftDetail", () => {
     expect(res.shortLabel).toBe("Selesai");
   });
 });
+
+import { getPaymentReminderEmailHtml } from "@/lib/email";
+
+describe("getPaymentReminderEmailHtml", () => {
+  it("renders email with sapaan Kaka, program title, and invoice link", () => {
+    const html = getPaymentReminderEmailHtml({
+      name: "Budi Santoso",
+      programTitle: "Zero Human Company",
+      batchName: "Batch 12",
+      price: 225000,
+      invoiceUrl: "https://checkout.xendit.co/v2/invoice-12345",
+    });
+
+    // Validasi sapaan Kaka
+    expect(html).toContain("Halo Kaka Budi Santoso");
+    // Validasi judul program & batch
+    expect(html).toContain("Zero Human Company");
+    expect(html).toContain("Batch 12");
+    // Validasi link invoice
+    expect(html).toContain("https://checkout.xendit.co/v2/invoice-12345");
+    // Validasi format rupiah
+    expect(html).toContain("Rp");
+    expect(html).toContain("225.000");
+  });
+});
+
