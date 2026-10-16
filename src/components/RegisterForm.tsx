@@ -222,7 +222,7 @@ export default function RegisterForm({
           className="btn btn-line btn-block"
           style={{ width: "100%", padding: "0.75rem", fontSize: "0.88rem", fontWeight: 700 }}
         >
-          🎁 Daftarkan Rekan / Beli Tiket untuk Orang Lain
+          Daftarkan Rekan / Beli Tiket untuk Orang Lain
         </button>
       </div>
     );
@@ -696,7 +696,7 @@ export default function RegisterForm({
           >
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <span style={{ fontWeight: 800, fontSize: "0.95rem", color: attendanceType === "ONLINE" ? "#6c5ce7" : "var(--ink)", display: "flex", alignItems: "center", gap: "0.45rem" }}>
-                💻 Online via Zoom
+                Online via Zoom
                 {isOnlineRegistered && (
                   <span style={{ fontSize: "0.7rem", background: "rgba(34, 197, 94, 0.12)", color: "#15803d", fontWeight: 700, padding: "0.12rem 0.45rem", borderRadius: "999px" }}>
                     ✓ Terdaftar
@@ -761,7 +761,7 @@ export default function RegisterForm({
           >
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <span style={{ fontWeight: 800, fontSize: "0.95rem", color: attendanceType === "OFFLINE" ? "#d63031" : "var(--ink)", display: "flex", alignItems: "center", gap: "0.45rem" }}>
-                🏢 Offline
+                Tatap Muka Offline (Bekasi)
                 {isOfflineRegistered && (
                   <span style={{ fontSize: "0.7rem", background: "rgba(34, 197, 94, 0.12)", color: "#15803d", fontWeight: 700, padding: "0.12rem 0.45rem", borderRadius: "999px" }}>
                     ✓ Terdaftar
@@ -805,7 +805,7 @@ export default function RegisterForm({
         {activeBatchesList.length > 1 && (
           <div style={{ marginBottom: "1.3rem", background: "rgba(0,0,0,0.02)", border: "1px solid var(--line)", borderRadius: "12px", padding: "0.85rem" }}>
             <span style={{ fontSize: "0.82rem", fontWeight: 800, color: "var(--ink)", display: "block", marginBottom: "0.55rem" }}>
-              📅 Pilih Angkatan / Batch {attendanceType === "ONLINE" ? "Online" : "Offline"}:
+              Pilih Angkatan / Batch {attendanceType === "ONLINE" ? "Online" : "Offline"}:
             </span>
             <div style={{ display: "flex", flexDirection: "column", gap: "0.45rem" }}>
               {activeBatchesList.map((b) => {
@@ -931,7 +931,7 @@ export default function RegisterForm({
                 transition: "all 0.15s ease",
               }}
             >
-              <span>👤</span> Untuk Saya Sendiri
+              Untuk Saya Sendiri
             </button>
             <button
               type="button"
@@ -954,7 +954,7 @@ export default function RegisterForm({
                 transition: "all 0.15s ease",
               }}
             >
-              <span>🎁</span> Belikan untuk Rekan
+              Belikan untuk Rekan
             </button>
           </div>
 
@@ -973,7 +973,7 @@ export default function RegisterForm({
                 color: "#6c5ce7",
                 lineHeight: 1.4,
               }}>
-                🎁 <b>Mendaftarkan Rekan:</b> Sertifikat kelulusan, akun LMS, dan akses grup WhatsApp akan diterbitkan atas nama rekan Anda di bawah ini:
+                <b>Mendaftarkan Rekan:</b> Sertifikat kelulusan, akun LMS, dan akses grup WhatsApp akan diterbitkan atas nama rekan Anda di bawah ini:
               </div>
 
               <div className="field" style={{ marginBottom: "0.8rem" }}>
@@ -1051,7 +1051,7 @@ export default function RegisterForm({
                   </strong>
                 </div>
                 <span style={{ fontSize: "0.74rem", background: "rgba(108, 92, 231, 0.1)", color: "#6c5ce7", fontWeight: 700, padding: "0.2rem 0.5rem", borderRadius: "6px" }}>
-                  {attendanceType === "OFFLINE" ? "🏢 Offline" : "💻 Online"}
+                  {attendanceType === "OFFLINE" ? "Offline" : "Online"}
                 </span>
               </div>
 
@@ -1117,7 +1117,7 @@ export default function RegisterForm({
                     <div>
                       <span style={{ color: "var(--ink-soft)", display: "block", fontSize: "0.72rem", fontWeight: 700 }}>FORMAT &amp; JADWAL</span>
                       <strong style={{ color: "var(--ink)", wordBreak: "break-word" }}>
-                        {attendanceType === "OFFLINE" ? "🏢 Tatap Muka Offline Bekasi" : "💻 Online via Zoom"} — {currentBatch?.name || (attendanceType === "OFFLINE" ? "Offline" : "Online")}
+                        {attendanceType === "OFFLINE" ? "Tatap Muka Offline (Bekasi)" : "Online via Zoom"} — {currentBatch?.name || (attendanceType === "OFFLINE" ? "Offline" : "Online")}
                       </strong>
                     </div>
                   )}
@@ -1147,7 +1147,7 @@ export default function RegisterForm({
                   </strong>
                 </div>
                 <span style={{ fontSize: "0.74rem", background: "rgba(108, 92, 231, 0.1)", color: "#6c5ce7", fontWeight: 700, padding: "0.2rem 0.5rem", borderRadius: "6px" }}>
-                  {attendanceType === "OFFLINE" ? "🏢 Offline" : "💻 Online via Zoom"}
+                  {attendanceType === "OFFLINE" ? "Offline" : "Online via Zoom"}
                 </span>
               </div>
 
@@ -1346,7 +1346,7 @@ export default function RegisterForm({
                   </strong>
                 </div>
                 <span style={{ fontSize: "0.74rem", background: "rgba(108, 92, 231, 0.1)", color: "#6c5ce7", fontWeight: 700, padding: "0.2rem 0.5rem", borderRadius: "6px" }}>
-                  {attendanceType === "OFFLINE" ? "🏢 Offline" : "💻 Online via Zoom"}
+                  {attendanceType === "OFFLINE" ? "Offline" : "Online via Zoom"}
                 </span>
               </div>
 
@@ -1382,7 +1382,7 @@ export default function RegisterForm({
                     className="btn btn-line btn-block"
                     style={{ width: "100%", padding: "0.75rem", fontSize: "0.85rem", fontWeight: 700 }}
                   >
-                    🎁 Belikan Tiket untuk Rekan di Jadwal Ini
+                    Belikan Tiket untuk Rekan di Jadwal Ini
                   </button>
                 </>
               ) : (
@@ -1417,7 +1417,7 @@ export default function RegisterForm({
               </strong>
             </div>
             <span style={{ fontSize: "0.75rem", background: "rgba(108, 92, 231, 0.1)", color: "#6c5ce7", fontWeight: 700, padding: "0.25rem 0.6rem", borderRadius: "6px" }}>
-              {attendanceType === "OFFLINE" ? "🏢 Offline" : "💻 Online via Zoom"}
+              {attendanceType === "OFFLINE" ? "Offline" : "Online via Zoom"}
             </span>
           </div>
 

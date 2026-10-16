@@ -456,7 +456,7 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
                 <div className="ticket-card">
                   <div className="ticket-glow" />
                   <div className="ticket-header">
-                    <div className="ticket-brand">🚀 JETSCHOOL ACADEMY</div>
+                    <div className="ticket-brand">JETSCHOOL ACADEMY</div>
                     <span className="ticket-badge">WORKSHOP</span>
                   </div>
                   <div className="ticket-body">
@@ -466,7 +466,9 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
                     </div>
                     <p className="ticket-title">Zero Human Company<br />Workshop Pass</p>
                     <div className="ticket-mentor">
-                      <div className="mentor-avatar">🤖</div>
+                      <div className="mentor-avatar" style={{ display: "grid", placeItems: "center" }}>
+                        <Icon name="user" size={18} />
+                      </div>
                       <div>
                         <p className="mentor-name">{program.mentorName}</p>
                         <p className="mentor-label">Instruktur</p>
@@ -771,9 +773,7 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
             <div className="container">
               <div className="section-head center">
                 <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: "0.7rem", marginBottom: "1.2rem" }}>
-                  <span style={{ color: "var(--orange)", fontSize: "1.2rem" }}>✦</span>
                   <span className="type-tag type-workshop" style={{ display: "inline-block" }}>Selamat Datang di Era</span>
-                  <span style={{ color: "var(--orange)", fontSize: "1.2rem" }}>✦</span>
                 </div>
                 <div style={{ position: "relative", display: "inline-block" }}>
                   <div style={{ position: "absolute", inset: "-24px -50px", background: "radial-gradient(ellipse, rgba(35,33,118,0.18) 0%, rgba(247,148,29,0.12) 55%, transparent 75%)", filter: "blur(22px)", zIndex: 0, pointerEvents: "none" }} />
@@ -813,10 +813,10 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
                 >
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1rem" }}>
                     <span style={{ fontSize: "0.72rem", fontWeight: 800, color: "var(--red)", background: "rgba(229, 72, 77, 0.08)", padding: "0.3rem 0.75rem", borderRadius: "999px", letterSpacing: "0.03em" }}>
-                      ⏳ MODEL KONVENSIONAL
+                      MODEL KONVENSIONAL
                     </span>
-                    <span style={{ width: "42px", height: "42px", borderRadius: "50%", background: "rgba(229, 72, 77, 0.08)", color: "var(--red)", display: "grid", placeItems: "center", fontSize: "1.25rem" }}>
-                      👥
+                    <span style={{ width: "40px", height: "40px", borderRadius: "50%", background: "rgba(229, 72, 77, 0.08)", color: "var(--red)", display: "grid", placeItems: "center" }}>
+                      <Icon name="users" size={18} />
                     </span>
                   </div>
 
@@ -829,10 +829,10 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
 
                   <div style={{ display: "flex", flexDirection: "column", gap: "0.55rem" }}>
                     {[
-                      { icon: "💸", title: "6x Beban Gaji Bulanan", desc: "Gaji pokok, tunjangan, BPJS, & fasilitas kantor." },
-                      { icon: "⏰", title: "Terbatas 8 Jam Kerja", desc: "Leads malam & akhir pekan lambat direspons." },
-                      { icon: "📉", title: "Kapasitas Terbatas & Lelah", desc: "Mudah burnout, human error, & risiko resign." },
-                      { icon: "🔄", title: "Supervisi & Follow-up Rutin", desc: "Waktu owner habis memantau pekerjaan harian." },
+                      { title: "6x Beban Gaji Bulanan", desc: "Gaji pokok, tunjangan, BPJS, & fasilitas kantor." },
+                      { title: "Terbatas 8 Jam Kerja", desc: "Leads malam & akhir pekan lambat direspons." },
+                      { title: "Kapasitas Terbatas & Lelah", desc: "Mudah burnout, human error, & risiko resign." },
+                      { title: "Supervisi & Follow-up Rutin", desc: "Waktu owner habis memantau pekerjaan harian." },
                     ].map((item, i) => (
                       <div
                         key={i}
@@ -846,7 +846,7 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
                           padding: "0.65rem 0.85rem",
                         }}
                       >
-                        <span style={{ fontSize: "1.1rem", lineHeight: 1.2 }}>{item.icon}</span>
+                        <span style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--red)", marginTop: "0.45rem", flexShrink: 0 }} />
                         <div>
                           <b style={{ fontSize: "0.82rem", color: "var(--ink)", display: "block" }}>{item.title}</b>
                           <span style={{ fontSize: "0.76rem", color: "var(--ink-soft)", lineHeight: 1.4, display: "block" }}>{item.desc}</span>
@@ -857,7 +857,7 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
 
                   <div style={{ marginTop: "1.2rem", padding: "0.65rem 0.9rem", background: "rgba(229, 72, 77, 0.06)", borderRadius: "12px", borderLeft: "3px solid var(--red)" }}>
                     <span style={{ fontSize: "0.76rem", fontWeight: 700, color: "var(--red)" }}>
-                      ⚠️ Biaya tinggi & pertumbuhan bisnis terhambat kapasitas jam kerja manusia.
+                      Biaya tinggi &amp; pertumbuhan bisnis terhambat kapasitas jam kerja manusia.
                     </span>
                   </div>
                 </div>
@@ -882,10 +882,10 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
                 >
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1rem" }}>
                     <span style={{ fontSize: "0.72rem", fontWeight: 800, color: "#fff", background: "linear-gradient(135deg, var(--purple), var(--purple-deep))", padding: "0.3rem 0.8rem", borderRadius: "999px", letterSpacing: "0.03em", boxShadow: "0 3px 8px rgba(35,33,118,0.25)" }}>
-                      ✨ ZERO HUMAN COMPANY
+                      ZERO HUMAN COMPANY
                     </span>
-                    <span style={{ width: "42px", height: "42px", borderRadius: "50%", background: "var(--purple-soft)", color: "var(--purple)", display: "grid", placeItems: "center", fontSize: "1.25rem", border: "1px solid rgba(35,33,118,0.18)" }}>
-                      🤖
+                    <span style={{ width: "40px", height: "40px", borderRadius: "50%", background: "var(--purple-soft)", color: "var(--purple)", display: "grid", placeItems: "center", border: "1px solid rgba(35,33,118,0.18)" }}>
+                      <Icon name="zap" size={18} />
                     </span>
                   </div>
 
@@ -898,10 +898,10 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
 
                   <div style={{ display: "flex", flexDirection: "column", gap: "0.55rem" }}>
                     {[
-                      { icon: "💰", title: "0 Beban Gaji Bulanan", desc: "Cukup 1x setup di laptop Anda tanpa langganan mahal." },
-                      { icon: "⚡", title: "Respon 24/7 Tanpa Jeda", desc: "Chat, closing, & follow-up leads aktif saat Anda tidur." },
-                      { icon: "🎯", title: "Konsisten 100% Sesuai SOP", desc: "Eksekusi presisi tinggi tanpa lelah dan tanpa drama." },
-                      { icon: "🚀", title: "Skalabilitas Tanpa Batas", desc: "Tangani ratusan prospek simultan tanpa rekrut staf." },
+                      { title: "0 Beban Gaji Bulanan", desc: "Cukup 1x setup di laptop Anda tanpa langganan mahal." },
+                      { title: "Respon 24/7 Tanpa Jeda", desc: "Chat, closing, & follow-up leads aktif saat Anda tidur." },
+                      { title: "Konsisten 100% Sesuai SOP", desc: "Eksekusi presisi tinggi tanpa lelah dan tanpa drama." },
+                      { title: "Skalabilitas Tanpa Batas", desc: "Tangani ratusan prospek simultan tanpa rekrut staf." },
                     ].map((item, i) => (
                       <div
                         key={i}
@@ -915,7 +915,7 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
                           padding: "0.65rem 0.85rem",
                         }}
                       >
-                        <span style={{ fontSize: "1.1rem", lineHeight: 1.2 }}>{item.icon}</span>
+                        <span style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--purple)", marginTop: "0.45rem", flexShrink: 0 }} />
                         <div>
                           <b style={{ fontSize: "0.82rem", color: "var(--purple)", display: "block" }}>{item.title}</b>
                           <span style={{ fontSize: "0.76rem", color: "var(--ink-soft)", lineHeight: 1.4, display: "block" }}>{item.desc}</span>
@@ -926,7 +926,7 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
 
                   <div style={{ marginTop: "1.2rem", padding: "0.65rem 0.9rem", background: "rgba(23, 160, 94, 0.08)", borderRadius: "12px", borderLeft: "3px solid var(--green)" }}>
                     <span style={{ fontSize: "0.76rem", fontWeight: 700, color: "var(--green)" }}>
-                      ✅ Operasional 100% mandiri & bisnis terus menghasilkan 24 jam.
+                      Operasional 100% mandiri &amp; bisnis terus menghasilkan 24 jam.
                     </span>
                   </div>
                 </div>
@@ -939,7 +939,9 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
                 background: "var(--white)", border: "1px solid var(--border)", borderRadius: "999px",
                 boxShadow: "0 12px 30px rgba(35,33,118,0.08)",
               }}>
-                <span style={{ width: "44px", height: "44px", borderRadius: "50%", background: "linear-gradient(135deg, var(--orange), var(--purple))", color: "#fff", display: "grid", placeItems: "center", fontSize: "1.2rem", flexShrink: 0 }}>💡</span>
+                <span style={{ width: "42px", height: "42px", borderRadius: "50%", background: "linear-gradient(135deg, var(--orange), var(--purple))", color: "#fff", display: "grid", placeItems: "center", flexShrink: 0 }}>
+                  <Icon name="zap" size={20} />
+                </span>
                 <p style={{ flex: 1, margin: 0, fontWeight: 700, color: "var(--ink)", fontSize: "0.95rem", lineHeight: 1.5 }}>
                   Zero Human Company memungkinkan kita membangun perusahaan{" "}
                   <span className="hero-h1-accent">bahkan tanpa manusia.</span>
@@ -956,7 +958,7 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
             <div className="container">
               <div className="section-head center">
                 <span style={{ display: "inline-flex", alignItems: "center", gap: "0.4rem", background: "linear-gradient(135deg, var(--purple), var(--purple-deep))", color: "#fff", fontWeight: 800, fontSize: "0.75rem", letterSpacing: "0.04em", padding: "0.4rem 1rem", borderRadius: "999px", marginBottom: "1.2rem", boxShadow: "0 3px 10px rgba(35,33,118,0.25)" }}>
-                  ✨ 6 KARYAWAN AI
+                  6 KARYAWAN AI
                 </span>
                 <h2 style={{ fontSize: "clamp(1.8rem, 4vw, 2.6rem)", lineHeight: 1.15 }}>
                   6 Karyawan yang<br />
@@ -981,7 +983,7 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
                   {
                     no: "01",
                     title: "Customer Service Agent",
-                    accent: "💬",
+                    iconName: "chat" as const,
                     color: "var(--purple)",
                     soft: "var(--purple-soft)",
                     border: "rgba(35, 33, 118, 0.15)",
@@ -991,7 +993,7 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
                   {
                     no: "02",
                     title: "Sales Agent",
-                    accent: "🤝",
+                    iconName: "award" as const,
                     color: "var(--orange)",
                     soft: "var(--orange-soft)",
                     border: "rgba(247, 148, 29, 0.2)",
@@ -1001,7 +1003,7 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
                   {
                     no: "03",
                     title: "Marketing Agent",
-                    accent: "📣",
+                    iconName: "chart" as const,
                     color: "var(--green)",
                     soft: "rgba(23, 160, 94, 0.08)",
                     border: "rgba(23, 160, 94, 0.2)",
@@ -1011,7 +1013,7 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
                   {
                     no: "04",
                     title: "Content Agent",
-                    accent: "✍️",
+                    iconName: "file-text" as const,
                     color: "var(--purple)",
                     soft: "var(--purple-soft)",
                     border: "rgba(35, 33, 118, 0.15)",
@@ -1021,7 +1023,7 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
                   {
                     no: "05",
                     title: "Developer Agent",
-                    accent: "🔧",
+                    iconName: "settings" as const,
                     color: "var(--orange)",
                     soft: "var(--orange-soft)",
                     border: "rgba(247, 148, 29, 0.2)",
@@ -1031,7 +1033,7 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
                   {
                     no: "06",
                     title: "Report Agent",
-                    accent: "📊",
+                    iconName: "monitor" as const,
                     color: "var(--green)",
                     soft: "rgba(23, 160, 94, 0.08)",
                     border: "rgba(23, 160, 94, 0.2)",
@@ -1059,7 +1061,7 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
                     <div style={{ height: "4px", background: agent.color }} />
 
                     <div style={{ padding: "1.6rem 1.4rem", display: "flex", flexDirection: "column", flex: 1 }}>
-                      {/* Top Row: Number badge + Robot Avatar */}
+                      {/* Top Row: Number badge + Clean Agent Icon */}
                       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1.2rem" }}>
                         <span
                           style={{
@@ -1077,40 +1079,19 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
                           {agent.no}
                         </span>
 
-                        <div style={{ position: "relative", width: "60px", height: "60px" }}>
-                          <div
-                            style={{
-                              width: "100%",
-                              height: "100%",
-                              borderRadius: "50%",
-                              background: agent.soft,
-                              border: `1px solid ${agent.border}`,
-                              display: "grid",
-                              placeItems: "center",
-                              fontSize: "1.8rem",
-                            }}
-                          >
-                            🤖
-                          </div>
-                          <span
-                            style={{
-                              position: "absolute",
-                              bottom: "-2px",
-                              right: "-2px",
-                              width: "24px",
-                              height: "24px",
-                              borderRadius: "50%",
-                              background: agent.color,
-                              color: "#fff",
-                              display: "grid",
-                              placeItems: "center",
-                              fontSize: "0.75rem",
-                              border: "2px solid var(--white)",
-                              boxShadow: "0 2px 6px rgba(0,0,0,0.12)",
-                            }}
-                          >
-                            {agent.accent}
-                          </span>
+                        <div
+                          style={{
+                            width: "44px",
+                            height: "44px",
+                            borderRadius: "12px",
+                            background: agent.soft,
+                            border: `1px solid ${agent.border}`,
+                            color: agent.color,
+                            display: "grid",
+                            placeItems: "center",
+                          }}
+                        >
+                          <Icon name={agent.iconName} size={22} />
                         </div>
                       </div>
 
@@ -1165,18 +1146,17 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
               >
                 <span
                   style={{
-                    width: "42px",
-                    height: "42px",
+                    width: "40px",
+                    height: "40px",
                     borderRadius: "50%",
                     background: "linear-gradient(135deg, var(--orange), var(--purple))",
                     color: "#fff",
                     display: "grid",
                     placeItems: "center",
-                    fontSize: "1.2rem",
                     flexShrink: 0,
                   }}
                 >
-                  ⚡
+                  <Icon name="zap" size={18} />
                 </span>
                 <p style={{ margin: 0, fontWeight: 700, color: "var(--ink)", fontSize: "0.95rem" }}>
                   Enam pekerjaan. Enam AI Agent. <span className="hero-h1-accent">Satu digital workforce.</span>
@@ -1267,17 +1247,17 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
               >
                 {[
                   {
-                    icon: "🏢",
+                    icon: "monitor" as const,
                     title: "Ruang Kantor Virtual 3D",
                     desc: "Setiap AI Agent memiliki peran spesifik di meja kerja, lounge, dan lobby.",
                   },
                   {
-                    icon: "🤖",
+                    icon: "users" as const,
                     title: "Direktori 6 Kru Otonom",
                     desc: "CS, Closer Sales, Lead Marketing, Strategist, Content Creator, dan Auditor.",
                   },
                   {
-                    icon: "📊",
+                    icon: "chart" as const,
                     title: "Log Aktivitas Real-time",
                     desc: "Transparansi penuh atas setiap aksi, percakapan, dan hasil yang dikerjakan agen.",
                   },
@@ -1295,7 +1275,9 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
                       boxShadow: "0 4px 15px rgba(35,33,118,0.04)",
                     }}
                   >
-                    <span style={{ fontSize: "1.3rem", lineHeight: 1 }}>{item.icon}</span>
+                    <span style={{ width: "36px", height: "36px", borderRadius: "10px", background: "var(--purple-soft)", color: "var(--purple)", display: "grid", placeItems: "center", flexShrink: 0 }}>
+                      <Icon name={item.icon} size={18} />
+                    </span>
                     <div>
                       <b style={{ fontSize: "0.88rem", color: "var(--ink)", display: "block" }}>{item.title}</b>
                       <span style={{ fontSize: "0.78rem", color: "var(--ink-soft)", lineHeight: 1.45, display: "block", marginTop: "0.2rem" }}>
@@ -1340,7 +1322,7 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
             <div className="container">
               <div className="section-head center">
                 <span className="type-tag type-workshop" style={{ marginBottom: "1rem", display: "inline-block" }}>
-                  ⏱️ Alur Workshop 3 Jam
+                  Alur Workshop 3 Jam
                 </span>
                 <h2 style={{ fontSize: "clamp(1.8rem, 4vw, 2.6rem)" }}>Dalam 3 Jam, Anda Membangunnya Sendiri</h2>
                 <p style={{ maxWidth: "34rem", marginInline: "auto", color: "var(--ink-soft)", lineHeight: 1.6 }}>
@@ -1365,7 +1347,7 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
                     phase: "TAHAP 01",
                     title: "Build",
                     subtitle: "Rancang Otak & Identitas",
-                    icon: "🏗️",
+                    iconName: "settings" as const,
                     accent: "var(--purple)",
                     accentSoft: "rgba(35, 33, 118, 0.08)",
                     borderSoft: "rgba(35, 33, 118, 0.2)",
@@ -1380,7 +1362,7 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
                     phase: "TAHAP 02",
                     title: "Connect",
                     subtitle: "Integrasi Workflow & Data",
-                    icon: "⚡",
+                    iconName: "zap" as const,
                     accent: "var(--orange)",
                     accentSoft: "rgba(247, 148, 29, 0.1)",
                     borderSoft: "rgba(247, 148, 29, 0.25)",
@@ -1395,7 +1377,7 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
                     phase: "TAHAP 03",
                     title: "Run",
                     subtitle: "Uji & Replikasi 6 Agent",
-                    icon: "🚀",
+                    iconName: "check" as const,
                     accent: "#10b981",
                     accentSoft: "rgba(16, 185, 129, 0.1)",
                     borderSoft: "rgba(16, 185, 129, 0.25)",
@@ -1451,12 +1433,12 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
                           height: "38px",
                           borderRadius: "12px",
                           background: item.accentSoft,
+                          color: item.accent,
                           display: "grid",
                           placeItems: "center",
-                          fontSize: "1.2rem",
                         }}
                       >
-                        {item.icon}
+                        <Icon name={item.iconName} size={18} />
                       </span>
                     </div>
 
@@ -1504,9 +1486,11 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
                   flexWrap: "wrap",
                 }}
               >
-                <span style={{ fontSize: "1.4rem", lineHeight: 1 }}>🎯</span>
+                <span style={{ width: "32px", height: "32px", borderRadius: "50%", background: "var(--purple-soft)", color: "var(--purple)", display: "grid", placeItems: "center", flexShrink: 0 }}>
+                  <Icon name="check" size={16} />
+                </span>
                 <p style={{ margin: 0, fontSize: "0.92rem", fontWeight: 800, color: "var(--purple)", lineHeight: 1.45 }}>
-                  <span style={{ color: "var(--ink)" }}>Target Akhir:</span> 6 AI Agent pertama Anda selesai dikonfigurasi & siap dijalankan di laptop Anda.
+                  <span style={{ color: "var(--ink)" }}>Target Akhir:</span> 6 AI Agent pertama Anda selesai dikonfigurasi &amp; siap dijalankan di laptop Anda.
                 </p>
               </div>
             </div>
@@ -1523,21 +1507,21 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
               </div>
               <div style={{ marginTop: "2rem", display: "flex", flexWrap: "wrap", justifyContent: "center", alignItems: "center", gap: "0.5rem" }}>
                 {[
-                  { label: "Laptop Anda", icon: "💻" },
-                  { label: "AI Model", icon: "🧠" },
-                  { label: "Tools", icon: "🛠️" },
-                  { label: "Workflow", icon: "🔀" },
-                  { label: "AI Agent", icon: "🤖" },
+                  { label: "Laptop Anda" },
+                  { label: "AI Model" },
+                  { label: "Tools" },
+                  { label: "Workflow" },
+                  { label: "AI Agent" },
                 ].map((step, i, arr) => (
                   <span key={i} style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
                     <span style={{
-                      padding: "0.6rem 1.1rem", borderRadius: "999px", fontSize: "0.9rem", fontWeight: 700,
+                      padding: "0.6rem 1.1rem", borderRadius: "999px", fontSize: "0.88rem", fontWeight: 700,
                       display: "flex", alignItems: "center", gap: "0.5rem",
                       ...(i === arr.length - 1
                         ? { background: "var(--purple)", color: "#fff" }
                         : { background: "var(--purple-soft)", color: "var(--purple)" }),
                     }}>
-                      <span>{step.icon}</span>{step.label}
+                      {step.label}
                     </span>
                     {i < arr.length - 1 && <span style={{ color: "var(--ink-faint)" }}>→</span>}
                   </span>
@@ -1546,17 +1530,17 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
 
               <div style={{ marginTop: "2.2rem", display: "flex", justifyContent: "center", gap: "0.7rem", flexWrap: "wrap" }}>
                 {[
-                  { icon: "🚫", label: "Tanpa coding" },
-                  { icon: "🚫", label: "Tanpa langganan bulanan" },
-                  { icon: "🚫", label: "Tanpa server berbayar" },
-                ].map((b, i) => (
-                  <span key={i} style={{ display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.85rem", fontWeight: 700, color: "var(--ink)", background: "var(--white)", border: "1px solid var(--border)", padding: "0.5rem 1rem", borderRadius: "999px" }}>
-                    <span>{b.icon}</span>{b.label}
+                  "Tanpa coding",
+                  "Tanpa langganan bulanan",
+                  "Tanpa server berbayar",
+                ].map((label, i) => (
+                  <span key={i} style={{ display: "flex", alignItems: "center", gap: "0.45rem", fontSize: "0.85rem", fontWeight: 700, color: "var(--ink)", background: "var(--white)", border: "1px solid var(--border)", padding: "0.5rem 1rem", borderRadius: "999px" }}>
+                    <span style={{ color: "#22c55e", fontWeight: 800 }}>✓</span> {label}
                   </span>
                 ))}
               </div>
               <p style={{ textAlign: "center", marginTop: "1rem", color: "var(--ink-faint)", fontSize: "0.76rem" }}>
-                Model AI: pilihan lokal/gratis tersedia, tergantung kebutuhan & provider.
+                Model AI: pilihan lokal/gratis tersedia, tergantung kebutuhan &amp; provider.
               </p>
             </div>
           </section>
@@ -1566,7 +1550,7 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
             <div className="container">
               <div className="section-head center">
                 <span style={{ display: "inline-flex", alignItems: "center", gap: "0.4rem", background: "var(--orange)", color: "#fff", fontWeight: 800, fontSize: "0.75rem", letterSpacing: "0.04em", padding: "0.4rem 1rem", borderRadius: "999px", marginBottom: "1.2rem", boxShadow: "0 3px 8px rgba(247,148,29,0.3)" }}>
-                  🔗 TERHUBUNG KEMANA SAJA
+                  TERHUBUNG KEMANA SAJA
                 </span>
                 <h2 style={{ fontSize: "clamp(1.6rem, 4vw, 2.4rem)" }}>
                   Agent Bisa Terhubung ke <span className="hero-h1-accent">Tools yang Sudah Anda Pakai</span>
@@ -1720,8 +1704,8 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
 
               {/* Bottom Summary Banner */}
               <div className="tool-integ-banner">
-                <span className="tool-integ-banner-icon">
-                  ⚡
+                <span className="tool-integ-banner-icon" style={{ display: "grid", placeItems: "center" }}>
+                  <Icon name="zap" size={18} />
                 </span>
                 <p className="tool-integ-banner-text">
                   Semua tools terhubung. Agent bekerja otomatis, <span className="hero-h1-accent">Anda fokus ke hal penting.</span>
@@ -1735,7 +1719,7 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
             <div className="container">
               <div className="section-head center">
                 <span style={{ display: "inline-flex", alignItems: "center", gap: "0.4rem", background: "var(--purple-soft)", color: "var(--purple)", fontWeight: 800, fontSize: "0.75rem", letterSpacing: "0.04em", padding: "0.4rem 1rem", borderRadius: "999px", marginBottom: "1.2rem" }}>
-                  🎁 FASILITAS LENGKAP WORKSHOP
+                  FASILITAS LENGKAP WORKSHOP
                 </span>
                 <h2 style={{ fontSize: "clamp(1.6rem, 4vw, 2.4rem)" }}>
                   Anda Tidak Pulang Membawa Slide.<br />
@@ -1873,7 +1857,7 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
                   <h3 style={{ fontSize: "clamp(1.25rem, 2.8vw, 1.7rem)", lineHeight: 1.35 }}>
                     Hire 6 Karyawan? Siapkan <span style={{ color: "#e74c3c" }}>±Rp29 Juta/bulan</span>.
                     <br />
-                    Bangun 6 AI Agent? <span style={{ color: "var(--green)" }}>Rp225.000 Sekali.</span> 🚀
+                    Bangun 6 AI Agent? <span style={{ color: "var(--green)" }}>Rp225.000 Sekali.</span>
                   </h3>
                 </div>
                 <div style={{ overflowX: "auto" }}>
@@ -1887,24 +1871,24 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
                     </thead>
                     <tbody>
                       {[
-                        { posisi: "Customer Service", gaji: "4jt", agent: "CS Agent ✅" },
-                        { posisi: "Sales", gaji: "5jt", agent: "Sales Agent ✅" },
-                        { posisi: "Marketing", gaji: "5jt", agent: "Marketing Agent ✅" },
-                        { posisi: "Content Writer", gaji: "4jt", agent: "Content Agent ✅" },
-                        { posisi: "Programmer", gaji: "7jt", agent: "Developer Agent ✅" },
-                        { posisi: "Admin & Laporan", gaji: "4jt", agent: "Report Agent ✅" },
+                        { posisi: "Customer Service", gaji: "4jt", agent: "CS Agent" },
+                        { posisi: "Sales", gaji: "5jt", agent: "Sales Agent" },
+                        { posisi: "Marketing", gaji: "5jt", agent: "Marketing Agent" },
+                        { posisi: "Content Writer", gaji: "4jt", agent: "Content Agent" },
+                        { posisi: "Programmer", gaji: "7jt", agent: "Developer Agent" },
+                        { posisi: "Admin & Laporan", gaji: "4jt", agent: "Report Agent" },
                       ].map((row, i) => (
                         <tr key={i} style={{ borderBottom: "1px solid var(--border)", background: i % 2 === 0 ? "transparent" : "var(--chip)" }}>
                           <td style={{ padding: "0.7rem 0.8rem", fontWeight: 600, color: "var(--ink)" }}>{row.posisi}</td>
                           <td style={{ textAlign: "center", padding: "0.7rem 0.8rem", fontWeight: 700, color: "#e74c3c" }}>Rp{row.gaji}</td>
-                          <td style={{ textAlign: "center", padding: "0.7rem 0.8rem", color: "var(--green)", fontWeight: 600 }}>{row.agent}</td>
+                          <td style={{ textAlign: "center", padding: "0.7rem 0.8rem", color: "var(--green)", fontWeight: 700 }}>{row.agent}</td>
                         </tr>
                       ))}
                       <tr style={{ background: "rgba(23,160,94,0.06)", borderTop: "2px solid var(--green)" }}>
                         <td style={{ padding: "0.9rem 0.8rem", fontWeight: 800, fontSize: "1rem", color: "var(--ink)" }}>TOTAL/bulan</td>
                         <td style={{ textAlign: "center", padding: "0.9rem 0.8rem", fontWeight: 900, fontSize: "1.15rem", color: "#e74c3c" }}>±Rp29jt</td>
                         <td style={{ textAlign: "center", padding: "0.9rem 0.8rem", fontWeight: 800, fontSize: "1rem", color: "var(--green)" }}>
-                          Rp225rb <span style={{ fontSize: "0.72rem", fontWeight: 500, color: "var(--ink-faint)" }}>SEKALI</span> 🚀
+                          Rp225rb <span style={{ fontSize: "0.72rem", fontWeight: 500, color: "var(--ink-faint)" }}>SEKALI</span>
                         </td>
                       </tr>
                     </tbody>
@@ -1922,10 +1906,11 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
                 <div style={{ position: "absolute", width: "350px", height: "350px", borderRadius: "50%", background: isEarlyBirdActive ? "radial-gradient(circle, rgba(247,148,29,0.2) 0%, transparent 70%)" : "radial-gradient(circle, rgba(168,85,247,0.2) 0%, transparent 70%)", top: "-120px", right: "-80px", pointerEvents: "none" }} />
                 
                 {/* Standout Badge */}
+                {/* Standout Badge */}
                 {isEarlyBirdActive ? (
                   <div style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem", background: "rgba(247,148,29,0.18)", border: "1px solid rgba(247,148,29,0.5)", color: "var(--orange)", fontWeight: 800, fontSize: "0.82rem", letterSpacing: "0.04em", padding: "0.45rem 1.1rem", borderRadius: "999px", boxShadow: "0 0 20px rgba(247,148,29,0.25)" }}>
                     <span style={{ display: "inline-block", width: "8px", height: "8px", borderRadius: "50%", background: "#f7941d", boxShadow: "0 0 10px #f7941d" }} />
-                    <span>⚡ PROMO EARLY BIRD</span>
+                    <span>PROMO EARLY BIRD</span>
                   </div>
                 ) : (
                   <div style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem", background: "rgba(239, 68, 68, 0.2)", border: "1px solid rgba(239, 68, 68, 0.55)", color: "#fca5a5", fontWeight: 800, fontSize: "0.82rem", letterSpacing: "0.04em", padding: "0.45rem 1.1rem", borderRadius: "999px" }}>
@@ -1962,7 +1947,7 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
                         <span style={{ fontSize: "0.82rem", color: "rgba(255,255,255,0.85)", fontWeight: 600 }}>Diskon Langsung Rp265.000</span>
                       </div>
                       <div style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "10px", padding: "0.65rem 0.9rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                        <span style={{ color: "var(--orange)", fontSize: "1rem" }}>⚡</span>
+                        <span style={{ color: "#22c55e", fontSize: "1rem" }}>✓</span>
                         <span style={{ fontSize: "0.82rem", color: "rgba(255,255,255,0.85)", fontWeight: 600 }}>Harga Promo Terbatas</span>
                       </div>
                     </>
@@ -1979,7 +1964,7 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
                     </>
                   )}
                   <div style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "10px", padding: "0.65rem 0.9rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                    <span style={{ color: "#38bdf8", fontSize: "1rem" }}>🚀</span>
+                    <span style={{ color: "#22c55e", fontSize: "1rem" }}>✓</span>
                     <span style={{ fontSize: "0.82rem", color: "rgba(255,255,255,0.85)", fontWeight: 600 }}>Sekali Bayar &amp; Akses Penuh</span>
                   </div>
                 </div>
@@ -1989,11 +1974,11 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
                 </p>
 
                 <a href="#daftar" className="btn btn-purple btn-lg" style={{ display: "inline-flex", maxWidth: "100%", position: "relative", background: isEarlyBirdActive ? "linear-gradient(135deg, #f7941d 0%, #e67e22 100%)" : "linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%)", whiteSpace: "normal", textAlign: "center", lineHeight: 1.25, fontWeight: 900, fontSize: "1.08rem", padding: "1rem 2rem", boxShadow: isEarlyBirdActive ? "0 8px 25px rgba(247,148,29,0.4)" : "0 8px 25px rgba(124,58,237,0.35)", border: "none" }}>
-                  🚀 {isEarlyBirdActive ? `Daftar Early Bird — ${rupiah(225000)}` : `Daftar Sekarang — ${rupiah(490000)}`}
+                  {isEarlyBirdActive ? `Daftar Early Bird — ${rupiah(225000)}` : `Daftar Sekarang — ${rupiah(490000)}`}
                 </a>
 
                 <p style={{ fontSize: "0.78rem", color: "rgba(255,255,255,0.55)", marginTop: "1rem", marginBottom: 0, position: "relative" }}>
-                  {isEarlyBirdActive ? "⚠️ Slot promo terbatas. Setelah promo berakhir kembali ke harga normal Rp490.000." : "ℹ️ Berlaku harga normal Rp490.000."}
+                  {isEarlyBirdActive ? "Slot promo terbatas. Setelah promo berakhir kembali ke harga normal Rp490.000." : "Berlaku harga normal Rp490.000."}
                 </p>
               </div>
             </div>
@@ -2004,7 +1989,7 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
             <div className="container">
               <div className="section-head center">
                 <span style={{ display: "inline-flex", alignItems: "center", gap: "0.4rem", background: "var(--purple-soft)", color: "var(--purple)", fontWeight: 800, fontSize: "0.75rem", letterSpacing: "0.04em", padding: "0.4rem 1rem", borderRadius: "999px", marginBottom: "1.2rem" }}>
-                  🎯 TARGET AUDIENCE
+                  TARGET AUDIENCE
                 </span>
                 <h2 style={{ fontSize: "clamp(1.6rem, 4vw, 2.4rem)" }}>
                   Apakah Zero Human Company <span className="hero-h1-accent">Cocok untuk Anda?</span>
@@ -2028,7 +2013,7 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
                   {
                     title: "Owner Bisnis & Founder",
                     desc: "Miliki 6 karyawan digital otonom yang bekerja 24/7 tanpa menambah beban gaji bulanan, tunjangan & BPJS.",
-                    tag: "⚡ Efisiensi Biaya Operasional",
+                    tag: "Efisiensi Biaya Operasional",
                     color: "var(--purple)",
                     soft: "var(--purple-soft)",
                     icon: (
@@ -2042,7 +2027,7 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
                   {
                     title: "Pelaku UMKM",
                     desc: "Kapasitas kerja setara tim korporasi besar tanpa perlu rekrut banyak staf dan bayar sewa kantor mahal.",
-                    tag: "🏪 Skala Bisnis Instan",
+                    tag: "Skala Bisnis Instan",
                     color: "var(--orange)",
                     soft: "var(--orange-soft)",
                     icon: (
@@ -2055,7 +2040,7 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
                   {
                     title: "Startup & Tech Business",
                     desc: "Operasional super lean — tim inti bisa 100% fokus ke inovasi produk & pertumbuhan market, bukan urus administrasi.",
-                    tag: "🚀 Lean & Fast Execution",
+                    tag: "Lean & Fast Execution",
                     color: "var(--green)",
                     soft: "rgba(23, 160, 94, 0.1)",
                     icon: (
@@ -2070,7 +2055,7 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
                   {
                     title: "Profesional & Freelancer",
                     desc: "Kerja solo terasa ringan karena ada asisten digital yang mengurus chat klien, riset, proposal, dan follow-up.",
-                    tag: "💼 Hemat 15+ Jam/Minggu",
+                    tag: "Hemat 15+ Jam/Minggu",
                     color: "var(--purple)",
                     soft: "var(--purple-soft)",
                     icon: (
@@ -2083,7 +2068,7 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
                   {
                     title: "Marketer & Tim Sales",
                     desc: "Riset tren pasar, pembuatan copywriting promosi, hingga follow-up prospek berjalan otomatis tanpa jeda.",
-                    tag: "📈 Otomasi Funnel & Closing",
+                    tag: "Otomasi Funnel & Closing",
                     color: "var(--orange)",
                     soft: "var(--orange-soft)",
                     icon: (
@@ -2096,7 +2081,7 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
                   {
                     title: "Pelajar & Tech Enthusiast",
                     desc: "Belajar langsung cara membangun arsitektur AI Agent masa depan secara hands-on dan aplikatif, bukan cuma teori.",
-                    tag: "🎓 Skill Masa Depan",
+                    tag: "Skill Masa Depan",
                     color: "var(--green)",
                     soft: "rgba(23, 160, 94, 0.1)",
                     icon: (
@@ -2177,18 +2162,17 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
               >
                 <span
                   style={{
-                    width: "42px",
-                    height: "42px",
+                    width: "40px",
+                    height: "40px",
                     borderRadius: "50%",
                     background: "linear-gradient(135deg, var(--orange), var(--purple))",
                     color: "#fff",
                     display: "grid",
                     placeItems: "center",
-                    fontSize: "1.2rem",
                     flexShrink: 0,
                   }}
                 >
-                  💡
+                  <Icon name="check" size={18} />
                 </span>
                 <p style={{ margin: 0, fontWeight: 700, color: "var(--ink)", fontSize: "0.92rem", lineHeight: 1.45 }}>
                   Tidak perlu latar belakang coding. <span className="hero-h1-accent">Yang penting kemauan untuk membangun dan bertumbuh.</span>
@@ -2225,36 +2209,40 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "1.2rem", marginTop: "2rem", textAlign: "left", maxWidth: "38rem", marginInline: "auto", position: "relative" }}>
                   <div style={{ background: "rgba(168,85,247,0.08)", border: "1px solid rgba(168,85,247,0.3)", borderRadius: "var(--r-md)", padding: "1.3rem" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", marginBottom: "0.9rem" }}>
-                      <span style={{ width: "34px", height: "34px", borderRadius: "50%", background: "linear-gradient(135deg, #a855f7, #7c3aed)", display: "grid", placeItems: "center", fontSize: "1rem", flexShrink: 0 }}>🧑</span>
+                      <span style={{ width: "32px", height: "32px", borderRadius: "50%", background: "linear-gradient(135deg, #a855f7, #7c3aed)", color: "#fff", display: "grid", placeItems: "center", flexShrink: 0 }}>
+                        <Icon name="user" size={16} />
+                      </span>
                       <b style={{ color: "#fff", fontSize: "1rem" }}>Manusia:</b>
                     </div>
                     <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
                       {[
-                        { icon: "🧠", text: "Berpikir. Memimpin." },
-                        { icon: "❤️", text: "Memutuskan. Membangun hubungan." },
-                        { icon: "⭐", text: "Mencipta." },
-                      ].map((item, i) => (
+                        "Berpikir. Memimpin.",
+                        "Memutuskan. Membangun hubungan.",
+                        "Mencipta.",
+                      ].map((text, i) => (
                         <div key={i} style={{ display: "flex", alignItems: "center", gap: "0.6rem", background: "rgba(255,255,255,0.05)", borderRadius: "var(--r-sm)", padding: "0.6rem 0.8rem" }}>
-                          <span style={{ fontSize: "0.9rem" }}>{item.icon}</span>
-                          <span style={{ color: "rgba(255,255,255,0.75)", fontSize: "0.86rem" }}>{item.text}</span>
+                          <span style={{ color: "#c084fc", fontWeight: 800 }}>•</span>
+                          <span style={{ color: "rgba(255,255,255,0.75)", fontSize: "0.86rem" }}>{text}</span>
                         </div>
                       ))}
                     </div>
                   </div>
                   <div style={{ background: "rgba(56,189,248,0.08)", border: "1px solid rgba(56,189,248,0.3)", borderRadius: "var(--r-md)", padding: "1.3rem" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", marginBottom: "0.9rem" }}>
-                      <span style={{ width: "34px", height: "34px", borderRadius: "50%", background: "linear-gradient(135deg, #38bdf8, #2563eb)", display: "grid", placeItems: "center", fontSize: "1rem", flexShrink: 0 }}>🤖</span>
-                      <b style={{ color: "#fff", fontSize: "1rem" }}>AI:</b>
+                      <span style={{ width: "32px", height: "32px", borderRadius: "50%", background: "linear-gradient(135deg, #38bdf8, #2563eb)", color: "#fff", display: "grid", placeItems: "center", flexShrink: 0 }}>
+                        <Icon name="settings" size={16} />
+                      </span>
+                      <b style={{ color: "#fff", fontSize: "1rem" }}>Sistem AI:</b>
                     </div>
                     <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
                       {[
-                        { icon: "📊", text: "Mencari. Menganalisis." },
-                        { icon: "📄", text: "Menulis. Mengikuti workflow." },
-                        { icon: "🔄", text: "Mengerjakan yang repetitif." },
-                      ].map((item, i) => (
+                        "Mencari. Menganalisis.",
+                        "Menulis. Mengikuti workflow.",
+                        "Mengerjakan yang repetitif.",
+                      ].map((text, i) => (
                         <div key={i} style={{ display: "flex", alignItems: "center", gap: "0.6rem", background: "rgba(255,255,255,0.05)", borderRadius: "var(--r-sm)", padding: "0.6rem 0.8rem" }}>
-                          <span style={{ fontSize: "0.9rem" }}>{item.icon}</span>
-                          <span style={{ color: "rgba(255,255,255,0.75)", fontSize: "0.86rem" }}>{item.text}</span>
+                          <span style={{ color: "#38bdf8", fontWeight: 800 }}>•</span>
+                          <span style={{ color: "rgba(255,255,255,0.75)", fontSize: "0.86rem" }}>{text}</span>
                         </div>
                       ))}
                     </div>
@@ -2267,7 +2255,9 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
                       <span key={i} style={{ width: "4px", height: "4px", borderRadius: "50%", background: "rgba(247,148,29,0.5)" }} />
                     ))}
                   </span>
-                  <span style={{ width: "40px", height: "40px", borderRadius: "50%", background: "var(--orange)", display: "grid", placeItems: "center", fontSize: "1.1rem", flexShrink: 0, boxShadow: "0 0 20px rgba(247,148,29,0.5)" }}>⚡</span>
+                  <span style={{ width: "36px", height: "36px", borderRadius: "50%", background: "var(--orange)", color: "#fff", display: "grid", placeItems: "center", flexShrink: 0, boxShadow: "0 0 20px rgba(247,148,29,0.5)" }}>
+                    <Icon name="zap" size={18} />
+                  </span>
                   <p style={{ fontWeight: 900, fontSize: "1.15rem", color: "var(--orange)", margin: 0 }}>
                     MANUSIA MEMIMPIN. AI BEKERJA.
                   </p>
@@ -2398,7 +2388,7 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
                     marginBottom: "0.85rem",
                   }}
                 >
-                  <span>⚡</span> Pendaftaran Batch Resmi Dibuka
+                  Pendaftaran Batch Resmi Dibuka
                 </div>
 
                 <h2
