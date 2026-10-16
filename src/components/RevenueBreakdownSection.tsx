@@ -32,10 +32,6 @@ export default function RevenueBreakdownSection({
   const [batchSortBy, setBatchSortBy] = useState<"nearest" | "revenue" | "paid">("nearest");
   const [hoveredBarIndex, setHoveredBarIndex] = useState<number | null>(null);
 
-  const nearestBatch = useMemo(() => {
-    return batchData.find((b) => !b.isPast && !b.batchId.startsWith("nobatch_"));
-  }, [batchData]);
-
   // ─── TAB 1: PER HARI (In-memory sliced by selected range) ───
   const currentDailyData = useMemo(() => {
     return dailyData.slice(-dayRange);
@@ -159,7 +155,7 @@ export default function RevenueBreakdownSection({
   };
 
   return (
-    <div className="rev-section" style={{ marginTop: "2.4rem" }}>
+    <div className="rev-section adm-section-gap">
       {/* Header Utama + Tab Switcher */}
       <div className="adm-head" style={{ marginBottom: "1rem" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", flexWrap: "wrap" }}>
@@ -208,7 +204,7 @@ export default function RevenueBreakdownSection({
           KONTEN TAB 1: PENDAPATAN PER HARI
          ════════════════════════════════════════════════════════ */}
       {activeTab === "daily" && (
-        <div className="tbl-wrap" style={{ padding: "1.4rem" }}>
+        <div className="tbl-wrap rev-card-body">
           {/* Header Periode & Switcher Rentang */}
           <div
             style={{
@@ -501,7 +497,7 @@ export default function RevenueBreakdownSection({
           KONTEN TAB 2: PENDAPATAN PER BULAN
          ════════════════════════════════════════════════════════ */}
       {activeTab === "monthly" && (
-        <div className="tbl-wrap" style={{ padding: "1.4rem" }}>
+        <div className="tbl-wrap rev-card-body">
           {/* Header & Total Omzet Bulanan */}
           <div
             style={{
@@ -650,7 +646,7 @@ export default function RevenueBreakdownSection({
           KONTEN TAB 3: PENDAPATAN PER BATCH
          ════════════════════════════════════════════════════════ */}
       {activeTab === "batch" && (
-        <div className="tbl-wrap" style={{ padding: "1.4rem" }}>
+        <div className="tbl-wrap rev-card-body">
           {/* Header & Total Batch */}
           <div
             style={{
@@ -675,52 +671,8 @@ export default function RevenueBreakdownSection({
             </span>
           </div>
 
-          {/* 4 Mini Stat Boxes */}
+          {/* 3 Mini Stat Boxes */}
           <div className="rev-summary-grid">
-            <div
-              className="rev-summary-box"
-              style={{
-                background: nearestBatch ? "rgba(35, 33, 118, 0.05)" : "var(--chip)",
-                border: nearestBatch ? "1.5px solid var(--purple)" : "1px solid var(--border)",
-              }}
-            >
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                <span className="muted" style={{ fontWeight: 700, color: "var(--purple)" }}>
-                  🚀 Batch Terdekat
-                </span>
-                {nearestBatch && (
-                  <span className="badge y" style={{ fontSize: "0.65rem", padding: "0.1rem 0.4rem", fontWeight: 800 }}>
-                    {nearestBatch.daysLeftShort}
-                  </span>
-                )}
-              </div>
-              <b style={{ fontSize: "1.1rem", color: "var(--ink)" }}>
-                {nearestBatch ? nearestBatch.daysLeftLabel : "Tidak Ada"}
-              </b>
-              <span style={{ fontSize: "0.72rem", color: "var(--ink-soft)" }}>
-                {nearestBatch ? (
-                  <>
-                    <strong style={{ color: "var(--purple)" }}>{nearestBatch.paidRegs} peserta lunas</strong>
-                    {" "}dari {nearestBatch.totalRegs} pendaftar
-                    <span
-                      style={{
-                        display: "block",
-                        color: "var(--ink-faint)",
-                        marginTop: "0.15rem",
-                        textOverflow: "ellipsis",
-                        overflow: "hidden",
-                        whiteSpace: "nowrap",
-                      }}
-                      title={`${nearestBatch.batchName} · ${nearestBatch.programTitle}`}
-                    >
-                      {nearestBatch.batchName} · {nearestBatch.programTitle}
-                    </span>
-                  </>
-                ) : (
-                  "Belum ada jadwal batch mendatang"
-                )}
-              </span>
-            </div>
 
             <div className="rev-summary-box">
               <span className="muted">Total Peserta Lunas</span>
@@ -751,7 +703,7 @@ export default function RevenueBreakdownSection({
 
           {/* Search & Filter Toolbar */}
           <div className="rev-search-bar" style={{ marginTop: "1rem" }}>
-            <div style={{ flex: 1, minWidth: "14rem" }}>
+            <div style={{ flex: "1 1 12rem", minWidth: 0 }}>
               <input
                 type="search"
                 placeholder="🔍 Cari nama program atau nama batch..."

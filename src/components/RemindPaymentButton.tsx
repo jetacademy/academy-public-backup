@@ -114,7 +114,10 @@ export default function RemindPaymentButton({
               boxShadow: "0 20px 45px rgba(0, 0, 0, 0.25)",
               width: "100%",
               maxWidth: "520px",
-              padding: "1.5rem",
+              maxHeight: "90vh",
+              overflowY: "auto",
+              boxSizing: "border-box",
+              padding: "1.25rem",
               position: "relative",
               animation: "fadeIn 0.15s ease-out",
             }}

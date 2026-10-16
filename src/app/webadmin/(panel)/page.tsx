@@ -160,7 +160,7 @@ export default async function AdminDashboard() {
         batchData={batchRevenue}
       />
 
-      <div className="adm-head" style={{ marginTop: "2.4rem" }}>
+      <div className="adm-head adm-section-gap">
         <h2 style={{ fontSize: "1.25rem" }}>Rekap per Program</h2>
       </div>
       <div className="tbl-wrap">
@@ -186,7 +186,7 @@ export default async function AdminDashboard() {
         </table>
       </div>
 
-      <div className="adm-head" style={{ marginTop: "2.4rem" }}>
+      <div className="adm-head adm-section-gap">
         <h2 style={{ fontSize: "1.25rem" }}>Pendaftar Terbaru</h2>
         <Link href="/webadmin/pendaftar" className="btn btn-sm">Lihat Semua →</Link>
       </div>
