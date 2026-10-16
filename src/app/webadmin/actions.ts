@@ -2103,12 +2103,24 @@ export async function updateBatchLinks(formData: FormData) {
   const priceOfflineRaw = optStr(formData, "priceOffline");
   const priceOfflineEbRaw = optStr(formData, "priceOfflineEb");
   const quotaOfflineEbRaw = optStr(formData, "quotaOfflineEb");
+  const batchTypeRaw = optStr(formData, "batchType");
+  const scheduleAtRaw = optStr(formData, "scheduleAt");
+
+  let scheduleAtDate: Date | undefined = undefined;
+  if (scheduleAtRaw) {
+    const parsed = parseWIB(scheduleAtRaw);
+    if (!isNaN(parsed.getTime())) {
+      scheduleAtDate = parsed;
+    }
+  }
 
   if (!id) redirect(`/webadmin/program/${programId}/batch?e=id`);
   await prisma.programBatch.update({
     where: { id },
     data: {
       ...(name !== undefined ? { name } : {}),
+      ...(scheduleAtDate ? { scheduleAt: scheduleAtDate } : {}),
+      ...(batchTypeRaw ? { batchType: batchTypeRaw, hasOffline: batchTypeRaw === "OFFLINE" } : {}),
       ...(seatsLeftRaw !== undefined ? { seatsLeft: seatsLeftRaw ? parseInt(seatsLeftRaw, 10) : null } : {}),
       ...(priceOnlineRaw !== undefined ? { priceOnline: priceOnlineRaw ? parseInt(priceOnlineRaw, 10) : null } : {}),
       ...(priceOnlineEbRaw !== undefined ? { priceOnlineEb: priceOnlineEbRaw ? parseInt(priceOnlineEbRaw, 10) : null } : {}),
