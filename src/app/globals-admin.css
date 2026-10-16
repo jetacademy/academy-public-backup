@@ -1147,6 +1147,15 @@
   .lms-add-module-btn { width: 100% !important; justify-content: center; }
 }
 
+.lms-mod-highlight {
+  animation: lmsHighlightPulse 2s ease-out;
+}
+@keyframes lmsHighlightPulse {
+  0% { box-shadow: 0 0 0 3px var(--purple); transform: scale(1.008); }
+  50% { box-shadow: 0 0 0 6px rgba(108, 92, 231, 0.35); }
+  100% { box-shadow: none; transform: scale(1); }
+}
+
 /* Kartu pilihan kriteria kelulusan */
 .criteria-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); gap: 1rem; }
 .criteria-card { position: relative; }

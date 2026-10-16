@@ -13,31 +13,93 @@ export default async function ProgramEditorLayout({
   const { id } = await params;
   const program = await prisma.program.findUnique({
     where: { id },
-    select: { id: true, title: true, slug: true, type: true, isActive: true },
+    select: { id: true, title: true, slug: true, type: true, isActive: true, emoji: true },
   });
   if (!program) notFound();
 
   return (
     <>
-      <div className="prog-editor-head">
-        <div>
-          <div style={{ display: "flex", alignItems: "center", gap: ".7rem", flexWrap: "wrap" }}>
-            <Link href="/webadmin/program" style={{ color: "var(--ink-faint)", fontSize: ".82rem", fontWeight: 700 }}>
-              ← Semua Program
+      <div
+        className="prog-editor-head"
+        style={{
+          background: "var(--white)",
+          border: "1px solid var(--border)",
+          borderRadius: "var(--r-md)",
+          padding: "1.2rem 1.4rem",
+          marginBottom: "1rem",
+          boxShadow: "0 2px 6px rgba(0,0,0,0.02)",
+        }}
+      >
+        <div style={{ flex: "1 1 auto" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: ".6rem", flexWrap: "wrap", marginBottom: "0.4rem" }}>
+            <Link
+              href="/webadmin/program"
+              style={{
+                color: "var(--ink-faint)",
+                fontSize: ".82rem",
+                fontWeight: 700,
+                textDecoration: "none",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "0.25rem",
+              }}
+            >
+              <span>←</span>
+              <span>Daftar Program</span>
             </Link>
-            <span className={`badge ${program.isActive ? "g" : "dim"}`}>{program.isActive ? "Aktif" : "Nonaktif"}</span>
-            <span className="badge">{program.type}</span>
+            <span style={{ color: "var(--border)" }}>•</span>
+            <span className={`badge ${program.isActive ? "g" : "dim"}`}>
+              {program.isActive ? "🟢 Publik Aktif" : "⚪ Nonaktif / Draft"}
+            </span>
+            <span
+              className="badge"
+              style={{
+                background: "var(--purple-soft)",
+                color: "var(--purple-deep)",
+                fontWeight: 800,
+              }}
+            >
+              {program.type}
+            </span>
           </div>
-          <h1 style={{ fontSize: "clamp(1.3rem, 3vw, 1.7rem)", margin: ".35rem 0 0" }}>{program.title}</h1>
+          <h1
+            style={{
+              fontSize: "clamp(1.25rem, 2.5vw, 1.65rem)",
+              margin: 0,
+              fontWeight: 900,
+              color: "var(--ink)",
+              display: "flex",
+              alignItems: "center",
+              gap: "0.5rem",
+            }}
+          >
+            <span>{program.emoji || "🎓"}</span>
+            <span>{program.title}</span>
+          </h1>
         </div>
-        <a href={`/program/${program.slug}`} target="_blank" className="btn btn-sm">
-          Lihat Halaman Publik ↗
-        </a>
+
+        <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", flexWrap: "wrap" }}>
+          <a
+            href={`/program/${program.slug}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn btn-sm"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "0.4rem",
+              fontWeight: 700,
+            }}
+          >
+            <span>Lihat Halaman Publik</span>
+            <span>↗</span>
+          </a>
+        </div>
       </div>
 
       <ProgramSubTabs programId={program.id} />
 
-      <div style={{ marginTop: "1.6rem" }}>{children}</div>
+      <div style={{ marginTop: "1.4rem" }}>{children}</div>
     </>
   );
 }

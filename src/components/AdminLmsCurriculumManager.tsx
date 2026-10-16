@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import Link from "next/link";
 import ConfirmButton from "@/components/ConfirmButton";
 import {
@@ -17,11 +17,11 @@ import {
   moveLmsLessonAction,
 } from "@/app/webadmin/actions";
 
-const TYPE_CHIP: Record<string, { cls: string; label: string }> = {
-  VIDEO: { cls: "video", label: "Video" },
-  TEXT: { cls: "text", label: "Teks" },
-  PDF: { cls: "pdf", label: "PDF" },
-  QUIZ: { cls: "quiz", label: "Kuis" },
+const TYPE_CHIP: Record<string, { cls: string; label: string; icon: string }> = {
+  VIDEO: { cls: "video", label: "Video", icon: "🎥" },
+  TEXT: { cls: "text", label: "Teks", icon: "📄" },
+  PDF: { cls: "pdf", label: "PDF", icon: "📑" },
+  QUIZ: { cls: "quiz", label: "Kuis", icon: "❓" },
 };
 
 export type LessonRow = {
@@ -180,6 +180,15 @@ export default function AdminLmsCurriculumManager({
   const [groups, setGroups] = useState<GroupRow[]>(initialGroups);
   const [orphanModules, setOrphanModules] = useState<ModuleRow[]>(initialOrphanModules);
 
+  // Search & Filter State
+  const [searchQuery, setSearchQuery] = useState("");
+  const [typeFilter, setTypeFilter] = useState<string>("ALL");
+
+  // Quick Action Toggles at Top
+  const [showTopAddGroup, setShowTopAddGroup] = useState(false);
+  const [showTopAddModule, setShowTopAddModule] = useState(false);
+  const [targetGroupIdForNewModule, setTargetGroupIdForNewModule] = useState<string>("");
+
   // Drag states
   const [activeLessonDrag, setActiveLessonDrag] = useState<ActiveLessonDrag | null>(null);
   const [lessonDropTarget, setLessonDropTarget] = useState<LessonDropTarget | null>(null);
@@ -289,6 +298,54 @@ export default function AdminLmsCurriculumManager({
     return null;
   };
 
+  // Filter Match Helpers
+  const isLessonMatch = (les: LessonRow) => {
+    const q = searchQuery.toLowerCase().trim();
+    const titleMatch = !q || les.title.toLowerCase().includes(q);
+    const typeMatch =
+      typeFilter === "ALL" ||
+      (typeFilter === "PREVIEW" ? les.isPreview : les.type === typeFilter);
+    return titleMatch && typeMatch;
+  };
+
+  const isModuleMatch = (mod: ModuleRow) => {
+    const q = searchQuery.toLowerCase().trim();
+    if (mod.lessons.some(isLessonMatch)) return true;
+    if (typeFilter === "ALL" && q && mod.title.toLowerCase().includes(q)) return true;
+    return false;
+  };
+
+  const isGroupMatch = (g: GroupRow) => {
+    const q = searchQuery.toLowerCase().trim();
+    if (g.modules.some(isModuleMatch)) return true;
+    if (typeFilter === "ALL" && q && g.title.toLowerCase().includes(q)) return true;
+    return false;
+  };
+
+  const isFiltering = searchQuery.trim() !== "" || typeFilter !== "ALL";
+
+  // Matching count calculation
+  const matchingLessonsCount = useMemo(() => {
+    if (!isFiltering) return 0;
+    let count = 0;
+    groups.forEach((g) => {
+      g.modules.forEach((m) => {
+        count += m.lessons.filter(isLessonMatch).length;
+      });
+    });
+    orphanModules.forEach((m) => {
+      count += m.lessons.filter(isLessonMatch).length;
+    });
+    return count;
+  }, [groups, orphanModules, searchQuery, typeFilter, isFiltering]);
+
+  // Auto-expand on search
+  useEffect(() => {
+    if (isFiltering) {
+      expandAll();
+    }
+  }, [searchQuery, typeFilter]);
+
   // ─────────────────────────────────────────────────────────────
   // LESSON DRAG & DROP (Bisa pindah antar modul dan antar kelompok)
   // ─────────────────────────────────────────────────────────────
@@ -299,166 +356,126 @@ export default function AdminLmsCurriculumManager({
     sourceModuleId: string
   ) => {
     e.stopPropagation();
-    const dragData: ActiveLessonDrag = {
-      lessonId: lesson.id,
-      sourceModuleId,
-      lesson,
-    };
-    setActiveLessonDrag(dragData);
-    e.dataTransfer.setData("application/json", JSON.stringify(dragData));
-    e.dataTransfer.setData("text/plain", lesson.id);
+    setActiveLessonDrag({ lessonId: lesson.id, sourceModuleId, lesson });
     e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData(
+      "text/plain",
+      JSON.stringify({ lessonId: lesson.id, sourceModuleId })
+    );
   };
 
   const handleLessonDragOverItem = (
     e: React.DragEvent,
-    targetModuleId: string,
-    targetIndex: number
+    moduleId: string,
+    index: number
   ) => {
     if (!activeLessonDrag) return;
     e.preventDefault();
     e.stopPropagation();
-    e.dataTransfer.dropEffect = "move";
 
-    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-    const midY = rect.top + rect.height / 2;
-    const isAfter = e.clientY > midY;
-    const computedIndex = isAfter ? targetIndex + 1 : targetIndex;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const offsetY = e.clientY - rect.top;
+    const isTopHalf = offsetY < rect.height / 2;
 
-    setHoveredModuleId(targetModuleId);
     setLessonDropTarget({
-      moduleId: targetModuleId,
-      index: computedIndex,
-      position: isAfter ? "after" : "before",
+      moduleId,
+      index,
+      position: isTopHalf ? "before" : "after",
     });
+    setHoveredModuleId(moduleId);
   };
 
   const handleLessonDragOverModuleFooter = (
     e: React.DragEvent,
-    targetModuleId: string,
-    lessonCount: number
+    moduleId: string,
+    lessonsLength: number
   ) => {
     if (!activeLessonDrag) return;
     e.preventDefault();
     e.stopPropagation();
-    e.dataTransfer.dropEffect = "move";
 
-    setHoveredModuleId(targetModuleId);
     setLessonDropTarget({
-      moduleId: targetModuleId,
-      index: lessonCount,
-      position: lessonCount === 0 ? "empty" : "end",
+      moduleId,
+      index: lessonsLength,
+      position: lessonsLength === 0 ? "empty" : "end",
     });
+    setHoveredModuleId(moduleId);
   };
 
   const handleLessonDrop = async (e: React.DragEvent, targetModuleId: string) => {
+    if (!activeLessonDrag) return;
     e.preventDefault();
     e.stopPropagation();
 
-    let dragData = activeLessonDrag;
-    if (!dragData) {
-      try {
-        const raw = e.dataTransfer.getData("application/json");
-        if (raw) dragData = JSON.parse(raw);
-      } catch {
-        // ignore
-      }
-    }
+    const { lessonId, sourceModuleId, lesson } = activeLessonDrag;
+    const dropInfo = lessonDropTarget;
 
-    if (!dragData) {
-      resetLessonDrag();
-      return;
-    }
+    const targetIndex = dropInfo
+      ? dropInfo.position === "after"
+        ? dropInfo.index + 1
+        : dropInfo.index
+      : 0;
 
-    const { lessonId, sourceModuleId, lesson } = dragData;
-    const dropTarget = lessonDropTarget;
-    const targetIdx = dropTarget && dropTarget.moduleId === targetModuleId ? dropTarget.index : undefined;
-
-    // Cek jika posisi sama persis
-    if (sourceModuleId === targetModuleId) {
-      const sourceModInfo = findModule(sourceModuleId);
-      if (sourceModInfo) {
-        const currentIdx = sourceModInfo.module.lessons.findIndex((l) => l.id === lessonId);
-        if (targetIdx !== undefined && (currentIdx === targetIdx || (currentIdx === targetIdx - 1 && dropTarget?.position === "after"))) {
-          resetLessonDrag();
-          return;
-        }
-      }
-    }
-
-    // Simpan snapshot untuk kemungkinan rollback
-    previousStateRef.current = { groups, orphanModules };
-
-    // OPTIMISTIC UPDATE
-    const newGroups = groups.map((g) => ({
-      ...g,
-      modules: g.modules.map((m) => ({
-        ...m,
-        lessons: [...m.lessons],
-      })),
-    }));
-
-    const newOrphans = orphanModules.map((m) => ({
-      ...m,
-      lessons: [...m.lessons],
-    }));
-
-    const getAllModules = () => {
-      const list: ModuleRow[] = [];
-      newGroups.forEach((g) => list.push(...g.modules));
-      list.push(...newOrphans);
-      return list;
-    };
-
-    const allMods = getAllModules();
-    const srcMod = allMods.find((m) => m.id === sourceModuleId);
-    const tgtMod = allMods.find((m) => m.id === targetModuleId);
-
-    if (!srcMod || !tgtMod) {
-      resetLessonDrag();
-      return;
-    }
-
-    // 1. Ambil & hapus dari modul asal
-    const srcIdx = srcMod.lessons.findIndex((l) => l.id === lessonId);
-    let movingLesson = lesson;
-    if (srcIdx !== -1) {
-      const [removed] = srcMod.lessons.splice(srcIdx, 1);
-      if (removed) movingLesson = removed;
-    }
-
-    // 2. Sisipkan ke modul tujuan
-    let finalInsertIdx = targetIdx !== undefined ? targetIdx : tgtMod.lessons.length;
-    // Koreksi jika di modul yang sama dan ditarik ke bawah
-    if (sourceModuleId === targetModuleId && srcIdx !== -1 && srcIdx < finalInsertIdx) {
-      finalInsertIdx = Math.max(0, finalInsertIdx - 1);
-    }
-    finalInsertIdx = Math.max(0, Math.min(finalInsertIdx, tgtMod.lessons.length));
-    tgtMod.lessons.splice(finalInsertIdx, 0, { ...movingLesson, moduleId: targetModuleId });
-
-    // Update state reaktif
-    setGroups(newGroups);
-    setOrphanModules(newOrphans);
     resetLessonDrag();
 
-    // Feedback pesan
-    const targetGroupName = groups.find((g) => g.modules.some((m) => m.id === targetModuleId))?.title ?? "Modul Tanpa Kelompok";
-    setStatusMessage(`Memindahkan materi ke ${tgtMod.title} (${targetGroupName})…`);
-    setErrorMessage(null);
-
-    // Jalankan Server Action
-    try {
-      const res = await moveLmsLessonAction(programId, lessonId, targetModuleId, finalInsertIdx);
-      if (!res.ok) {
-        throw new Error(res.error || "Gagal memindahkan materi");
+    if (sourceModuleId === targetModuleId) {
+      const srcMod = findModule(sourceModuleId)?.module;
+      if (srcMod) {
+        const fromIdx = srcMod.lessons.findIndex((l) => l.id === lessonId);
+        let finalIdx = targetIndex;
+        if (fromIdx < targetIndex) finalIdx -= 1;
+        if (fromIdx === finalIdx) return;
       }
+    }
+
+    previousStateRef.current = { groups, orphanModules };
+
+    // 1. Optimistic Update
+    const removeLessonFromList = (modules: ModuleRow[]): ModuleRow[] =>
+      modules.map((m) =>
+        m.id === sourceModuleId
+          ? { ...m, lessons: m.lessons.filter((l) => l.id !== lessonId) }
+          : m
+      );
+
+    const addLessonToList = (modules: ModuleRow[]): ModuleRow[] =>
+      modules.map((m) => {
+        if (m.id !== targetModuleId) return m;
+        const newLessons = [...m.lessons];
+        const insertAt = Math.min(Math.max(0, targetIndex), newLessons.length);
+        newLessons.splice(insertAt, 0, { ...lesson, moduleId: targetModuleId });
+        return { ...m, lessons: newLessons };
+      });
+
+    let nextGroups = groups.map((g) => ({
+      ...g,
+      modules: removeLessonFromList(g.modules),
+    }));
+    let nextOrphans = removeLessonFromList(orphanModules);
+
+    nextGroups = nextGroups.map((g) => ({
+      ...g,
+      modules: addLessonToList(g.modules),
+    }));
+    nextOrphans = addLessonToList(nextOrphans);
+
+    setGroups(nextGroups);
+    setOrphanModules(nextOrphans);
+
+    // 2. Server Action
+    const targetModTitle = findModule(targetModuleId)?.module.title || "Modul";
+    setStatusMessage(`Memindahkan materi "${lesson.title}" ke "${targetModTitle}"…`);
+
+    try {
+      const res = await moveLmsLessonAction(programId, lessonId, targetModuleId, targetIndex);
+      if (!res.ok) throw new Error(res.error || "Gagal memindahkan materi");
+      setStatusMessage(`Materi "${lesson.title}" berhasil dipindahkan.`);
       setTimeout(() => setStatusMessage(null), 2500);
     } catch (err: any) {
       console.error("[handleLessonDrop] Error:", err);
-      // Rollback
       setGroups(previousStateRef.current.groups);
       setOrphanModules(previousStateRef.current.orphanModules);
-      setErrorMessage(err?.message || "Gagal memindahkan materi. Posisi dikembalikan.");
+      setErrorMessage(err?.message || "Gagal memindahkan materi. Perubahan dibatalkan.");
       setStatusMessage(null);
     }
   };
@@ -470,33 +487,36 @@ export default function AdminLmsCurriculumManager({
   };
 
   // ─────────────────────────────────────────────────────────────
-  // MODULE REORDERING (Drag & Drop urutan modul dalam grup / list)
+  // MODULE DRAG & DROP (Urutan modul dalam satu kelompok/orphan)
   // ─────────────────────────────────────────────────────────────
 
-  const handleModuleDragStart = (e: React.DragEvent, moduleId: string, groupId: string | null, index: number) => {
-    // Jangan drag modul jika mengklik input / button / link / lesson
-    const target = e.target as HTMLElement;
-    if (target.closest("input, select, button, a, .lms-lesson-item, .lms-lessons")) {
-      e.preventDefault();
-      return;
-    }
+  const handleModuleDragStart = (
+    e: React.DragEvent,
+    moduleId: string,
+    groupId: string | null,
+    index: number
+  ) => {
+    if (activeLessonDrag) return;
     setActiveModuleDrag({ moduleId, groupId, index });
-    e.dataTransfer.setData("text/plain", moduleId);
     e.dataTransfer.effectAllowed = "move";
   };
 
-  const handleModuleDragOver = (e: React.DragEvent, groupId: string | null, index: number) => {
+  const handleModuleDragOver = (
+    e: React.DragEvent,
+    groupId: string | null,
+    index: number
+  ) => {
     if (!activeModuleDrag || activeLessonDrag) return;
-    if (activeModuleDrag.groupId !== groupId) return; // Hanya reorder dalam grup yang sama
+    if (activeModuleDrag.groupId !== groupId) return;
     e.preventDefault();
-    e.dataTransfer.dropEffect = "move";
-
-    if (!moduleDragOverIdx || moduleDragOverIdx.index !== index || moduleDragOverIdx.groupId !== groupId) {
-      setModuleDragOverIdx({ groupId, index });
-    }
+    setModuleDragOverIdx({ groupId, index });
   };
 
-  const handleModuleDrop = async (e: React.DragEvent, groupId: string | null, targetIdx: number) => {
+  const handleModuleDrop = async (
+    e: React.DragEvent,
+    groupId: string | null,
+    targetIdx: number
+  ) => {
     if (!activeModuleDrag || activeLessonDrag) return;
     if (activeModuleDrag.groupId !== groupId) return;
     e.preventDefault();
@@ -554,7 +574,6 @@ export default function AdminLmsCurriculumManager({
   const handleDeleteModule = async (moduleId: string, moduleTitle: string, groupId: string | null) => {
     previousStateRef.current = { groups, orphanModules };
 
-    // 1. Optimistic remove
     if (groupId) {
       setGroups((prevG) =>
         prevG.map((g) =>
@@ -652,7 +671,6 @@ export default function AdminLmsCurriculumManager({
     const isModuleDragging = activeModuleDrag?.moduleId === mod.id;
     const isModuleDragOver = moduleDragOverIdx?.groupId === groupId && moduleDragOverIdx?.index === mIdx && !isModuleDragging;
 
-    // Status drop target materi
     const isLessonDragActive = Boolean(activeLessonDrag);
     const isTargetOfLessonDrop = hoveredModuleId === mod.id;
     const isFooterDropActive =
@@ -661,9 +679,12 @@ export default function AdminLmsCurriculumManager({
 
     const isModCollapsed = Boolean(collapsedModules[mod.id]);
 
+    const displayedLessons = isFiltering ? mod.lessons.filter(isLessonMatch) : mod.lessons;
+
     return (
       <section
         key={mod.id}
+        id={`lms-mod-${mod.id}`}
         draggable={!isLessonDragActive}
         onDragStart={(e) => handleModuleDragStart(e, mod.id, groupId, mIdx)}
         onDragOver={(e) => {
@@ -724,7 +745,14 @@ export default function AdminLmsCurriculumManager({
             </span>
 
             <span className="mod-no">{label}</span>
-            <span className="lms-mod-count">{mod.lessons.length} materi</span>
+            <span className="lms-mod-count">
+              {mod.lessons.length} materi
+              {isFiltering && displayedLessons.length < mod.lessons.length && (
+                <span style={{ color: "var(--purple)", marginLeft: "0.25rem" }}>
+                  ({displayedLessons.length} cocok)
+                </span>
+              )}
+            </span>
 
             <div className="lms-mod-actions">
               <button
@@ -805,16 +833,16 @@ export default function AdminLmsCurriculumManager({
                 name="title"
                 defaultValue={mod.title}
                 required
-                title="Klik untuk mengganti nama modul"
                 className="lms-mod-title-input"
+                title="Klik untuk mengganti nama modul"
               />
               <select
                 name="groupId"
                 defaultValue={mod.groupId ?? ""}
-                title="Pindahkan ke kelompok lain"
                 className="lms-mod-group-select"
+                title="Pindahkan modul ini ke kelompok lain"
               >
-                <option value="">Tanpa kelompok</option>
+                <option value="">Tanpa Kelompok</option>
                 {groupOptions.map((g) => (
                   <option key={g.id} value={g.id}>
                     {g.title}
@@ -830,40 +858,29 @@ export default function AdminLmsCurriculumManager({
           </form>
         </div>
 
-        {/* Daftar Materi di Modul Ini */}
-        <div className="lms-lessons">
-          {mod.lessons.length === 0 ? (
-            <div
-              className={`lms-empty-lesson-dropzone${isLessonDragActive ? " is-active" : ""}`}
-              onDragOver={(e) => handleLessonDragOverModuleFooter(e, mod.id, 0)}
-              onDrop={(e) => handleLessonDrop(e, mod.id)}
-            >
-              {isLessonDragActive ? (
-                <span>⬇ Lepaskan materi di sini untuk memasukkan ke modul ini</span>
-              ) : (
-                <span style={{ fontStyle: "italic", color: "var(--ink-faint)", fontSize: ".8rem" }}>
-                  Belum ada materi di modul ini. Tarik materi ke sini atau klik tombol di bawah.
-                </span>
-              )}
-            </div>
+        <div className="lms-mod-body">
+          {displayedLessons.length === 0 ? (
+            <p className="lms-empty-hint">
+              {isFiltering
+                ? "Tidak ada materi di modul ini yang cocok dengan filter pencarian."
+                : "Belum ada materi di modul ini. Klik tombol di bawah atau seret materi ke sini."}
+            </p>
           ) : (
-            <div className="lms-lessons-dnd-list">
-              {mod.lessons.map((les, lesIdx) => {
-                const chip = TYPE_CHIP[les.type] ?? TYPE_CHIP.VIDEO;
+            <div className="lms-lessons-list">
+              {displayedLessons.map((les, lesIdx) => {
+                const chip = TYPE_CHIP[les.type] ?? { cls: "", label: les.type, icon: "📄" };
                 const isItemDragging = activeLessonDrag?.lessonId === les.id;
                 const isDropTargetTop =
                   lessonDropTarget?.moduleId === mod.id &&
-                  lessonDropTarget?.index === lesIdx &&
-                  lessonDropTarget?.position === "before" &&
-                  !isItemDragging;
+                  lessonDropTarget.index === lesIdx &&
+                  lessonDropTarget.position === "before";
                 const isDropTargetBottom =
                   lessonDropTarget?.moduleId === mod.id &&
-                  lessonDropTarget?.index === lesIdx + 1 &&
-                  lessonDropTarget?.position === "after" &&
-                  !isItemDragging;
+                  lessonDropTarget.index === lesIdx &&
+                  lessonDropTarget.position === "after";
 
                 return (
-                  <div key={les.id} style={{ position: "relative" }}>
+                  <div key={les.id} className="lms-lesson-item-wrapper">
                     {/* Indikator bar drop di atas item */}
                     {isDropTargetTop && <div className="lms-lesson-drop-bar before" />}
 
@@ -888,16 +905,41 @@ export default function AdminLmsCurriculumManager({
 
                       <div className="lms-lesson-main">
                         <div className="lms-lesson-meta-top">
-                          <span className={`type-chip ${chip.cls}`}>{chip.label}</span>
+                          <span className={`type-chip ${chip.cls}`}>
+                            <span>{chip.icon}</span>
+                            <span>{chip.label}</span>
+                          </span>
                           {les.isPreview && (
-                            <span className="badge" style={{ fontSize: ".62rem" }}>
-                              Preview Gratis
+                            <span
+                              className="badge"
+                              style={{
+                                fontSize: ".62rem",
+                                background: "rgba(0, 184, 148, 0.15)",
+                                color: "#00b894",
+                                fontWeight: 700,
+                              }}
+                            >
+                              ✓ Preview Gratis
                             </span>
                           )}
                           {les.type === "QUIZ" && (
-                            <span className="l-meta">{les._count.questions} soal</span>
+                            <span
+                              className="badge"
+                              style={{
+                                fontSize: ".62rem",
+                                background: "rgba(108, 92, 231, 0.1)",
+                                color: "var(--purple)",
+                                fontWeight: 700,
+                              }}
+                            >
+                              ❓ {les._count.questions} soal
+                            </span>
                           )}
-                          {les.duration && <span className="l-meta">{les.duration}</span>}
+                          {les.duration && (
+                            <span className="l-meta" style={{ display: "inline-flex", alignItems: "center", gap: "0.2rem" }}>
+                              ⏱️ {les.duration}
+                            </span>
+                          )}
                         </div>
                         <Link
                           href={`/webadmin/program/${programId}/lms/lesson/${les.id}`}
@@ -985,7 +1027,7 @@ export default function AdminLmsCurriculumManager({
                             <ConfirmButton
                               className="icon-btn danger"
                               title="Hapus materi"
-                              message={`Hapus materi "${les.title}"?`}
+                              message={`Hapus materi "${les.title}"? Histori progres belajar materi ini akan terhapus.`}
                               onConfirm={() => handleDeleteLesson(les.id, les.title, mod.id)}
                             >
                               Hapus
@@ -1017,6 +1059,7 @@ export default function AdminLmsCurriculumManager({
               <Link
                 href={`/webadmin/program/${programId}/lms/lesson/new?module=${mod.id}`}
                 className="btn btn-sm lms-add-lesson-btn"
+                style={{ fontWeight: 700 }}
               >
                 + Tambah Materi / Tes
               </Link>
@@ -1051,60 +1094,377 @@ export default function AdminLmsCurriculumManager({
         </div>
       )}
 
-      {/* Toolbar Kurikulum: Statistik & Tombol Ciutkan/Bentangkan Semua */}
-      <div className="lms-curriculum-toolbar">
-        <div className="lms-toolbar-info">
-          <span>Struktur Kurikulum:</span>
-          <span className="lms-toolbar-pill">{groups.length} Bagian</span>
-          <span className="lms-toolbar-pill">
-            {groups.reduce((acc, g) => acc + g.modules.length, 0) + orphanModules.length} Modul
-          </span>
-          <span className="lms-toolbar-pill">
-            {groups.reduce(
-              (acc, g) => acc + g.modules.reduce((mAcc, m) => mAcc + m.lessons.length, 0),
-              0
-            ) + orphanModules.reduce((mAcc, m) => mAcc + m.lessons.length, 0)}{" "}
-            Materi
-          </span>
+      {/* Top Action & Navigation Controls Bar */}
+      <div
+        style={{
+          background: "var(--white)",
+          border: "1px solid var(--border)",
+          borderRadius: "var(--r-md)",
+          padding: "1rem 1.25rem",
+          marginBottom: "1.2rem",
+          display: "flex",
+          flexDirection: "column",
+          gap: "0.85rem",
+          boxShadow: "0 1px 3px rgba(0,0,0,0.03)",
+        }}
+      >
+        {/* Row 1: Search, Type Filter & Quick Jump */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "0.75rem",
+            flexWrap: "wrap",
+          }}
+        >
+          {/* Search Box */}
+          <div style={{ position: "relative", flex: "1 1 240px", minWidth: "180px" }}>
+            <span
+              style={{
+                position: "absolute",
+                left: "0.8rem",
+                top: "50%",
+                transform: "translateY(-50%)",
+                color: "var(--ink-faint)",
+                fontSize: "0.85rem",
+              }}
+            >
+              🔍
+            </span>
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Cari materi, kuis, modul, bagian..."
+              style={{
+                width: "100%",
+                padding: "0.55rem 2rem 0.55rem 2.2rem",
+                borderRadius: "var(--r-sm)",
+                border: "1px solid var(--border)",
+                fontSize: "0.85rem",
+                background: "var(--chip)",
+              }}
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery("")}
+                style={{
+                  position: "absolute",
+                  right: "0.6rem",
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  background: "none",
+                  border: "none",
+                  color: "var(--ink-faint)",
+                  cursor: "pointer",
+                  fontSize: "0.85rem",
+                }}
+              >
+                ✕
+              </button>
+            )}
+          </div>
+
+          {/* Filter Tipe Materi */}
+          <select
+            value={typeFilter}
+            onChange={(e) => setTypeFilter(e.target.value)}
+            style={{
+              padding: "0.55rem 0.8rem",
+              borderRadius: "var(--r-sm)",
+              border: "1px solid var(--border)",
+              fontSize: "0.85rem",
+              background: "var(--white)",
+              fontWeight: 600,
+            }}
+          >
+            <option value="ALL">Semua Tipe Materi</option>
+            <option value="VIDEO">🎥 Video</option>
+            <option value="TEXT">📄 Teks Bacaan</option>
+            <option value="PDF">📑 Dokumen PDF</option>
+            <option value="QUIZ">❓ Kuis &amp; Soal</option>
+            <option value="PREVIEW">🆓 Preview Gratis</option>
+          </select>
+
+          {/* Quick Jump Navigator */}
+          <select
+            onChange={(e) => {
+              const modId = e.target.value;
+              if (!modId) return;
+              const info = findModule(modId);
+              if (info) {
+                if (info.groupId) {
+                  setCollapsedGroups((prev) => ({ ...prev, [info.groupId!]: false }));
+                }
+                setCollapsedModules((prev) => ({ ...prev, [modId]: false }));
+                setTimeout(() => {
+                  const el = document.getElementById(`lms-mod-${modId}`);
+                  if (el) {
+                    el.scrollIntoView({ behavior: "smooth", block: "center" });
+                    el.classList.add("lms-mod-highlight");
+                    setTimeout(() => el.classList.remove("lms-mod-highlight"), 2000);
+                  }
+                }, 50);
+              }
+              e.target.value = "";
+            }}
+            defaultValue=""
+            style={{
+              padding: "0.55rem 0.8rem",
+              borderRadius: "var(--r-sm)",
+              border: "1px solid var(--border)",
+              fontSize: "0.85rem",
+              background: "var(--white)",
+              fontWeight: 600,
+              cursor: "pointer",
+            }}
+          >
+            <option value="" disabled>
+              ⚡ Lompat ke Modul...
+            </option>
+            {groups.map((g, gIdx) => (
+              <optgroup key={g.id} label={`Bagian ${gIdx + 1}: ${g.title}`}>
+                {g.modules.map((m, mIdx) => (
+                  <option key={m.id} value={m.id}>
+                    {gIdx + 1}.{mIdx + 1} {m.title} ({m.lessons.length} materi)
+                  </option>
+                ))}
+              </optgroup>
+            ))}
+            {orphanModules.length > 0 && (
+              <optgroup label="Modul Tanpa Kelompok">
+                {orphanModules.map((m, mIdx) => (
+                  <option key={m.id} value={m.id}>
+                    {mIdx + 1}. {m.title} ({m.lessons.length} materi)
+                  </option>
+                ))}
+              </optgroup>
+            )}
+          </select>
+
+          {/* Top Quick Action Buttons */}
+          <div style={{ display: "flex", gap: "0.5rem", marginLeft: "auto", flexWrap: "wrap" }}>
+            <button
+              type="button"
+              onClick={() => {
+                setShowTopAddGroup(!showTopAddGroup);
+                setShowTopAddModule(false);
+              }}
+              className="btn btn-sm btn-purple"
+              style={{ fontWeight: 700 }}
+            >
+              {showTopAddGroup ? "✕ Tutup" : "+ Kelompok Baru"}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setShowTopAddModule(!showTopAddModule);
+                setShowTopAddGroup(false);
+              }}
+              className="btn btn-sm"
+              style={{ fontWeight: 700, background: "var(--white)", border: "1px solid var(--border)" }}
+            >
+              {showTopAddModule ? "✕ Tutup" : "+ Modul Baru"}
+            </button>
+          </div>
         </div>
 
-        <div className="lms-toolbar-actions">
-          <button
-            type="button"
-            className="lms-btn-toolbar"
-            onClick={collapseAll}
-            title="Ciutkan semua bagian dan modul agar tampilan ringkas"
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="4 14 10 14 10 20" />
-              <polyline points="20 10 14 10 14 4" />
-              <line x1="14" y1="10" x2="21" y2="3" />
-              <line x1="3" y1="21" x2="10" y2="14" />
-            </svg>
-            Ciutkan Semua
-          </button>
-          <button
-            type="button"
-            className="lms-btn-toolbar"
-            onClick={expandAll}
-            title="Bentangkan semua bagian dan modul"
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="15 3 21 3 21 9" />
-              <polyline points="9 21 3 21 3 15" />
-              <line x1="21" y1="3" x2="14" y2="10" />
-              <line x1="3" y1="21" x2="10" y2="14" />
-            </svg>
-            Bentangkan Semua
-          </button>
+        {/* Row 2: Status Filter Indicator & Expand/Collapse All */}
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            flexWrap: "wrap",
+            gap: "0.6rem",
+            paddingTop: "0.5rem",
+            borderTop: "1px dashed var(--border)",
+          }}
+        >
+          <div style={{ fontSize: "0.82rem", color: "var(--ink-soft)" }}>
+            {isFiltering ? (
+              <span style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem" }}>
+                <span>
+                  Menemukan <strong>{matchingLessonsCount}</strong> materi yang sesuai.
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSearchQuery("");
+                    setTypeFilter("ALL");
+                  }}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    color: "var(--purple)",
+                    cursor: "pointer",
+                    fontWeight: 700,
+                    fontSize: "0.8rem",
+                    padding: 0,
+                  }}
+                >
+                  ✕ Reset Filter
+                </button>
+              </span>
+            ) : (
+              <span>
+                Struktur: <strong>{groups.length}</strong> Bagian ·{" "}
+                <strong>{groups.reduce((a, g) => a + g.modules.length, 0) + orphanModules.length}</strong> Modul ·{" "}
+                <strong>
+                  {groups.reduce(
+                    (a, g) => a + g.modules.reduce((ma, m) => ma + m.lessons.length, 0),
+                    0
+                  ) + orphanModules.reduce((ma, m) => ma + m.lessons.length, 0)}
+                </strong>{" "}
+                Materi
+              </span>
+            )}
+          </div>
+
+          <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
+            <button
+              type="button"
+              className="btn btn-xs"
+              onClick={collapseAll}
+              title="Ciutkan semua agar tampilan ringkas"
+              style={{ fontSize: "0.75rem", padding: "0.3rem 0.65rem", fontWeight: 600 }}
+            >
+              Ciutkan Semua
+            </button>
+            <button
+              type="button"
+              className="btn btn-xs"
+              onClick={expandAll}
+              title="Bentangkan semua modul dan materi"
+              style={{ fontSize: "0.75rem", padding: "0.3rem 0.65rem", fontWeight: 600 }}
+            >
+              Bentangkan Semua
+            </button>
+          </div>
         </div>
       </div>
 
+      {/* Top Quick Create Form: Kelompok Baru */}
+      {showTopAddGroup && (
+        <div
+          style={{
+            background: "var(--white)",
+            border: "2px solid var(--purple)",
+            borderRadius: "var(--r-md)",
+            padding: "1.2rem 1.4rem",
+            marginBottom: "1.2rem",
+            boxShadow: "0 6px 20px rgba(108, 92, 231, 0.12)",
+            animation: "fadeIn 0.2s ease-in-out",
+          }}
+        >
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.6rem" }}>
+            <h4 style={{ margin: 0, fontWeight: 800, color: "var(--ink)", fontSize: "0.95rem" }}>
+              📁 Tambah Kelompok Modul (Bagian Baru)
+            </h4>
+            <button
+              type="button"
+              onClick={() => setShowTopAddGroup(false)}
+              style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ink-soft)", fontSize: "1.1rem" }}
+            >
+              ✕
+            </button>
+          </div>
+          <form action={saveLmsGroup} style={{ display: "flex", gap: "0.6rem", flexWrap: "wrap" }}>
+            <input type="hidden" name="programId" value={programId} />
+            <input
+              name="title"
+              placeholder={`mis. Bagian ${groups.length + 1}: Praktik & Studi Kasus`}
+              required
+              style={{
+                flex: "1 1 260px",
+                padding: "0.6rem 0.85rem",
+                borderRadius: "var(--r-sm)",
+                border: "1px solid var(--border)",
+                fontSize: "0.88rem",
+              }}
+            />
+            <button type="submit" className="btn btn-purple" style={{ fontWeight: 700, padding: "0.6rem 1.4rem" }}>
+              Simpan Kelompok
+            </button>
+          </form>
+        </div>
+      )}
+
+      {/* Top Quick Create Form: Modul Baru */}
+      {showTopAddModule && (
+        <div
+          style={{
+            background: "var(--white)",
+            border: "2px solid var(--purple)",
+            borderRadius: "var(--r-md)",
+            padding: "1.2rem 1.4rem",
+            marginBottom: "1.2rem",
+            boxShadow: "0 6px 20px rgba(108, 92, 231, 0.12)",
+            animation: "fadeIn 0.2s ease-in-out",
+          }}
+        >
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.6rem" }}>
+            <h4 style={{ margin: 0, fontWeight: 800, color: "var(--ink)", fontSize: "0.95rem" }}>
+              📦 Tambah Modul (Sub-Bab) Baru
+            </h4>
+            <button
+              type="button"
+              onClick={() => setShowTopAddModule(false)}
+              style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ink-soft)", fontSize: "1.1rem" }}
+            >
+              ✕
+            </button>
+          </div>
+          <form action={saveLmsModule} style={{ display: "flex", gap: "0.6rem", flexWrap: "wrap" }}>
+            <input type="hidden" name="programId" value={programId} />
+            <select
+              name="groupId"
+              value={targetGroupIdForNewModule}
+              onChange={(e) => setTargetGroupIdForNewModule(e.target.value)}
+              style={{
+                flex: "0 0 220px",
+                padding: "0.6rem 0.8rem",
+                borderRadius: "var(--r-sm)",
+                border: "1px solid var(--border)",
+                fontSize: "0.85rem",
+                background: "var(--white)",
+                fontWeight: 600,
+              }}
+            >
+              <option value="">(Tanpa Kelompok / Lepas)</option>
+              {groups.map((g, idx) => (
+                <option key={g.id} value={g.id}>
+                  Bagian {idx + 1}: {g.title}
+                </option>
+              ))}
+            </select>
+            <input
+              name="title"
+              placeholder="Nama modul (cth: Pengantar & Konsep Dasar)..."
+              required
+              style={{
+                flex: "1 1 260px",
+                padding: "0.6rem 0.85rem",
+                borderRadius: "var(--r-sm)",
+                border: "1px solid var(--border)",
+                fontSize: "0.88rem",
+              }}
+            />
+            <button type="submit" className="btn btn-purple" style={{ fontWeight: 700, padding: "0.6rem 1.4rem" }}>
+              Simpan Modul
+            </button>
+          </form>
+        </div>
+      )}
+
       {/* Render Semua Kelompok Modul */}
       {groups.map((group, gIdx) => {
+        if (isFiltering && !isGroupMatch(group)) return null;
+
         const isGroupCollapsed = Boolean(collapsedGroups[group.id]);
         return (
-          <section key={group.id} className={`lms-group${isGroupCollapsed ? " is-collapsed" : ""}`}>
+          <section key={group.id} id={`lms-group-${group.id}`} className={`lms-group${isGroupCollapsed ? " is-collapsed" : ""}`}>
             <div className="lms-group-head">
               <div className="lms-group-head-top">
                 {/* Tombol Collapse / Expand Bagian */}
@@ -1135,107 +1495,108 @@ export default function AdminLmsCurriculumManager({
 
                 <span className="group-no">Bagian {gIdx + 1}</span>
                 <span className="lms-group-count">{group.modules.length} modul</span>
-              <div className="lms-group-actions">
-                <form action={moveLmsGroup}>
-                  <input type="hidden" name="id" value={group.id} />
-                  <input type="hidden" name="programId" value={programId} />
-                  <input type="hidden" name="dir" value="up" />
-                  <button
-                    type="submit"
-                    className="icon-btn"
-                    disabled={gIdx === 0}
-                    title="Geser ke atas"
-                    aria-label="Geser ke atas"
-                  >
-                    ↑
-                  </button>
-                </form>
-                <form action={moveLmsGroup}>
-                  <input type="hidden" name="id" value={group.id} />
-                  <input type="hidden" name="programId" value={programId} />
-                  <input type="hidden" name="dir" value="down" />
-                  <button
-                    type="submit"
-                    className="icon-btn"
-                    disabled={gIdx === groups.length - 1}
-                    title="Geser ke bawah"
-                    aria-label="Geser ke bawah"
-                  >
-                    ↓
-                  </button>
-                </form>
-                <form action={deleteLmsGroup}>
-                  <input type="hidden" name="id" value={group.id} />
-                  <input type="hidden" name="programId" value={programId} />
-                  <ConfirmButton
-                    className="icon-btn danger"
-                    title="Hapus kelompok"
-                    message={`Hapus kelompok "${group.title}"? Modul di dalamnya TIDAK ikut terhapus — hanya keluar dari kelompok.`}
-                    onConfirm={() => handleDeleteGroup(group.id, group.title)}
-                  >
-                    Hapus
-                  </ConfirmButton>
-                </form>
+                <div className="lms-group-actions">
+                  <form action={moveLmsGroup}>
+                    <input type="hidden" name="id" value={group.id} />
+                    <input type="hidden" name="programId" value={programId} />
+                    <input type="hidden" name="dir" value="up" />
+                    <button
+                      type="submit"
+                      className="icon-btn"
+                      disabled={gIdx === 0}
+                      title="Geser ke atas"
+                      aria-label="Geser ke atas"
+                    >
+                      ↑
+                    </button>
+                  </form>
+                  <form action={moveLmsGroup}>
+                    <input type="hidden" name="id" value={group.id} />
+                    <input type="hidden" name="programId" value={programId} />
+                    <input type="hidden" name="dir" value="down" />
+                    <button
+                      type="submit"
+                      className="icon-btn"
+                      disabled={gIdx === groups.length - 1}
+                      title="Geser ke bawah"
+                      aria-label="Geser ke bawah"
+                    >
+                      ↓
+                    </button>
+                  </form>
+                  <form action={deleteLmsGroup}>
+                    <input type="hidden" name="id" value={group.id} />
+                    <input type="hidden" name="programId" value={programId} />
+                    <ConfirmButton
+                      className="icon-btn danger"
+                      title="Hapus kelompok"
+                      message={`Hapus kelompok "${group.title}"? Modul di dalamnya TIDAK ikut terhapus — hanya keluar dari kelompok.`}
+                      onConfirm={() => handleDeleteGroup(group.id, group.title)}
+                    >
+                      Hapus
+                    </ConfirmButton>
+                  </form>
+                </div>
               </div>
+
+              <form action={saveLmsGroup} className="lms-group-form">
+                <input type="hidden" name="id" value={group.id} />
+                <input type="hidden" name="programId" value={programId} />
+                <input
+                  name="title"
+                  defaultValue={group.title}
+                  required
+                  title="Klik untuk mengganti nama kelompok"
+                  className="lms-group-title-input"
+                />
+                <button type="submit" className="btn btn-sm btn-purple lms-group-save-btn">
+                  Simpan Nama
+                </button>
+              </form>
             </div>
 
-            <form action={saveLmsGroup} className="lms-group-form">
-              <input type="hidden" name="id" value={group.id} />
-              <input type="hidden" name="programId" value={programId} />
-              <input
-                name="title"
-                defaultValue={group.title}
-                required
-                title="Klik untuk mengganti nama kelompok"
-                className="lms-group-title-input"
-              />
-              <button type="submit" className="btn btn-sm btn-purple lms-group-save-btn">
-                Simpan Nama
-              </button>
-            </form>
-          </div>
+            <div className="lms-group-body">
+              {group.modules.length === 0 ? (
+                <p
+                  style={{
+                    fontSize: ".82rem",
+                    color: "var(--ink-faint)",
+                    fontStyle: "italic",
+                    margin: "0 0 .8rem",
+                    padding: ".5rem 0",
+                  }}
+                >
+                  Belum ada modul di Bagian ini. Buat modul di bawah untuk menaruh materi.
+                </p>
+              ) : (
+                <div className="lms-modules-dnd-container">
+                  {group.modules.map((mod, mIdx) => {
+                    if (isFiltering && !isModuleMatch(mod)) return null;
+                    return renderModuleCard(mod, mIdx, group.id, `${gIdx + 1}.`, group.modules.length);
+                  })}
+                </div>
+              )}
 
-          <div className="lms-group-body">
-            {group.modules.length === 0 ? (
-              <p
-                style={{
-                  fontSize: ".82rem",
-                  color: "var(--ink-faint)",
-                  fontStyle: "italic",
-                  margin: "0 0 .8rem",
-                  padding: ".5rem 0",
-                }}
+              {/* Tambah modul ke kelompok ini */}
+              <form
+                action={saveLmsModule}
+                className="lms-add-module-form"
+                style={{ marginTop: group.modules.length > 0 ? "1rem" : 0 }}
               >
-                Belum ada modul di Bagian ini. Buat modul di bawah untuk menaruh materi.
-              </p>
-            ) : (
-              <div className="lms-modules-dnd-container">
-                {group.modules.map((mod, mIdx) =>
-                  renderModuleCard(mod, mIdx, group.id, `${gIdx + 1}.`, group.modules.length)
-                )}
-              </div>
-            )}
-
-            {/* Tambah modul ke kelompok ini */}
-            <form
-              action={saveLmsModule}
-              className="lms-add-module-form"
-              style={{ marginTop: group.modules.length > 0 ? "1rem" : 0 }}
-            >
-              <input type="hidden" name="programId" value={programId} />
-              <input type="hidden" name="groupId" value={group.id} />
-              <input
-                name="title"
-                placeholder={`Nama modul baru di Bagian ${gIdx + 1}…`}
-                required
-                className="lms-add-module-input"
-              />
-              <button type="submit" className="btn btn-sm btn-purple lms-add-module-btn">
-                + Tambah Modul
-              </button>
-            </form>
-          </div>
-        </section>
+                <input type="hidden" name="programId" value={programId} />
+                <input type="hidden" name="groupId" value={group.id} />
+                <input
+                  name="title"
+                  placeholder={`Nama modul baru di Bagian ${gIdx + 1}…`}
+                  required
+                  className="lms-add-module-input"
+                />
+                <button type="submit" className="btn btn-sm btn-purple lms-add-module-btn">
+                  + Tambah Modul
+                </button>
+              </form>
+            </div>
+          </section>
         );
       })}
 
@@ -1243,14 +1604,15 @@ export default function AdminLmsCurriculumManager({
       {orphanModules.length > 0 && (
         <div style={{ marginTop: groups.length > 0 ? "1.6rem" : 0 }}>
           {groups.length > 0 && (
-            <h3 style={{ fontSize: ".9rem", color: "var(--ink-soft)", margin: "0 0 .8rem" }}>
-              Modul Tanpa Kelompok
+            <h3 style={{ fontSize: ".95rem", fontWeight: 800, color: "var(--ink)", margin: "0 0 .8rem" }}>
+              📦 Modul Tanpa Kelompok (Mandiri)
             </h3>
           )}
           <div className="lms-modules-dnd-container">
-            {orphanModules.map((mod, mIdx) =>
-              renderModuleCard(mod, mIdx, null, undefined, orphanModules.length)
-            )}
+            {orphanModules.map((mod, mIdx) => {
+              if (isFiltering && !isModuleMatch(mod)) return null;
+              return renderModuleCard(mod, mIdx, null, undefined, orphanModules.length);
+            })}
           </div>
         </div>
       )}
