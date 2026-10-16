@@ -31,6 +31,10 @@ export interface BatchRevenueItem {
   paidRegs: number;
   totalRevenue: number;
   conversionRate: number; // 0 - 100
+  daysLeft?: number;
+  daysLeftLabel?: string;
+  daysLeftShort?: string;
+  isNearest?: boolean;
 }
 
 interface DailyRowRaw {
@@ -63,6 +67,42 @@ const INDO_MONTHS = [
   "Januari", "Februari", "Maret", "April", "Mei", "Juni",
   "Juli", "Agustus", "September", "Oktober", "November", "Desember"
 ];
+
+/**
+ * Menghitung selisih hari batch secara akurat berdasarkan kalender WIB (Asia/Jakarta).
+ */
+export function getDaysLeftDetail(targetDateInput: Date | string, nowInput: Date = new Date()): {
+  daysLeft: number;
+  label: string;
+  shortLabel: string;
+  isPast: boolean;
+  isToday: boolean;
+} {
+  const target = typeof targetDateInput === "string" ? new Date(targetDateInput) : targetDateInput;
+  if (Number.isNaN(target.getTime())) {
+    return { daysLeft: 0, label: "—", shortLabel: "—", isPast: false, isToday: false };
+  }
+
+  const WIB_OFFSET = 7 * 60 * 60 * 1000;
+  const targetWib = new Date(target.getTime() + WIB_OFFSET);
+  const nowWib = new Date(nowInput.getTime() + WIB_OFFSET);
+
+  const targetDayUtc = Date.UTC(targetWib.getUTCFullYear(), targetWib.getUTCMonth(), targetWib.getUTCDate());
+  const nowDayUtc = Date.UTC(nowWib.getUTCFullYear(), nowWib.getUTCMonth(), nowWib.getUTCDate());
+
+  const diffDays = Math.round((targetDayUtc - nowDayUtc) / (24 * 60 * 60 * 1000));
+
+  if (diffDays < 0) {
+    return { daysLeft: diffDays, label: "Selesai", shortLabel: "Selesai", isPast: true, isToday: false };
+  }
+  if (diffDays === 0) {
+    return { daysLeft: 0, label: "Hari ini", shortLabel: "Hari ini", isPast: false, isToday: true };
+  }
+  if (diffDays === 1) {
+    return { daysLeft: 1, label: "Besok (1 hari lagi)", shortLabel: "Besok", isPast: false, isToday: false };
+  }
+  return { daysLeft: diffDays, label: `${diffDays} hari lagi`, shortLabel: `${diffDays} hari lagi`, isPast: false, isToday: false };
+}
 
 /**
  * Mengambil rekap harian 90 hari terakhir (WIB) langsung via SQL aggregate.
@@ -240,6 +280,7 @@ export async function getBatchRevenueData(limit: number = 50): Promise<BatchReve
       const paidRegs = Number(b.paid_regs);
       const totalRevenue = Number(b.total_revenue ?? 0);
       const conversionRate = totalRegs > 0 ? Math.round((paidRegs / totalRegs) * 100) : 0;
+      const diff = getDaysLeftDetail(scheduleDate, now);
 
       combined.push({
         batchId: b.batch_id,
@@ -249,12 +290,15 @@ export async function getBatchRevenueData(limit: number = 50): Promise<BatchReve
         batchType: b.batch_type || "ONLINE",
         scheduleAt: scheduleDate.toISOString(),
         scheduleFormatted: formatJadwalWIB(scheduleDate),
-        isPast: scheduleDate < now,
+        isPast: diff.isPast,
         isActive: Boolean(b.is_active),
         totalRegs,
         paidRegs,
         totalRevenue,
         conversionRate,
+        daysLeft: diff.daysLeft,
+        daysLeftLabel: diff.label,
+        daysLeftShort: diff.shortLabel,
       });
     }
 
@@ -279,11 +323,44 @@ export async function getBatchRevenueData(limit: number = 50): Promise<BatchReve
         paidRegs,
         totalRevenue,
         conversionRate,
+        daysLeft: 99999,
+        daysLeftLabel: "Reguler",
+        daysLeftShort: "Reguler",
       });
     }
 
-    // Sort by total revenue desc by default or schedule
-    return combined.sort((a, b) => b.totalRevenue - a.totalRevenue);
+    // Urutan default (Gambar 2): Batch terdekat ditaruh di paling atas!
+    // 1. Batch terjadwal mendatang (scheduleAt terdekat ke sekarang berada di index 0)
+    // 2. Program Non-Batch (self-paced)
+    // 3. Batch yang sudah selesai (diurutkan dari yang paling baru selesai ke yang lama)
+    combined.sort((a, b) => {
+      const isNoBatchA = a.batchId.startsWith("nobatch_");
+      const isNoBatchB = b.batchId.startsWith("nobatch_");
+
+      // Batch terjadwal mendatang selalu di posisi teratas
+      if (!a.isPast && !isNoBatchA && (b.isPast || isNoBatchB)) return -1;
+      if (!b.isPast && !isNoBatchB && (a.isPast || isNoBatchA)) return 1;
+
+      // Antar batch mendatang: yang jadwalnya paling dekat ke hari ini ditaruh paling atas
+      if (!a.isPast && !isNoBatchA && !b.isPast && !isNoBatchB) {
+        return new Date(a.scheduleAt).getTime() - new Date(b.scheduleAt).getTime();
+      }
+
+      // Non-batch sebelum batch selesai
+      if (!a.isPast && isNoBatchA && b.isPast) return -1;
+      if (!b.isPast && isNoBatchB && a.isPast) return 1;
+
+      // Antar batch yang sudah selesai: yang baru saja selesai di atas
+      return new Date(b.scheduleAt).getTime() - new Date(a.scheduleAt).getTime();
+    });
+
+    // Tandai batch terdekat pertama
+    const firstUpcoming = combined.find((b) => !b.isPast && !b.batchId.startsWith("nobatch_"));
+    if (firstUpcoming) {
+      firstUpcoming.isNearest = true;
+    }
+
+    return combined;
   } catch (err) {
     console.error("[getBatchRevenueData] Database error:", err);
     return [];

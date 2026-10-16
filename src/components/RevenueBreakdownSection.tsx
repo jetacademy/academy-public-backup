@@ -29,7 +29,12 @@ export default function RevenueBreakdownSection({
   const [batchPage, setBatchPage] = useState(1);
   const [batchSearch, setBatchSearch] = useState("");
   const [batchFormatFilter, setBatchFormatFilter] = useState<"ALL" | "ONLINE" | "OFFLINE">("ALL");
+  const [batchSortBy, setBatchSortBy] = useState<"nearest" | "revenue" | "paid">("nearest");
   const [hoveredBarIndex, setHoveredBarIndex] = useState<number | null>(null);
+
+  const nearestBatch = useMemo(() => {
+    return batchData.find((b) => !b.isPast && !b.batchId.startsWith("nobatch_"));
+  }, [batchData]);
 
   // ─── TAB 1: PER HARI (In-memory sliced by selected range) ───
   const currentDailyData = useMemo(() => {
@@ -100,7 +105,7 @@ export default function RevenueBreakdownSection({
 
   // ─── TAB 3: PER BATCH ───
   const filteredBatches = useMemo(() => {
-    return batchData.filter((b) => {
+    const list = batchData.filter((b) => {
       if (batchFormatFilter !== "ALL" && b.batchType !== batchFormatFilter) {
         return false;
       }
@@ -112,7 +117,16 @@ export default function RevenueBreakdownSection({
       }
       return true;
     });
-  }, [batchData, batchSearch, batchFormatFilter]);
+
+    if (batchSortBy === "revenue") {
+      return [...list].sort((a, b) => b.totalRevenue - a.totalRevenue);
+    }
+    if (batchSortBy === "paid") {
+      return [...list].sort((a, b) => b.paidRegs - a.paidRegs);
+    }
+    // "nearest" (Default): Menampilkan batch terdekat di urutan paling atas
+    return list;
+  }, [batchData, batchSearch, batchFormatFilter, batchSortBy]);
 
   const batchTotalIncome = useMemo(() => {
     return filteredBatches.reduce((acc, b) => acc + b.totalRevenue, 0);
@@ -661,8 +675,53 @@ export default function RevenueBreakdownSection({
             </span>
           </div>
 
-          {/* 3 Mini Stat Boxes */}
+          {/* 4 Mini Stat Boxes */}
           <div className="rev-summary-grid">
+            <div
+              className="rev-summary-box"
+              style={{
+                background: nearestBatch ? "rgba(35, 33, 118, 0.05)" : "var(--chip)",
+                border: nearestBatch ? "1.5px solid var(--purple)" : "1px solid var(--border)",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <span className="muted" style={{ fontWeight: 700, color: "var(--purple)" }}>
+                  🚀 Batch Terdekat
+                </span>
+                {nearestBatch && (
+                  <span className="badge y" style={{ fontSize: "0.65rem", padding: "0.1rem 0.4rem", fontWeight: 800 }}>
+                    {nearestBatch.daysLeftShort}
+                  </span>
+                )}
+              </div>
+              <b style={{ fontSize: "1.1rem", color: "var(--ink)" }}>
+                {nearestBatch ? nearestBatch.daysLeftLabel : "Tidak Ada"}
+              </b>
+              <span style={{ fontSize: "0.72rem", color: "var(--ink-soft)" }}>
+                {nearestBatch ? (
+                  <>
+                    <strong style={{ color: "var(--purple)" }}>{nearestBatch.paidRegs} peserta lunas</strong>
+                    {" "}dari {nearestBatch.totalRegs} pendaftar
+                    <span
+                      style={{
+                        display: "block",
+                        color: "var(--ink-faint)",
+                        marginTop: "0.15rem",
+                        textOverflow: "ellipsis",
+                        overflow: "hidden",
+                        whiteSpace: "nowrap",
+                      }}
+                      title={`${nearestBatch.batchName} · ${nearestBatch.programTitle}`}
+                    >
+                      {nearestBatch.batchName} · {nearestBatch.programTitle}
+                    </span>
+                  </>
+                ) : (
+                  "Belum ada jadwal batch mendatang"
+                )}
+              </span>
+            </div>
+
             <div className="rev-summary-box">
               <span className="muted">Total Peserta Lunas</span>
               <b style={{ fontSize: "1.1rem", color: "var(--ink)" }}>{batchTotalPaid} orang</b>
@@ -748,6 +807,31 @@ export default function RevenueBreakdownSection({
                 🏢 Offline
               </button>
             </div>
+
+            <div style={{ display: "flex", alignItems: "center", gap: "0.35rem" }}>
+              <span style={{ fontSize: "0.74rem", color: "var(--ink-faint)", fontWeight: 600 }}>Urutkan:</span>
+              <select
+                value={batchSortBy}
+                onChange={(e) => {
+                  setBatchSortBy(e.target.value as any);
+                  setBatchPage(1);
+                }}
+                style={{
+                  padding: "0.32rem 0.55rem",
+                  fontSize: "0.75rem",
+                  borderRadius: "6px",
+                  border: "1px solid var(--border)",
+                  background: "var(--white)",
+                  color: "var(--ink)",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                }}
+              >
+                <option value="nearest">⏰ Batch Terdekat (Default)</option>
+                <option value="revenue">💰 Total Omzet</option>
+                <option value="paid">👥 Peserta Lunas</option>
+              </select>
+            </div>
           </div>
 
           {/* TABEL PENDAPATAN PER BATCH */}
@@ -769,20 +853,41 @@ export default function RevenueBreakdownSection({
                   const isOffline = b.batchType === "OFFLINE";
 
                   return (
-                    <tr key={b.batchId}>
+                    <tr
+                      key={b.batchId}
+                      style={
+                        b.isNearest
+                          ? { background: "rgba(35, 33, 118, 0.03)" }
+                          : undefined
+                      }
+                    >
                       <td data-label="Program & Batch">
                         <div style={{ display: "flex", flexDirection: "column", gap: "0.15rem" }}>
-                          <Link
-                            href={`/webadmin/program/${b.programId}`}
-                            style={{
-                              fontWeight: 700,
-                              color: "var(--ink)",
-                              textDecoration: "none",
-                              fontSize: "0.88rem",
-                            }}
-                          >
-                            {b.programTitle}
-                          </Link>
+                          <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", flexWrap: "wrap" }}>
+                            <Link
+                              href={`/webadmin/program/${b.programId}`}
+                              style={{
+                                fontWeight: 700,
+                                color: "var(--ink)",
+                                textDecoration: "none",
+                                fontSize: "0.88rem",
+                              }}
+                            >
+                              {b.programTitle}
+                            </Link>
+                            {b.isNearest && (
+                              <span
+                                className="badge y"
+                                style={{
+                                  fontSize: "0.64rem",
+                                  padding: "0.1rem 0.4rem",
+                                  fontWeight: 800,
+                                }}
+                              >
+                                ⭐ Terdekat
+                              </span>
+                            )}
+                          </div>
                           <span style={{ fontSize: "0.78rem", color: "var(--purple)", fontWeight: 600 }}>
                             {b.batchName}
                           </span>
@@ -794,25 +899,37 @@ export default function RevenueBreakdownSection({
                         </span>
                       </td>
                       <td data-label="Jadwal Pelaksanaan">
-                        <div style={{ display: "flex", flexDirection: "column", gap: "0.15rem" }}>
+                        <div style={{ display: "flex", flexDirection: "column", gap: "0.2rem" }}>
                           <span style={{ fontSize: "0.82rem", color: "var(--ink-soft)" }}>
                             {b.scheduleFormatted}
                           </span>
-                          <span style={{ fontSize: "0.68rem" }}>
+                          <span style={{ fontSize: "0.7rem" }}>
                             {b.isPast ? (
                               <span style={{ color: "var(--ink-faint)" }}>✅ Selesai</span>
                             ) : (
-                              <span style={{ color: "#27ae60", fontWeight: 700 }}>🟢 Mendatang</span>
+                              <span
+                                style={{
+                                  color: b.daysLeft === 0 || b.daysLeft === 1 ? "#d97706" : "#16a34a",
+                                  fontWeight: 700,
+                                }}
+                              >
+                                🟢 {b.daysLeftLabel || "Mendatang"}
+                              </span>
                             )}
                           </span>
                         </div>
                       </td>
                       <td data-label="Pendaftar & Lunas" style={{ textAlign: "center" }}>
-                        <strong style={{ color: "var(--ink)" }}>{b.paidRegs}</strong>
-                        <span className="muted" style={{ fontSize: "0.78rem" }}>
-                          {" "}
-                          / {b.totalRegs}
-                        </span>
+                        <div>
+                          <strong style={{ color: "var(--ink)", fontSize: "0.95rem" }}>{b.paidRegs}</strong>
+                          <span className="muted" style={{ fontSize: "0.78rem" }}>
+                            {" "}
+                            / {b.totalRegs}
+                          </span>
+                        </div>
+                        <div style={{ fontSize: "0.7rem", color: "var(--purple)", fontWeight: 600, marginTop: "0.1rem" }}>
+                          {b.paidRegs} peserta lunas
+                        </div>
                       </td>
                       <td data-label="Konversi" style={{ textAlign: "center" }}>
                         <span

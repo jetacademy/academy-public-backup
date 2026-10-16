@@ -95,6 +95,7 @@ export default async function AdminDashboard() {
   });
 
   const todayRevenue = dailyRevenue.length > 0 ? dailyRevenue[dailyRevenue.length - 1].amount : 0;
+  const nearestBatch = batchRevenue.find((b) => !b.isPast && !b.batchId.startsWith("nobatch_"));
 
   return (
     <>
@@ -109,6 +110,44 @@ export default async function AdminDashboard() {
           { label: "Pendapatan Lunas", value: rupiah(revenue._sum.amount ?? 0) },
           { label: "Pendapatan Hari Ini", value: rupiah(todayRevenue) },
           { label: "Program Aktif", value: programs.filter((p) => p.isActive).length },
+          {
+            id: "batch-terdekat",
+            label: "Batch Terdekat",
+            value: nearestBatch ? nearestBatch.daysLeftShort || "Mendatang" : "—",
+            sublabel: nearestBatch ? (
+              <span
+                style={{
+                  display: "block",
+                  fontSize: "0.74rem",
+                  color: "var(--ink-soft)",
+                  fontWeight: 500,
+                  marginTop: "0.2rem",
+                  lineHeight: 1.35,
+                }}
+              >
+                <span style={{ color: "var(--purple)", fontWeight: 700 }}>
+                  {nearestBatch.paidRegs} peserta lunas
+                </span>
+                <span
+                  style={{
+                    display: "block",
+                    textOverflow: "ellipsis",
+                    overflow: "hidden",
+                    whiteSpace: "nowrap",
+                    color: "var(--ink-faint)",
+                    fontSize: "0.7rem",
+                  }}
+                  title={`${nearestBatch.batchName} · ${nearestBatch.programTitle}`}
+                >
+                  {nearestBatch.batchName} · {nearestBatch.programTitle}
+                </span>
+              </span>
+            ) : (
+              <span style={{ display: "block", fontSize: "0.72rem", color: "var(--ink-faint)", marginTop: "0.2rem" }}>
+                Belum ada batch mendatang
+              </span>
+            ),
+          },
         ]}
       />
 

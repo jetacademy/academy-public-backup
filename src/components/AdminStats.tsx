@@ -7,6 +7,7 @@ export interface AdminStatItem {
   label: string;
   value: string | number;
   sublabel?: React.ReactNode;
+  defaultVisible?: boolean;
 }
 
 interface AdminStatsProps {
@@ -15,20 +16,20 @@ interface AdminStatsProps {
 }
 
 export default function AdminStats({ stats, className = "" }: AdminStatsProps) {
-  // Semua card default tertutup/tersembunyi (false) saat dibuka
+  // Semua card default tertutup/tersembunyi (false) saat dibuka, kecuali jika defaultVisible diatur true
   const [visibleState, setVisibleState] = useState<Record<number, boolean>>({});
 
-  const toggleVisibility = (idx: number) => {
+  const toggleVisibility = (idx: number, currentVisible: boolean) => {
     setVisibleState((prev) => ({
       ...prev,
-      [idx]: !prev[idx],
+      [idx]: !currentVisible,
     }));
   };
 
   return (
     <div className={`adm-stats ${className}`}>
       {stats.map((stat, idx) => {
-        const isVisible = !!visibleState[idx];
+        const isVisible = visibleState[idx] ?? !!stat.defaultVisible;
         return (
           <div key={stat.id || idx} className="adm-stat">
             <div className="adm-stat-top">
@@ -42,7 +43,7 @@ export default function AdminStats({ stats, className = "" }: AdminStatsProps) {
               <button
                 type="button"
                 className="adm-stat-eye-btn"
-                onClick={() => toggleVisibility(idx)}
+                onClick={() => toggleVisibility(idx, isVisible)}
                 title={isVisible ? "Sembunyikan angka" : "Lihat angka"}
                 aria-label={isVisible ? `Sembunyikan ${stat.label}` : `Lihat ${stat.label}`}
               >
