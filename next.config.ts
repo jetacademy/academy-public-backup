@@ -4,11 +4,19 @@ const nextConfig: NextConfig = {
   reactCompiler: true,
   poweredByHeader: false,
   generateEtags: false,
+  // Hemat RAM saat build di hosting: source map prerender tidak dipakai di produksi.
+  enablePrerenderSourceMaps: false,
   experimental: {
     serverActions: {
       // upload PDF/gambar materi & sertifikat via server action (maks 20 MB + overhead encoding)
       bodySizeLimit: "25mb",
     },
+    // Build default memakai worker sebanyak jumlah CPU (15 di mesin dev) — tiap worker
+    // proses Node terpisah, jadi RAM berlipat & hosting kena OOM. Batasi (bisa di-override
+    // via env NEXT_BUILD_CPUS bila mesin build lebih besar).
+    cpus: Number(process.env.NEXT_BUILD_CPUS) || 2,
+    webpackMemoryOptimizations: true,
+    serverSourceMaps: false,
   },
   images: {
     // 🔴 KOREKSI 3 Sep: image optimizer (_next/image) hang di prod → semua gambar

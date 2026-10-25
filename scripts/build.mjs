@@ -21,6 +21,11 @@ try {
 import { execSync } from "child_process";
 import { exit } from "process";
 
+// Container Hostinger membatasi jumlah thread/proses, tapi melaporkan CPU host yang banyak.
+// Tanpa batas, compiler Rust (SWC/tokio) & worker Next membuka thread sebanyak CPU host →
+// panic "OS can't spawn worker thread (os error 11)". Batasi semuanya ke angka kecil.
+const BUILD_THREADS = process.env.NEXT_BUILD_CPUS || "2";
+
 function run(cmd) {
   console.log(`> ${cmd}`);
   try {
@@ -29,6 +34,11 @@ function run(cmd) {
       env: {
         ...process.env,
         NODE_OPTIONS: process.env.NODE_OPTIONS || "--max-old-space-size=2048",
+        NEXT_BUILD_CPUS: BUILD_THREADS,
+        TOKIO_WORKER_THREADS: process.env.TOKIO_WORKER_THREADS || BUILD_THREADS,
+        RAYON_NUM_THREADS: process.env.RAYON_NUM_THREADS || BUILD_THREADS,
+        UV_THREADPOOL_SIZE: process.env.UV_THREADPOOL_SIZE || "4",
+        NEXT_TELEMETRY_DISABLED: "1",
       },
     });
     return true;
@@ -49,18 +59,17 @@ if (!migrated) {
   run("npx prisma db push");
 }
 
-// Step 4: Lint
-run("npx eslint .");
+// Lint sengaja TIDAK dijalankan saat build: hasilnya tidak pernah menggagalkan build
+// (run() mengabaikan exit code) tapi tetap makan RAM & waktu di hosting. Jalankan
+// `npm run lint` di lokal sebelum push. Type-check tetap jalan di dalam `next build`.
 
-// Step 5: Build Next.js
+// Step 4: Build Next.js
 // Catatan: Di hosting (Hostinger hbuilds/container), Turbopack (default Next.js 16)
 // sering crash mendadak ("ERROR: Failed to build the application") tanpa error log detail
 // akibat kehabisan RAM (OOM Killer) atau inkompatibilitas Rust binary di container hosting.
 // Flag --webpack jauh lebih hemat memori dan stabil di shared/cloud hosting.
 console.log("\n🚀 Memulai Next.js build dengan Webpack (hemat RAM untuk hosting)...");
-let built = run("npx next build --webpack");
-if (!built) {
-  console.log("\n⚠️  Build dengan --webpack gagal, mencoba fallback ke default next build...");
-  built = run("npx next build");
-}
+// Tanpa fallback ke Turbopack: di container yang sama ia gagal karena batas thread yang sama
+// dan menghabiskan ~15 menit sebelum error (terbukti di log deploy 25 Okt 2026).
+const built = run("npx next build --webpack");
 if (!built) exit(1);
