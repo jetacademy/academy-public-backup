@@ -12,7 +12,7 @@ import Testimonials from "@/components/Testimonials";
 import Icon from "@/components/Icon";
 import ProgramContentBlocks from "@/components/ProgramContentBlocks";
 import VibesLandingSections from "@/components/VibesLandingSections";
-import TransformArrow from "@/components/TransformArrow";
+import ZeroHumanLandingSections, { ZeroHumanHero, type ZhcOffer } from "@/components/ZeroHumanLandingSections";
 import { getProgramBySlug } from "@/lib/programs";
 import { TYPE_LABEL, type ProgramType } from "@/lib/fallback";
 import Image from "next/image";
@@ -164,7 +164,6 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
   const isOnlineEbActive = isZeroHuman ? zhcOnlineCount < EARLY_BIRD_ONLINE_QUOTA : false;
   const isOfflineEbActive = isZeroHuman ? zhcOfflineCount < EARLY_BIRD_OFFLINE_QUOTA : false;
   const isOfflineSoldOut = isZeroHuman ? (zhcOfflineCount >= OFFLINE_MAX_SEATS || !activeOfflineBatch) : false;
-  const isEarlyBirdActive = isOnlineEbActive;
 
   const effectivePrice = isZeroHuman
     ? (isOnlineEbActive ? onlineEbPrice : onlineNormalPrice)
@@ -210,6 +209,22 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
   });
 
   const priceLabel = isFree ? "GRATIS" : rupiah(effectivePrice);
+
+  const zhcOfflineVenue = activeOfflineBatch?.offlineVenue || "Coworking Space Kota Bekasi";
+  const zhcOffer: ZhcOffer = {
+    onlinePrice: isOnlineEbActive ? onlineEbPrice : onlineNormalPrice,
+    onlinePriceOld: isOnlineEbActive ? onlineNormalPrice : null,
+    isOnlineEb: isOnlineEbActive,
+    offlinePrice: isOfflineEbActive ? offlineEbPrice : offlineNormalPrice,
+    offlinePriceOld: isOfflineEbActive ? offlineNormalPrice : null,
+    isOfflineEb: isOfflineEbActive,
+    isOfflineSoldOut,
+    scheduleOnline: scheduleOnlineFormatted,
+    scheduleOffline: scheduleOfflineFormatted,
+    offlineVenue: zhcOfflineVenue,
+    sessionAt: onlineScheduleDate.toISOString(),
+    mentorName: program.mentorName,
+  };
   const ebCtaNavLabel = isFree ? "Daftar Gratis" : "Daftar";
 
   const faqItems = isAiForTeachers
@@ -270,53 +285,43 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
     ? [
         {
           q: "Berapa biaya pendaftaran workshop ini?",
-          a: isEarlyBirdActive
-            ? "Biaya promo Early Bird Rp 225.000. Setelah promo berakhir, harga kembali normal Rp 490.000."
-            : "Biaya pendaftaran saat ini Rp 490.000 (harga normal).",
-        },
-        {
-          q: "Apakah workshop ini benar-benar praktik?",
-          a: "Ya. Fokus workshop adalah praktik membangun AI Agent, bukan hanya teori.",
+          a: `Kelas Online (Live Zoom) ${rupiah(isOnlineEbActive ? onlineEbPrice : onlineNormalPrice)}${isOnlineEbActive ? ` (Early Bird, normal ${rupiah(onlineNormalPrice)})` : ""}. Kelas Offline (tatap muka) ${rupiah(isOfflineEbActive ? offlineEbPrice : offlineNormalPrice)}${isOfflineEbActive ? ` (Early Bird, normal ${rupiah(offlineNormalPrice)})` : ""}.`,
         },
         {
           q: "Apakah harus bisa coding?",
-          a: "Tidak harus.",
+          a: "Tidak. Workshop dirancang untuk peserta nonteknis. Anda akan dipandu mengonfigurasi Hermes Agent dan mencoba tugas bisnis secara bertahap. Dasar penggunaan laptop dan mengikuti instruksi instalasi akan membantu.",
         },
         {
-          q: "Apakah saya harus berlangganan platform AI Agent?",
-          a: "Tidak. Workshop tidak mengharuskan Anda berlangganan platform AI Agent dari Jetschool.",
+          q: "Apakah enam AI Agent langsung bisa menjalankan semua aplikasi?",
+          a: "Anda belajar membuat dan mengonfigurasi enam peran serta menjajal contoh workflow. Koneksi ke Instagram, Meta Ads, WhatsApp, Google Workspace, atau aplikasi lain memerlukan akses akun, autentikasi, tools atau API, dan mungkin konfigurasi lanjutan. Tidak semua integrasi otomatis aktif seusai workshop.",
         },
         {
-          q: "Apakah ada biaya langganan ke Jetschool?",
-          a: "Tidak ada biaya langganan platform AI Agent dari Jetschool.",
+          q: "Apakah Hermes bisa membuat gambar konten Instagram sampai mempostingnya?",
+          a: "Bisa. Hermes menyusun ide, membuat gambar feed sesuai brand, menulis caption dan hashtag, lalu memposting otomatis sesuai jadwal ke akun Instagram yang sudah dihubungkan (akun Business/Creator). Anda bisa memilih posting langsung atau lewat persetujuan dulu sebelum terbit.",
         },
         {
-          q: "Apakah membutuhkan server?",
-          a: "Untuk setup dasar yang diajarkan, Agent berjalan di laptop Anda sehingga tidak membutuhkan server berbayar.",
+          q: "Apakah bisa mengelola Meta Ads dan budget iklan?",
+          a: "Dapat membantu membaca data, menganalisis performa, merancang campaign, dan menggunakan integrasi Meta yang berizin. Perubahan anggaran atau publikasi iklan sebaiknya dilakukan setelah persetujuan manusia. Akun, API, dan izin Meta tetap diperlukan.",
         },
         {
-          q: "Apakah AI modelnya gratis?",
-          a: "Tersedia pilihan model lokal dan LLM gratis yang tersedia, tergantung kebutuhan dan kebijakan provider.",
+          q: "Apakah AI bisa mencari prospek sampai mengirim penawaran?",
+          a: "Bisa. Hermes mencari calon pelanggan yang cocok, mengirim penawaran personal, melakukan follow-up otomatis, lalu memberi tahu Anda saat ada prospek yang siap closing. Pengiriman pesan tetap mengikuti kebijakan platform (misalnya WhatsApp) agar akun Anda aman — bukan spam massal.",
         },
         {
-          q: "Apakah Agent bisa bekerja 24/7?",
-          a: "Agent dapat menjalankan pekerjaan selama environment tempat Agent berjalan tersedia dan aktif. Jika Agent dijalankan langsung di laptop, laptop perlu menyala agar Agent dapat menjalankan tugas.",
+          q: "Apakah membutuhkan VPS atau biaya langganan?",
+          a: "Untuk setup dasar, Hermes dapat dijalankan pada laptop tanpa server berbayar. Untuk operasi terus-menerus, perangkat atau server harus aktif. Beberapa model, API, konektor, atau infrastruktur dapat dikenai biaya penyedia masing-masing; tidak ada kewajiban berlangganan platform Agent dari Jetschool.",
         },
         {
-          q: "Setelah workshop apakah Agent menjadi milik saya?",
-          a: "Anda membangun dan mengkonfigurasi Agent sendiri selama workshop sehingga dapat terus dikembangkan dan disesuaikan setelah workshop.",
+          q: "Apakah semua agent bisa bekerja 24 jam?",
+          a: "Agent dapat mengerjakan tugas terjadwal selama sistem, koneksi, dan akses layanan berfungsi. Bila berjalan di laptop, laptop dan proses agent harus tetap aktif. Pengoperasian berkelanjutan memerlukan monitoring dan pengamanan tambahan.",
         },
         {
-          q: "Apakah saya mendapatkan rekaman?",
-          a: "Ya.",
+          q: "Apa yang saya dapatkan setelah workshop?",
+          a: "Praktik konfigurasi enam AI Agent, rekaman workshop, modul panduan langkah demi langkah, akses komunitas alumni, serta e-sertifikat.",
         },
         {
-          q: "Apakah mendapatkan sertifikat?",
-          a: "Ya, peserta mendapatkan e-sertifikat.",
-        },
-        {
-          q: "Apakah workshop ini cocok untuk pemula?",
-          a: "Ya. Materi dirancang untuk membawa peserta dari pengenalan hingga praktik membangun Agent.",
+          q: "Bagaimana proses pendaftaran dan pembayaran?",
+          a: "Isi formulir pendaftaran di halaman ini, pilih tiket Online atau Offline, lalu selesaikan pembayaran melalui metode yang tersedia. Info akses dikirim via WhatsApp ke nomor yang Anda daftarkan.",
         },
       ]
     : [
@@ -409,30 +414,13 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
       <Navbar minimal ctaHref="#daftar" ctaLabel={ebCtaNavLabel} />
 
       {/* ===== HERO ===== */}
+      {isZeroHuman ? <ZeroHumanHero offer={zhcOffer} cover={program.imageUrl ? { src: program.imageUrl, alt: program.title } : null} /> : (
       <section className="hero">
         <div className="container">
           <div className="prg-hero-wrap">
 
             {/* Kolom kiri — teks */}
             <div className="prg-hero-content">
-              {isZeroHuman ? (
-                <>
-                  <span className="type-tag type-workshop" style={{ marginBottom: "1rem", display: "inline-block" }}>
-                    Zero Human Company
-                  </span>
-                  <p style={{ fontWeight: 700, color: "rgba(255,255,255,0.75)", margin: "0 0 0.6rem" }}>
-                    Workshop Membangun Perusahaan dengan AI Agent
-                  </p>
-                  <h1 className="prg-hero-h1">Bangun 6 Karyawan AI Pertama Anda dalam 3 Jam</h1>
-                  <p className="prg-hero-lead">
-                    Bangun AI Agent yang membantu menjalankan pekerjaan Customer Service, Sales, Marketing, Content, Developer, dan Reporting untuk bisnis Anda.
-                  </p>
-                  <p className="prg-hero-desc" style={{ marginBottom: 0, fontSize: "0.92rem" }}>
-                    Tanpa coding. Tanpa langganan platform AI Agent. Tanpa server berbayar untuk setup dasar.
-                  </p>
-
-                </>
-              ) : (
               <>
               <span className={`type-tag ${TYPE_CLASS[program.type]}`} style={{ marginBottom: "1.2rem", display: "inline-block" }}>
                 {TYPE_LABEL[program.type]}
@@ -447,49 +435,10 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
                 </div>
               )}
               </>
-              )}
             </div>
 
             {/* Kolom kanan — Gambar Program (upload admin) atau ilustrasi bawaan */}
             <div className="prg-hero-visual">
-              {isZeroHuman && !program.imageUrl ? (
-                <div className="ticket-card">
-                  <div className="ticket-glow" />
-                  <div className="ticket-header">
-                    <div className="ticket-brand">JETSCHOOL ACADEMY</div>
-                    <span className="ticket-badge">WORKSHOP</span>
-                  </div>
-                  <div className="ticket-body">
-                    <div className="ticket-live-indicator">
-                      <span className="live-dot" />
-                      6 AI AGENT AKTIF
-                    </div>
-                    <p className="ticket-title">Zero Human Company<br />Workshop Pass</p>
-                    <div className="ticket-mentor">
-                      <div className="mentor-avatar" style={{ display: "grid", placeItems: "center" }}>
-                        <Icon name="user" size={18} />
-                      </div>
-                      <div>
-                        <p className="mentor-name">{program.mentorName}</p>
-                        <p className="mentor-label">Instruktur</p>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="ticket-divider">
-                    <span className="notch notch-left" style={{ background: "#171540" }} />
-                    <span className="ticket-dashed-line" />
-                    <span className="notch notch-right" style={{ background: "#171540" }} />
-                  </div>
-                  <div className="ticket-footer">
-                    <div className="ticket-meta">
-                      <div className="meta-item"><Icon name="calendar" size={14} /> {displayHari}, {formatJam(displayScheduleAt)}</div>
-                      <div className="meta-item"><Icon name="clock" size={14} /> 3 Jam · Live Zoom</div>
-                      <div className="meta-item"><Icon name="award" size={14} /> e-Sertifikat + Rekaman</div>
-                    </div>
-                    <OfferTimer target={displayScheduleAt.toISOString()} note="Sesi dimulai dalam" />
-                  </div>
-                </div>
-              ) : (
               <div className={`prg-hero-image-panel ${program.imageUrl ? "prg-hero-image-panel-dynamic" : ""}`}>
                 {program.imageUrl ? (
                   <Image
@@ -511,14 +460,15 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
                   />
                 )}
               </div>
-              )}
             </div>
 
           </div>
         </div>
       </section>
+      )}
 
       {/* ===== DESCRIPTION & CTA BAR ===== */}
+      {!isZeroHuman && (
       <section className="section-sm" style={{ paddingTop: "2rem", paddingBottom: "2rem" }}>
         <div className="container">
           <div className={hasBlocks ? "prg-desc-cta-card no-desc" : "prg-desc-cta-card"}>
@@ -526,24 +476,17 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
               <div className="prg-desc-col">
                 <h3 className="prg-desc-title">Deskripsi Program</h3>
                 <p className="prg-desc-text">
-                  {isZeroHuman
-                    ? "Workshop intensif 3 jam: pelajari cara membangun dan mengoperasikan 6 AI Agent untuk membantu pekerjaan Customer Service, Sales, Marketing, Content, Developer, dan Reporting di bisnis Anda — tanpa coding, tanpa langganan platform AI Agent."
-                    : program.description}
+                  {program.description}
                 </p>
               </div>
             )}
             <div className="prg-cta-col">
               <a href="#daftar" className="btn btn-purple btn-lg btn-block" style={{ width: "100%", textAlign: "center" }}>
-                {isFree ? "Daftar Gratis Sekarang" : isZeroHuman && isEarlyBirdActive ? `Daftar Early Bird — ${priceLabel}` : `Daftar — ${priceLabel}`}
+                {isFree ? "Daftar Gratis Sekarang" : `Daftar — ${priceLabel}`}
               </a>
               {!isFree && effectivePriceOld && (
                 <span className="prg-hero-strike" style={{ color: "var(--ink-soft)", textDecoration: "line-through", display: "block", textAlign: "center", marginTop: "0.2rem" }}>
                   {rupiah(effectivePriceOld)}
-                </span>
-              )}
-              {isZeroHuman && !isEarlyBirdActive && (
-                <span style={{ display: "block", textAlign: "center", marginTop: "0.4rem", fontSize: "0.78rem", color: "var(--ink-soft)", fontWeight: 600 }}>
-                  (Harga Normal)
                 </span>
               )}
               <div className="prg-cta-meta-list" style={{ marginTop: "0.5rem" }}>
@@ -553,7 +496,7 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
                 </div>
                 <div className="cta-meta-item">
                   <Icon name="award" size={14} />
-                  <span>{isAiForTeachers ? "Live Zoom 2 jam · 6 Demo Langsung" : isZeroHuman ? "Live Zoom 3 jam · 6 Karyawan AI" : isVibesCoding ? "Live Zoom 2,5 jam · 4 Produk Jadi" : "Komunitas + Rekaman + Sertifikat"}</span>
+                  <span>{isAiForTeachers ? "Live Zoom 2 jam · 6 Demo Langsung" : isVibesCoding ? "Live Zoom 2,5 jam · 4 Produk Jadi" : "Komunitas + Rekaman + Sertifikat"}</span>
                 </div>
               </div>
               <OfferTimer target={displayScheduleAt.toISOString()} note="Sesi dimulai dalam" />
@@ -561,6 +504,7 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
           </div>
         </div>
       </section>
+      )}
 
       {/* ===== BODY: editor blok (jika ada) menggantikan seluruh section di bawah ini ===== */}
       {hasBlocks ? (
@@ -737,1541 +681,8 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
         </>
       )}
 
-      {/* ===== ZERO HUMAN COMPANY: 6 AI AGENT ===== */}
-      {isZeroHuman && (
-        <>
-          {/* Section 0: VIDEO — Lihat langsung Karyawan AI bekerja */}
-          <section className="section" style={{ paddingTop: "3rem", paddingBottom: "2rem" }}>
-            <div className="container">
-              <div className="section-head center" style={{ marginBottom: "1.5rem" }}>
-                <h2 style={{ fontSize: "clamp(1.6rem, 4vw, 2.4rem)" }}>Lihat Karyawan AI Bekerja Tanpa Henti</h2>
-                <p style={{ maxWidth: "32rem", marginInline: "auto", color: "var(--ink-soft)" }}>
-                  Owner tidur — bisnis tetap jalan. Ini yang Anda dapatkan dengan 6 Karyawan AI.
-                </p>
-              </div>
-              <div
-                style={{
-                  position: "relative", width: "100%", maxWidth: "56rem", marginInline: "auto",
-                  aspectRatio: "16 / 9", borderRadius: "var(--r-lg)", overflow: "hidden",
-                  background: "#0a1226", boxShadow: "0 24px 60px rgba(25,25,25,.35)",
-                }}
-              >
-                <iframe
-                  src="https://iframe.mediadelivery.net/embed/707807/cce98f15-2759-416f-b495-ae04a6d65c12?autoplay=true&loop=true&muted=true&volume=0&preload=true&responsive=true"
-                  title="Zero Human Company — Karyawan AI bekerja tanpa henti"
-                  loading="lazy"
-                  allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture; web-share"
-                  allowFullScreen
-                  style={{ position: "absolute", inset: 0, width: "100%", height: "100%", border: "none" }}
-                />
-              </div>
-            </div>
-          </section>
-
-          {/* Section 1: Selamat Datang — Dulu vs Sekarang (Redesigned & Harmonized) */}
-          <section className="section" style={{ paddingTop: "3.5rem", paddingBottom: "3.5rem", background: "var(--chip)" }}>
-            <div className="container">
-              <div className="section-head center">
-                <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: "0.7rem", marginBottom: "1.2rem" }}>
-                  <span className="type-tag type-workshop" style={{ display: "inline-block" }}>Selamat Datang di Era</span>
-                </div>
-                <div style={{ position: "relative", display: "inline-block" }}>
-                  <div style={{ position: "absolute", inset: "-24px -50px", background: "radial-gradient(ellipse, rgba(35,33,118,0.18) 0%, rgba(247,148,29,0.12) 55%, transparent 75%)", filter: "blur(22px)", zIndex: 0, pointerEvents: "none" }} />
-                  <h2 style={{ fontSize: "clamp(1.8rem, 4vw, 2.6rem)", position: "relative", zIndex: 1 }}>Zero <span className="hero-h1-accent">Human Company</span></h2>
-                </div>
-                <p style={{ maxWidth: "34rem", marginInline: "auto", color: "var(--ink-soft)" }}>
-                  Dulu, menjalankan bisnis butuh tim besar dengan beban biaya tinggi. Sekarang, 6 AI Agent otonom siap bekerja bersama Anda.
-                </p>
-              </div>
-
-              <div
-                style={{
-                  marginTop: "2.5rem",
-                  display: "flex",
-                  flexWrap: "wrap",
-                  justifyContent: "center",
-                  alignItems: "center",
-                  gap: "1.2rem",
-                  maxWidth: "60rem",
-                  marginInline: "auto",
-                }}
-              >
-                {/* Dulu: Model Konvensional */}
-                <div
-                  className="bento"
-                  style={{
-                    flex: "1 1 320px",
-                    maxWidth: "460px",
-                    padding: "1.8rem 1.6rem",
-                    background: "var(--white)",
-                    border: "1px solid rgba(229, 72, 77, 0.2)",
-                    borderRadius: "22px",
-                    boxShadow: "0 10px 30px rgba(229, 72, 77, 0.04)",
-                    display: "flex",
-                    flexDirection: "column",
-                  }}
-                >
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1rem" }}>
-                    <span style={{ fontSize: "0.72rem", fontWeight: 800, color: "var(--red)", background: "rgba(229, 72, 77, 0.08)", padding: "0.3rem 0.75rem", borderRadius: "999px", letterSpacing: "0.03em" }}>
-                      MODEL KONVENSIONAL
-                    </span>
-                    <span style={{ width: "40px", height: "40px", borderRadius: "50%", background: "rgba(229, 72, 77, 0.08)", color: "var(--red)", display: "grid", placeItems: "center" }}>
-                      <Icon name="users" size={18} />
-                    </span>
-                  </div>
-
-                  <h3 style={{ fontSize: "1.15rem", fontWeight: 800, margin: "0 0 0.35rem", color: "var(--ink)" }}>
-                    Ketergantungan Tim 6 Orang
-                  </h3>
-                  <p style={{ fontSize: "0.84rem", color: "var(--ink-soft)", lineHeight: 1.5, margin: "0 0 1.2rem" }}>
-                    Biaya operasional membengkak tiap bulan dan aktivitas terhenti di luar jam kantor.
-                  </p>
-
-                  <div style={{ display: "flex", flexDirection: "column", gap: "0.55rem" }}>
-                    {[
-                      { title: "6x Beban Gaji Bulanan", desc: "Gaji pokok, tunjangan, BPJS, & fasilitas kantor." },
-                      { title: "Terbatas 8 Jam Kerja", desc: "Leads malam & akhir pekan lambat direspons." },
-                      { title: "Kapasitas Terbatas & Lelah", desc: "Mudah burnout, human error, & risiko resign." },
-                      { title: "Supervisi & Follow-up Rutin", desc: "Waktu owner habis memantau pekerjaan harian." },
-                    ].map((item, i) => (
-                      <div
-                        key={i}
-                        style={{
-                          display: "flex",
-                          alignItems: "flex-start",
-                          gap: "0.75rem",
-                          background: "rgba(229, 72, 77, 0.03)",
-                          border: "1px solid rgba(229, 72, 77, 0.08)",
-                          borderRadius: "14px",
-                          padding: "0.65rem 0.85rem",
-                        }}
-                      >
-                        <span style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--red)", marginTop: "0.45rem", flexShrink: 0 }} />
-                        <div>
-                          <b style={{ fontSize: "0.82rem", color: "var(--ink)", display: "block" }}>{item.title}</b>
-                          <span style={{ fontSize: "0.76rem", color: "var(--ink-soft)", lineHeight: 1.4, display: "block" }}>{item.desc}</span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div style={{ marginTop: "1.2rem", padding: "0.65rem 0.9rem", background: "rgba(229, 72, 77, 0.06)", borderRadius: "12px", borderLeft: "3px solid var(--red)" }}>
-                    <span style={{ fontSize: "0.76rem", fontWeight: 700, color: "var(--red)" }}>
-                      Biaya tinggi &amp; pertumbuhan bisnis terhambat kapasitas jam kerja manusia.
-                    </span>
-                  </div>
-                </div>
-
-                {/* Transform Arrow */}
-                <TransformArrow />
-
-                {/* Sekarang: Zero Human Company */}
-                <div
-                  className="bento"
-                  style={{
-                    flex: "1 1 320px",
-                    maxWidth: "460px",
-                    padding: "1.8rem 1.6rem",
-                    background: "linear-gradient(180deg, rgba(35,33,118,0.03) 0%, var(--white) 100%)",
-                    border: "1.5px solid rgba(35, 33, 118, 0.22)",
-                    borderRadius: "22px",
-                    boxShadow: "0 14px 40px rgba(35,33,118,0.08)",
-                    display: "flex",
-                    flexDirection: "column",
-                  }}
-                >
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1rem" }}>
-                    <span style={{ fontSize: "0.72rem", fontWeight: 800, color: "#fff", background: "linear-gradient(135deg, var(--purple), var(--purple-deep))", padding: "0.3rem 0.8rem", borderRadius: "999px", letterSpacing: "0.03em", boxShadow: "0 3px 8px rgba(35,33,118,0.25)" }}>
-                      ZERO HUMAN COMPANY
-                    </span>
-                    <span style={{ width: "40px", height: "40px", borderRadius: "50%", background: "var(--purple-soft)", color: "var(--purple)", display: "grid", placeItems: "center", border: "1px solid rgba(35,33,118,0.18)" }}>
-                      <Icon name="zap" size={18} />
-                    </span>
-                  </div>
-
-                  <h3 style={{ fontSize: "1.15rem", fontWeight: 800, margin: "0 0 0.35rem", color: "var(--ink)" }}>
-                    6 AI Agent Otonom Bekerja
-                  </h3>
-                  <p style={{ fontSize: "0.84rem", color: "var(--ink-soft)", lineHeight: 1.5, margin: "0 0 1.2rem" }}>
-                    Manusia menentukan strategi & arah bisnis — AI Agent mengeksekusi secara otomatis 24/7.
-                  </p>
-
-                  <div style={{ display: "flex", flexDirection: "column", gap: "0.55rem" }}>
-                    {[
-                      { title: "0 Beban Gaji Bulanan", desc: "Cukup 1x setup di laptop Anda tanpa langganan mahal." },
-                      { title: "Respon 24/7 Tanpa Jeda", desc: "Chat, closing, & follow-up leads aktif saat Anda tidur." },
-                      { title: "Konsisten 100% Sesuai SOP", desc: "Eksekusi presisi tinggi tanpa lelah dan tanpa drama." },
-                      { title: "Skalabilitas Tanpa Batas", desc: "Tangani ratusan prospek simultan tanpa rekrut staf." },
-                    ].map((item, i) => (
-                      <div
-                        key={i}
-                        style={{
-                          display: "flex",
-                          alignItems: "flex-start",
-                          gap: "0.75rem",
-                          background: "rgba(35, 33, 118, 0.03)",
-                          border: "1px solid rgba(35, 33, 118, 0.08)",
-                          borderRadius: "14px",
-                          padding: "0.65rem 0.85rem",
-                        }}
-                      >
-                        <span style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--purple)", marginTop: "0.45rem", flexShrink: 0 }} />
-                        <div>
-                          <b style={{ fontSize: "0.82rem", color: "var(--purple)", display: "block" }}>{item.title}</b>
-                          <span style={{ fontSize: "0.76rem", color: "var(--ink-soft)", lineHeight: 1.4, display: "block" }}>{item.desc}</span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div style={{ marginTop: "1.2rem", padding: "0.65rem 0.9rem", background: "rgba(23, 160, 94, 0.08)", borderRadius: "12px", borderLeft: "3px solid var(--green)" }}>
-                    <span style={{ fontSize: "0.76rem", fontWeight: 700, color: "var(--green)" }}>
-                      Operasional 100% mandiri &amp; bisnis terus menghasilkan 24 jam.
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Bottom Quote / Transformation Hook */}
-              <div style={{
-                marginTop: "2.2rem", display: "flex", alignItems: "center", gap: "1rem",
-                maxWidth: "40rem", marginInline: "auto", padding: "1rem 1.4rem",
-                background: "var(--white)", border: "1px solid var(--border)", borderRadius: "999px",
-                boxShadow: "0 12px 30px rgba(35,33,118,0.08)",
-              }}>
-                <span style={{ width: "42px", height: "42px", borderRadius: "50%", background: "linear-gradient(135deg, var(--orange), var(--purple))", color: "#fff", display: "grid", placeItems: "center", flexShrink: 0 }}>
-                  <Icon name="zap" size={20} />
-                </span>
-                <p style={{ flex: 1, margin: 0, fontWeight: 700, color: "var(--ink)", fontSize: "0.95rem", lineHeight: 1.5 }}>
-                  Zero Human Company memungkinkan kita membangun perusahaan{" "}
-                  <span className="hero-h1-accent">bahkan tanpa manusia.</span>
-                </p>
-                <a href="#daftar" style={{ width: "40px", height: "40px", borderRadius: "50%", background: "var(--purple)", color: "#fff", display: "grid", placeItems: "center", flexShrink: 0 }} aria-label="Daftar sekarang">
-                  <Icon name="arrowRight" size={18} />
-                </a>
-              </div>
-            </div>
-          </section>
-
-          {/* Section 2: 6 Karyawan AI (Unified & Harmonized with Brand Palette) */}
-          <section className="section" style={{ paddingBottom: "3.5rem" }}>
-            <div className="container">
-              <div className="section-head center">
-                <span style={{ display: "inline-flex", alignItems: "center", gap: "0.4rem", background: "linear-gradient(135deg, var(--purple), var(--purple-deep))", color: "#fff", fontWeight: 800, fontSize: "0.75rem", letterSpacing: "0.04em", padding: "0.4rem 1rem", borderRadius: "999px", marginBottom: "1.2rem", boxShadow: "0 3px 10px rgba(35,33,118,0.25)" }}>
-                  6 KARYAWAN AI
-                </span>
-                <h2 style={{ fontSize: "clamp(1.8rem, 4vw, 2.6rem)", lineHeight: 1.15 }}>
-                  6 Karyawan yang<br />
-                  <span className="hero-h1-accent">Tetap Bekerja Saat Anda Tidur</span>
-                </h2>
-                <p style={{ maxWidth: "32rem", marginInline: "auto", color: "var(--ink-soft)" }}>
-                  Anda sedang istirahat. Bisnis tetap berjalan — 6 AI Agent yang siap Anda bangun dan jalankan untuk otomatisasi operasional.
-                </p>
-              </div>
-
-              <div
-                style={{
-                  marginTop: "2.5rem",
-                  display: "grid",
-                  gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
-                  gap: "1.4rem",
-                  maxWidth: "68rem",
-                  marginInline: "auto",
-                }}
-              >
-                {[
-                  {
-                    no: "01",
-                    title: "Customer Service Agent",
-                    iconName: "chat" as const,
-                    color: "var(--purple)",
-                    soft: "var(--purple-soft)",
-                    border: "rgba(35, 33, 118, 0.15)",
-                    desc: "Menjawab pertanyaan & bantu pelanggan 24/7 tanpa henti lebih cepat.",
-                    tasks: ["Menjawab pertanyaan", "Info produk", "Ikuti instruksi bisnis"],
-                  },
-                  {
-                    no: "02",
-                    title: "Sales Agent",
-                    iconName: "award" as const,
-                    color: "var(--orange)",
-                    soft: "var(--orange-soft)",
-                    border: "rgba(247, 148, 29, 0.2)",
-                    desc: "Menemukan prospek, follow-up, dan menutup penjualan secara otomatis.",
-                    tasks: ["Kelola leads", "Follow-up otomatis", "Laporan closing"],
-                  },
-                  {
-                    no: "03",
-                    title: "Marketing Agent",
-                    iconName: "chart" as const,
-                    color: "var(--green)",
-                    soft: "rgba(23, 160, 94, 0.08)",
-                    border: "rgba(23, 160, 94, 0.2)",
-                    desc: "Partner riset pasar, rancang strategi promosi, dan kelola campaign.",
-                    tasks: ["Riset pasar", "Ide campaign", "Strategi promosi"],
-                  },
-                  {
-                    no: "04",
-                    title: "Content Agent",
-                    iconName: "file-text" as const,
-                    color: "var(--purple)",
-                    soft: "var(--purple-soft)",
-                    border: "rgba(35, 33, 118, 0.15)",
-                    desc: "Mempercepat produksi artikel, caption, script, dan konten brand Anda.",
-                    tasks: ["Copywriting", "Caption & script", "Content planning"],
-                  },
-                  {
-                    no: "05",
-                    title: "Developer Agent",
-                    iconName: "settings" as const,
-                    color: "var(--orange)",
-                    soft: "var(--orange-soft)",
-                    border: "rgba(247, 148, 29, 0.2)",
-                    desc: "Bantu coding, perbaiki bug, kembangkan fitur, dan kelola website.",
-                    tasks: ["Coding & script", "Debugging", "Fitur & website"],
-                  },
-                  {
-                    no: "06",
-                    title: "Report Agent",
-                    iconName: "monitor" as const,
-                    color: "var(--green)",
-                    soft: "rgba(23, 160, 94, 0.08)",
-                    border: "rgba(23, 160, 94, 0.2)",
-                    desc: "Kumpulkan data, analisis, dan buat laporan akurat setiap hari.",
-                    tasks: ["Rangkum aktivitas", "Buat laporan", "Insight bisnis"],
-                  },
-                ].map((agent, i) => (
-                  <div
-                    key={i}
-                    className="bento"
-                    style={{
-                      position: "relative",
-                      padding: 0,
-                      background: "var(--white)",
-                      border: "1px solid var(--border)",
-                      borderRadius: "20px",
-                      overflow: "hidden",
-                      display: "flex",
-                      flexDirection: "column",
-                      boxShadow: "0 10px 30px rgba(35,33,118,0.05)",
-                      transition: "transform 0.2s ease, box-shadow 0.2s ease",
-                    }}
-                  >
-                    {/* Top colored accent bar */}
-                    <div style={{ height: "4px", background: agent.color }} />
-
-                    <div style={{ padding: "1.6rem 1.4rem", display: "flex", flexDirection: "column", flex: 1 }}>
-                      {/* Top Row: Number badge + Clean Agent Icon */}
-                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1.2rem" }}>
-                        <span
-                          style={{
-                            width: "32px",
-                            height: "32px",
-                            borderRadius: "50%",
-                            background: agent.color,
-                            color: "#fff",
-                            fontWeight: 800,
-                            fontSize: "0.78rem",
-                            display: "grid",
-                            placeItems: "center",
-                          }}
-                        >
-                          {agent.no}
-                        </span>
-
-                        <div
-                          style={{
-                            width: "44px",
-                            height: "44px",
-                            borderRadius: "12px",
-                            background: agent.soft,
-                            border: `1px solid ${agent.border}`,
-                            color: agent.color,
-                            display: "grid",
-                            placeItems: "center",
-                          }}
-                        >
-                          <Icon name={agent.iconName} size={22} />
-                        </div>
-                      </div>
-
-                      {/* Title & Desc */}
-                      <h3 style={{ fontSize: "1.08rem", fontWeight: 800, margin: "0 0 0.45rem", color: "var(--ink)" }}>
-                        {agent.title}
-                      </h3>
-                      <p style={{ fontSize: "0.86rem", color: "var(--ink-soft)", lineHeight: 1.55, margin: "0 0 1.2rem" }}>
-                        {agent.desc}
-                      </p>
-
-                      {/* Capabilities / Task Chips */}
-                      <div style={{ marginTop: "auto", display: "flex", flexWrap: "wrap", gap: "0.4rem", paddingTop: "0.75rem", borderTop: "1px dashed var(--border)" }}>
-                        {agent.tasks.map((task, j) => (
-                          <span
-                            key={j}
-                            style={{
-                              fontSize: "0.74rem",
-                              fontWeight: 600,
-                              background: agent.soft,
-                              color: agent.color,
-                              border: `1px solid ${agent.border}`,
-                              padding: "0.26rem 0.62rem",
-                              borderRadius: "999px",
-                              letterSpacing: "0.01em",
-                            }}
-                          >
-                            {task}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Bottom workforce banner */}
-              <div
-                style={{
-                  marginTop: "2.2rem",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "1rem",
-                  maxWidth: "38rem",
-                  marginInline: "auto",
-                  padding: "0.9rem 1.4rem",
-                  background: "var(--white)",
-                  border: "1px solid var(--border)",
-                  borderRadius: "999px",
-                  boxShadow: "0 12px 30px rgba(35,33,118,0.08)",
-                }}
-              >
-                <span
-                  style={{
-                    width: "40px",
-                    height: "40px",
-                    borderRadius: "50%",
-                    background: "linear-gradient(135deg, var(--orange), var(--purple))",
-                    color: "#fff",
-                    display: "grid",
-                    placeItems: "center",
-                    flexShrink: 0,
-                  }}
-                >
-                  <Icon name="zap" size={18} />
-                </span>
-                <p style={{ margin: 0, fontWeight: 700, color: "var(--ink)", fontSize: "0.95rem" }}>
-                  Enam pekerjaan. Enam AI Agent. <span className="hero-h1-accent">Satu digital workforce.</span>
-                </p>
-              </div>
-            </div>
-          </section>
-
-          {/* Section 2.5: LIVE DEMO VIDEO — Jetschool Headquarter & 6 AI Crew Visualizer */}
-          <section id="demo-headquarter" className="section" style={{ paddingTop: "2.5rem", paddingBottom: "3.5rem" }}>
-            <div className="container">
-              <div className="section-head center" style={{ marginBottom: "2rem" }}>
-                <span style={{ display: "inline-flex", alignItems: "center", gap: "0.45rem", background: "linear-gradient(135deg, var(--orange), #d97706)", color: "#fff", fontWeight: 800, fontSize: "0.75rem", letterSpacing: "0.04em", padding: "0.4rem 1.1rem", borderRadius: "999px", marginBottom: "1rem", boxShadow: "0 4px 14px rgba(247,148,29,0.3)" }}>
-                  <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#fff", display: "inline-block" }} />
-                  LIVE DEMO EKOSISTEM
-                </span>
-                <h2 style={{ fontSize: "clamp(1.8rem, 4vw, 2.6rem)", lineHeight: 1.2 }}>
-                  Saksikan 6 Karyawan AI Bekerja<br />
-                  <span className="hero-h1-accent">di Kantor Virtual Jetschool</span>
-                </h2>
-                <p style={{ maxWidth: "36rem", marginInline: "auto", color: "var(--ink-soft)", lineHeight: 1.6 }}>
-                  Bukan sekadar konsep di atas kertas. Tonton rekaman langsung bagaimana 6 AI Agent berkoordinasi, bertukar tugas, dan mengeksekusi operasional bisnis dalam satu ekosistem kantor virtual.
-                </p>
-              </div>
-
-              {/* Video Player Card */}
-              <div
-                style={{
-                  position: "relative",
-                  width: "100%",
-                  maxWidth: "60rem",
-                  marginInline: "auto",
-                  borderRadius: "24px",
-                  overflow: "hidden",
-                  background: "#080c18",
-                  border: "1.5px solid rgba(35, 33, 118, 0.25)",
-                  boxShadow: "0 28px 70px rgba(15, 23, 42, 0.38), 0 0 0 1px rgba(255, 255, 255, 0.05)",
-                }}
-              >
-                {/* Top Window Bar for Realistic App Frame Feel */}
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    padding: "0.75rem 1.25rem",
-                    background: "linear-gradient(180deg, #131b2e 0%, #0d1322 100%)",
-                    borderBottom: "1px solid rgba(255, 255, 255, 0.08)",
-                  }}
-                >
-                  <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                    <span style={{ width: "11px", height: "11px", borderRadius: "50%", background: "#ef4444", display: "inline-block" }} />
-                    <span style={{ width: "11px", height: "11px", borderRadius: "50%", background: "#f59e0b", display: "inline-block" }} />
-                    <span style={{ width: "11px", height: "11px", borderRadius: "50%", background: "#10b981", display: "inline-block" }} />
-                    <span style={{ marginLeft: "0.6rem", fontSize: "0.78rem", fontWeight: 700, color: "rgba(255, 255, 255, 0.8)", letterSpacing: "0.02em" }}>
-                      JETSCHOOL HEADQUARTER — AI Crew Visualizer
-                    </span>
-                  </div>
-                  <span style={{ fontSize: "0.72rem", fontWeight: 700, color: "#10b981", background: "rgba(16, 185, 129, 0.12)", border: "1px solid rgba(16, 185, 129, 0.25)", padding: "0.2rem 0.65rem", borderRadius: "999px", display: "inline-flex", alignItems: "center", gap: "0.35rem" }}>
-                    <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#10b981" }} />
-                    6 Agent Aktif
-                  </span>
-                </div>
-
-                {/* Aspect Ratio Responsive Video Frame */}
-                <div style={{ position: "relative", width: "100%", aspectRatio: "16 / 9" }}>
-                  <iframe
-                    src="https://iframe.mediadelivery.net/embed/707807/5ede62bd-83d5-4875-abdd-651825a8eda0?autoplay=false&loop=false&muted=false&preload=true&responsive=true"
-                    title="Jetschool Headquarter — Demo 6 Karyawan AI Bekerja"
-                    loading="lazy"
-                    allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;"
-                    allowFullScreen
-                    style={{ position: "absolute", inset: 0, width: "100%", height: "100%", border: "none" }}
-                  />
-                </div>
-              </div>
-
-              {/* Highlights below video */}
-              <div
-                style={{
-                  marginTop: "1.8rem",
-                  display: "grid",
-                  gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
-                  gap: "1rem",
-                  maxWidth: "60rem",
-                  marginInline: "auto",
-                }}
-              >
-                {[
-                  {
-                    icon: "monitor" as const,
-                    title: "Ruang Kantor Virtual 3D",
-                    desc: "Setiap AI Agent memiliki peran spesifik di meja kerja, lounge, dan lobby.",
-                  },
-                  {
-                    icon: "users" as const,
-                    title: "Direktori 6 Kru Otonom",
-                    desc: "CS, Closer Sales, Lead Marketing, Strategist, Content Creator, dan Auditor.",
-                  },
-                  {
-                    icon: "chart" as const,
-                    title: "Log Aktivitas Real-time",
-                    desc: "Transparansi penuh atas setiap aksi, percakapan, dan hasil yang dikerjakan agen.",
-                  },
-                ].map((item, i) => (
-                  <div
-                    key={i}
-                    style={{
-                      background: "var(--white)",
-                      border: "1px solid var(--border)",
-                      borderRadius: "16px",
-                      padding: "1.1rem 1.25rem",
-                      display: "flex",
-                      alignItems: "flex-start",
-                      gap: "0.85rem",
-                      boxShadow: "0 4px 15px rgba(35,33,118,0.04)",
-                    }}
-                  >
-                    <span style={{ width: "36px", height: "36px", borderRadius: "10px", background: "var(--purple-soft)", color: "var(--purple)", display: "grid", placeItems: "center", flexShrink: 0 }}>
-                      <Icon name={item.icon} size={18} />
-                    </span>
-                    <div>
-                      <b style={{ fontSize: "0.88rem", color: "var(--ink)", display: "block" }}>{item.title}</b>
-                      <span style={{ fontSize: "0.78rem", color: "var(--ink-soft)", lineHeight: 1.45, display: "block", marginTop: "0.2rem" }}>
-                        {item.desc}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </section>
-
-          {/* Section 3: Bukan Sekadar Chatbot */}
-          <section className="section" style={{ background: "var(--chip)", paddingBottom: "3.5rem" }}>
-            <div className="container">
-              <div className="section-head center">
-                <span className="type-tag" style={{ marginBottom: "1.2rem", display: "inline-block", background: "var(--purple-soft)", color: "var(--purple)" }}>Bukan Sekadar Chatbot</span>
-                <h2 style={{ fontSize: "clamp(1.8rem, 4vw, 2.6rem)" }}>ChatGPT Bisa Menjawab. AI Agent Bisa Bekerja.</h2>
-                <p style={{ maxWidth: "34rem", marginInline: "auto", color: "var(--ink-soft)" }}>
-                  Chatbot menunggu pertanyaan. AI Agent diberi tujuan, tools, dan workflow untuk menyelesaikan pekerjaan.
-                </p>
-              </div>
-
-              <div style={{ marginTop: "2.2rem", maxWidth: "300px", marginInline: "auto" }}>
-                <Image
-                  src="/zhc-whatsapp-demo.webp"
-                  alt="Contoh percakapan Sales Agent di WhatsApp"
-                  width={500}
-                  height={880}
-                  style={{ width: "100%", height: "auto", borderRadius: "24px", boxShadow: "0 30px 60px rgba(15,23,42,0.28)" }}
-                />
-              </div>
-
-              <p style={{ textAlign: "center", marginTop: "2.2rem", color: "var(--ink)", maxWidth: "30rem", marginInline: "auto", fontWeight: 700 }}>
-                Anda memberi pekerjaan. Agent yang mengerjakannya — inilah yang akan Anda praktikkan.
-              </p>
-            </div>
-          </section>
-
-          {/* Section 5: Dalam 3 Jam — Timeline (Redesigned & Premium) */}
-          <section className="section" style={{ background: "var(--chip)", paddingBottom: "4rem", paddingTop: "3.5rem" }}>
-            <div className="container">
-              <div className="section-head center">
-                <span className="type-tag type-workshop" style={{ marginBottom: "1rem", display: "inline-block" }}>
-                  Alur Workshop 3 Jam
-                </span>
-                <h2 style={{ fontSize: "clamp(1.8rem, 4vw, 2.6rem)" }}>Dalam 3 Jam, Anda Membangunnya Sendiri</h2>
-                <p style={{ maxWidth: "34rem", marginInline: "auto", color: "var(--ink-soft)", lineHeight: 1.6 }}>
-                  Bukan seminar teori atau slide presentasi — 100% praktik langsung live step-by-step dari nol hingga sistem bekerja.
-                </p>
-              </div>
-
-              {/* 3 Step Cards Grid */}
-              <div
-                style={{
-                  marginTop: "2.5rem",
-                  display: "grid",
-                  gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
-                  gap: "1.4rem",
-                  maxWidth: "66rem",
-                  marginInline: "auto",
-                }}
-              >
-                {[
-                  {
-                    step: "JAM 1",
-                    phase: "TAHAP 01",
-                    title: "Build",
-                    subtitle: "Rancang Otak & Identitas",
-                    iconName: "settings" as const,
-                    accent: "var(--purple)",
-                    accentSoft: "rgba(35, 33, 118, 0.08)",
-                    borderSoft: "rgba(35, 33, 118, 0.2)",
-                    desc: "Bangun AI Agent pertama Anda: identitas, instruksi kerja, tujuan bisnis, dan batas kemampuannya secara presisi.",
-                    points: [
-                      "Konfigurasi System Prompt & Karakter",
-                      "Penetapan SOP & Batasan Pekerjaan",
-                    ],
-                  },
-                  {
-                    step: "JAM 2",
-                    phase: "TAHAP 02",
-                    title: "Connect",
-                    subtitle: "Integrasi Workflow & Data",
-                    iconName: "zap" as const,
-                    accent: "var(--orange)",
-                    accentSoft: "rgba(247, 148, 29, 0.1)",
-                    borderSoft: "rgba(247, 148, 29, 0.25)",
-                    desc: "Hubungkan Agent ke alur kerja nyata: menghubungkan tools penunjang, sumber data, dan trigger respon otomatis.",
-                    points: [
-                      "Koneksi Tools & Trigger Workflow",
-                      "Integrasi Knowledge Base & Data",
-                    ],
-                  },
-                  {
-                    step: "JAM 3",
-                    phase: "TAHAP 03",
-                    title: "Run",
-                    subtitle: "Uji & Replikasi 6 Agent",
-                    iconName: "check" as const,
-                    accent: "#10b981",
-                    accentSoft: "rgba(16, 185, 129, 0.1)",
-                    borderSoft: "rgba(16, 185, 129, 0.25)",
-                    desc: "Jalankan, simulasikan tugas nyata, evaluasi akurasi — lalu replikasi sistem untuk mengaktifkan seluruh 6 AI Agent.",
-                    points: [
-                      "Live Testing & Evaluasi Skenario",
-                      "Replikasi Menjadi 6 AI Agent Lengkap",
-                    ],
-                  },
-                ].map((item, i) => (
-                  <div
-                    key={i}
-                    className="bento"
-                    style={{
-                      background: "var(--white)",
-                      borderRadius: "20px",
-                      border: `1.5px solid ${item.borderSoft}`,
-                      padding: "1.8rem 1.6rem",
-                      display: "flex",
-                      flexDirection: "column",
-                      boxShadow: "0 10px 30px rgba(0,0,0,0.03)",
-                      position: "relative",
-                      overflow: "hidden",
-                    }}
-                  >
-                    {/* Top Accent Line */}
-                    <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: "4px", background: item.accent }} />
-
-                    {/* Step Header */}
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1.2rem" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                        <span
-                          style={{
-                            fontSize: "0.72rem",
-                            fontWeight: 900,
-                            letterSpacing: "0.06em",
-                            padding: "0.28rem 0.65rem",
-                            borderRadius: "999px",
-                            background: item.accentSoft,
-                            color: item.accent,
-                            border: `1px solid ${item.borderSoft}`,
-                          }}
-                        >
-                          {item.step}
-                        </span>
-                        <span style={{ fontSize: "0.72rem", fontWeight: 700, color: "var(--ink-faint)" }}>
-                          {item.phase}
-                        </span>
-                      </div>
-                      <span
-                        style={{
-                          width: "38px",
-                          height: "38px",
-                          borderRadius: "12px",
-                          background: item.accentSoft,
-                          color: item.accent,
-                          display: "grid",
-                          placeItems: "center",
-                        }}
-                      >
-                        <Icon name={item.iconName} size={18} />
-                      </span>
-                    </div>
-
-                    {/* Title */}
-                    <h3 style={{ fontSize: "1.3rem", fontWeight: 900, margin: "0 0 0.2rem", color: "var(--ink)" }}>
-                      {item.title}
-                    </h3>
-                    <p style={{ fontSize: "0.82rem", fontWeight: 700, color: item.accent, margin: "0 0 0.8rem" }}>
-                      {item.subtitle}
-                    </p>
-
-                    {/* Description */}
-                    <p style={{ fontSize: "0.86rem", color: "var(--ink-soft)", lineHeight: 1.55, margin: "0 0 1.2rem" }}>
-                      {item.desc}
-                    </p>
-
-                    {/* Check Points */}
-                    <div style={{ marginTop: "auto", display: "flex", flexDirection: "column", gap: "0.45rem", paddingTop: "0.8rem", borderTop: "1px dashed var(--border)" }}>
-                      {item.points.map((pt, pIdx) => (
-                        <div key={pIdx} style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.78rem", fontWeight: 600, color: "var(--ink)" }}>
-                          <span style={{ color: item.accent, fontWeight: 900 }}>✓</span>
-                          <span>{pt}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Target Banner */}
-              <div
-                style={{
-                  maxWidth: "52rem",
-                  marginInline: "auto",
-                  marginTop: "2rem",
-                  padding: "1.2rem 1.6rem",
-                  background: "linear-gradient(135deg, rgba(35,33,118,0.06) 0%, rgba(247,148,29,0.06) 100%)",
-                  border: "1.5px solid rgba(35,33,118,0.14)",
-                  borderRadius: "16px",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: "0.9rem",
-                  textAlign: "center",
-                  flexWrap: "wrap",
-                }}
-              >
-                <span style={{ width: "32px", height: "32px", borderRadius: "50%", background: "var(--purple-soft)", color: "var(--purple)", display: "grid", placeItems: "center", flexShrink: 0 }}>
-                  <Icon name="check" size={16} />
-                </span>
-                <p style={{ margin: 0, fontSize: "0.92rem", fontWeight: 800, color: "var(--purple)", lineHeight: 1.45 }}>
-                  <span style={{ color: "var(--ink)" }}>Target Akhir:</span> 6 AI Agent pertama Anda selesai dikonfigurasi &amp; siap dijalankan di laptop Anda.
-                </p>
-              </div>
-            </div>
-          </section>
-
-          {/* Section 6: Dibangun di Laptop Anda + Trust Badges */}
-          <section className="section" style={{ paddingBottom: "3.5rem" }}>
-            <div className="container">
-              <div className="section-head center">
-                <h2 style={{ fontSize: "clamp(1.6rem, 4vw, 2.4rem)" }}>Dibangun di Laptop Anda</h2>
-                <p style={{ maxWidth: "32rem", marginInline: "auto", color: "var(--ink-soft)" }}>
-                  Anda belajar membangun dan menjalankan AI Agent langsung dari perangkat sendiri — tanpa platform bulanan.
-                </p>
-              </div>
-              <div style={{ marginTop: "2rem", display: "flex", flexWrap: "wrap", justifyContent: "center", alignItems: "center", gap: "0.5rem" }}>
-                {[
-                  { label: "Laptop Anda" },
-                  { label: "AI Model" },
-                  { label: "Tools" },
-                  { label: "Workflow" },
-                  { label: "AI Agent" },
-                ].map((step, i, arr) => (
-                  <span key={i} style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                    <span style={{
-                      padding: "0.6rem 1.1rem", borderRadius: "999px", fontSize: "0.88rem", fontWeight: 700,
-                      display: "flex", alignItems: "center", gap: "0.5rem",
-                      ...(i === arr.length - 1
-                        ? { background: "var(--purple)", color: "#fff" }
-                        : { background: "var(--purple-soft)", color: "var(--purple)" }),
-                    }}>
-                      {step.label}
-                    </span>
-                    {i < arr.length - 1 && <span style={{ color: "var(--ink-faint)" }}>→</span>}
-                  </span>
-                ))}
-              </div>
-
-              <div style={{ marginTop: "2.2rem", display: "flex", justifyContent: "center", gap: "0.7rem", flexWrap: "wrap" }}>
-                {[
-                  "Tanpa coding",
-                  "Tanpa langganan bulanan",
-                  "Tanpa server berbayar",
-                ].map((label, i) => (
-                  <span key={i} style={{ display: "flex", alignItems: "center", gap: "0.45rem", fontSize: "0.85rem", fontWeight: 700, color: "var(--ink)", background: "var(--white)", border: "1px solid var(--border)", padding: "0.5rem 1rem", borderRadius: "999px" }}>
-                    <span style={{ color: "#22c55e", fontWeight: 800 }}>✓</span> {label}
-                  </span>
-                ))}
-              </div>
-              <p style={{ textAlign: "center", marginTop: "1rem", color: "var(--ink-faint)", fontSize: "0.76rem" }}>
-                Model AI: pilihan lokal/gratis tersedia, tergantung kebutuhan &amp; provider.
-              </p>
-            </div>
-          </section>
-
-          {/* Section 6.5: Terhubung ke Tools yang Sudah Anda Pakai (Redesigned with Real Logos) */}
-          <section className="section" style={{ background: "var(--chip)", paddingBottom: "3.5rem" }}>
-            <div className="container">
-              <div className="section-head center">
-                <span style={{ display: "inline-flex", alignItems: "center", gap: "0.4rem", background: "var(--orange)", color: "#fff", fontWeight: 800, fontSize: "0.75rem", letterSpacing: "0.04em", padding: "0.4rem 1rem", borderRadius: "999px", marginBottom: "1.2rem", boxShadow: "0 3px 8px rgba(247,148,29,0.3)" }}>
-                  TERHUBUNG KEMANA SAJA
-                </span>
-                <h2 style={{ fontSize: "clamp(1.6rem, 4vw, 2.4rem)" }}>
-                  Agent Bisa Terhubung ke <span className="hero-h1-accent">Tools yang Sudah Anda Pakai</span>
-                </h2>
-                <p style={{ maxWidth: "34rem", marginInline: "auto", color: "var(--ink-soft)" }}>
-                  Tanpa perlu ganti aplikasi — AI Agent Anda bekerja langsung di ekosistem software yang sudah biasa Anda gunakan setiap hari.
-                </p>
-              </div>
-
-              <div className="tool-integ-grid">
-                {[
-                  {
-                    name: "WhatsApp",
-                    desc: "Chat prospek, jawab FAQ, dan broadcast update otomatis.",
-                    logo: (
-                      <svg viewBox="0 0 24 24" fill="none">
-                        <path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91C2.13 13.66 2.59 15.36 3.45 16.86L2.05 22L7.3 20.63C8.75 21.42 10.38 21.83 12.04 21.83C17.5 21.83 21.95 17.38 21.95 11.92C21.95 9.27 20.92 6.78 19.05 4.9C17.18 3.03 14.69 2 12.04 2Z" fill="#25D366"/>
-                        <path d="M17.47 14.38C17.17 14.23 15.7 13.51 15.43 13.41C15.15 13.31 14.95 13.26 14.75 13.56C14.55 13.86 13.98 14.53 13.8 14.73C13.63 14.93 13.45 14.96 13.15 14.81C12.85 14.66 11.89 14.35 10.75 13.33C9.86 12.54 9.26 11.56 9.09 11.26C8.91 10.96 9.07 10.8 9.22 10.65C9.35 10.52 9.51 10.31 9.66 10.13C9.81 9.96 9.86 9.83 9.96 9.63C10.06 9.43 10.01 9.26 9.94 9.11C9.86 8.96 9.29 7.56 9.06 7C8.83 6.45 8.6 6.53 8.43 6.52C8.27 6.51 8.07 6.51 7.87 6.51C7.67 6.51 7.35 6.58 7.07 6.89C6.8 7.19 6.02 7.92 6.02 9.4C6.02 10.88 7.1 12.31 7.25 12.51C7.4 12.71 9.37 15.75 12.39 17.05C13.11 17.36 13.68 17.55 14.11 17.69C14.83 17.92 15.48 17.89 16 17.81C16.58 17.72 17.79 17.07 18.04 16.37C18.29 15.67 18.29 15.07 18.21 14.94C18.14 14.81 17.94 14.73 17.64 14.58L17.47 14.38Z" fill="white"/>
-                      </svg>
-                    ),
-                  },
-                  {
-                    name: "Telegram",
-                    desc: "Terima perintah, notifikasi instan, & pantau status agent.",
-                    logo: (
-                      <svg viewBox="0 0 24 24" fill="none">
-                        <circle cx="12" cy="12" r="12" fill="#229ED9"/>
-                        <path d="M5.4 11.9L17.6 7.2C18.2 6.95 18.7 7.32 18.5 8.15L16.4 18.05C16.25 18.75 15.8 18.92 15.2 18.58L12 16.22L10.45 17.71C10.28 17.88 10.13 18.03 9.8 18.03L10.03 14.73L16.03 9.31C16.29 9.08 15.97 8.95 15.63 9.18L8.21 13.85L5.02 12.85C4.33 12.63 4.31 12.16 5.4 11.9Z" fill="white"/>
-                      </svg>
-                    ),
-                  },
-                  {
-                    name: "Slack",
-                    desc: "Kirim laporan harian, insight bisnis, & alert ke channel tim.",
-                    logo: (
-                      <svg viewBox="0 0 24 24" fill="none">
-                        <path d="M5.04 14.5a2.52 2.52 0 0 1-2.52-2.52c0-1.39 1.13-2.52 2.52-2.52h2.52v2.52c0 1.39-1.13 2.52-2.52 2.52z" fill="#E01E5A"/>
-                        <path d="M8.82 14.5c1.39 0 2.52-1.13 2.52-2.52V5.04A2.52 2.52 0 0 0 8.82 2.52a2.52 2.52 0 0 0-2.52 2.52v6.94c0 1.39 1.13 2.52 2.52 2.52z" fill="#E01E5A"/>
-                        <path d="M9.5 5.04a2.52 2.52 0 0 1 2.52-2.52c1.39 0 2.52 1.13 2.52 2.52v2.52h-2.52c-1.39 0-2.52-1.13-2.52-2.52z" fill="#36C5F0"/>
-                        <path d="M9.5 8.82c0 1.39 1.13 2.52 2.52 2.52h6.94a2.52 2.52 0 0 0 2.52-2.52 2.52 2.52 0 0 0-2.52-2.52H12.02c-1.39 0-2.52 1.13-2.52 2.52z" fill="#36C5F0"/>
-                        <path d="M18.96 9.5c1.39 0 2.52 1.13 2.52 2.52 0 1.39-1.13 2.52-2.52 2.52h-2.52V9.5h2.52z" fill="#2EB67D"/>
-                        <path d="M15.18 9.5c-1.39 0-2.52 1.13-2.52 2.52v6.94a2.52 2.52 0 0 0 2.52 2.52 2.52 2.52 0 0 0 2.52-2.52V12.02c0-1.39-1.13-2.52-2.52-2.52z" fill="#2EB67D"/>
-                        <path d="M14.5 18.96a2.52 2.52 0 0 1-2.52 2.52c-1.39 0-2.52-1.13-2.52-2.52v-2.52h2.52c1.39 0 2.52 1.13 2.52 2.52z" fill="#ECB22E"/>
-                        <path d="M14.5 15.18c0-1.39-1.13-2.52-2.52-2.52H5.04A2.52 2.52 0 0 0 2.52 15.18a2.52 2.52 0 0 0 2.52 2.52h6.94c1.39 0 2.52-1.13 2.52-2.52z" fill="#ECB22E"/>
-                      </svg>
-                    ),
-                  },
-                  {
-                    name: "Google Sheets",
-                    desc: "Catat lead, rekap transaksi, & update spreadsheet otomatis.",
-                    logo: (
-                      <svg viewBox="0 0 24 24" fill="none">
-                        <path d="M14.5 2H6C4.9 2 4 2.9 4 4V20C4 21.1 4.9 22 6 22H18C19.1 22 20 21.1 20 20V7.5L14.5 2Z" fill="#0F9D58"/>
-                        <path d="M14 2V8H20" fill="#87CEAB"/>
-                        <path d="M8 12H16V18H8V12Z" fill="white" opacity="0.95"/>
-                        <path d="M8 14H16M8 16H16M12 12V18" stroke="#0F9D58" strokeWidth="1.2"/>
-                      </svg>
-                    ),
-                  },
-                  {
-                    name: "Google Docs",
-                    desc: "Tulis draft artikel, proposal, & dokumen bisnis instan.",
-                    logo: (
-                      <svg viewBox="0 0 24 24" fill="none">
-                        <path d="M14.5 2H6C4.9 2 4 2.9 4 4V20C4 21.1 4.9 22 6 22H18C19.1 22 20 21.1 20 20V7.5L14.5 2Z" fill="#4285F4"/>
-                        <path d="M14 2V8H20" fill="#A1C2FA"/>
-                        <path d="M8 12H16M8 15H16M8 18H13" stroke="white" strokeWidth="1.5" strokeLinecap="round"/>
-                      </svg>
-                    ),
-                  },
-                  {
-                    name: "Google Drive",
-                    desc: "Baca file SOP, simpan dokumen kerja, & kelola folder cloud.",
-                    logo: (
-                      <svg viewBox="0 0 24 24" fill="none">
-                        <path d="M8.27 2L15.73 2L22 13L14.54 13L8.27 2Z" fill="#FFBA00"/>
-                        <path d="M2 13L5.73 19.5L13.19 19.5L9.46 13L2 13Z" fill="#0066DA"/>
-                        <path d="M15.73 2L9.46 13L13.19 19.5L19.46 8.5L15.73 2Z" fill="#00AC47"/>
-                        <path d="M2 13L8.27 2L12 8.5L5.73 19.5L2 13Z" fill="#2684FC"/>
-                      </svg>
-                    ),
-                  },
-                  {
-                    name: "Gmail & Email",
-                    desc: "Kirim email konfirmasi, penawaran, & follow-up pelanggan.",
-                    logo: (
-                      <svg viewBox="0 0 24 24" fill="none">
-                        <path d="M20 4H4C2.9 4 2 4.9 2 6V18C2 19.1 2.9 20 4 20H20C21.1 20 22 19.1 22 18V6C22 4.9 21.1 4 20 4Z" fill="#EA4335"/>
-                        <path d="M20 4L12 11.5L4 4H20Z" fill="#BB001B"/>
-                        <path d="M2 6L12 13.5L22 6V18H2V6Z" fill="#F2F2F2"/>
-                        <path d="M2 6L12 13.5L22 6" stroke="#D93025" strokeWidth="1.5"/>
-                      </svg>
-                    ),
-                  },
-                  {
-                    name: "Google Calendar",
-                    desc: "Atur jadwal meeting, booking sesi, & kirim reminder otomatis.",
-                    logo: (
-                      <svg viewBox="0 0 24 24" fill="none">
-                        <rect x="3" y="4" width="18" height="17" rx="3" fill="white" stroke="#4285F4" strokeWidth="2"/>
-                        <path d="M3 8H21" stroke="#4285F4" strokeWidth="2"/>
-                        <rect x="7" y="2" width="2" height="4" rx="1" fill="#4285F4"/>
-                        <rect x="15" y="2" width="2" height="4" rx="1" fill="#4285F4"/>
-                        <text x="12" y="16.5" textAnchor="middle" fill="#4285F4" fontSize="8" fontWeight="bold" fontFamily="sans-serif">31</text>
-                      </svg>
-                    ),
-                  },
-                  {
-                    name: "Notion",
-                    desc: "Akses knowledge base, wiki SOP, & update task manajemen.",
-                    logo: (
-                      <svg viewBox="0 0 24 24" fill="none">
-                        <rect width="24" height="24" rx="6" fill="#000000"/>
-                        <path d="M6 6.5L8.5 6L17.5 6.5L18 8L16.5 8.5V17L13.5 17.5L9.5 11V16.5L11 17.5L6.5 17.5L6 16L7.5 15.5V8.5L6 8L6 6.5ZM13.5 8.5L9.5 14.5V8.5H13.5Z" fill="white"/>
-                      </svg>
-                    ),
-                  },
-                  {
-                    name: "Database & API",
-                    desc: "Sinkronisasi ke CRM, PostgreSQL, Airtable, & Webhook bisnis.",
-                    logo: (
-                      <svg viewBox="0 0 24 24" fill="none">
-                        <path d="M12 2C6.5 2 2 3.8 2 6V18C2 20.2 6.5 22 12 22C17.5 22 22 20.2 22 18V6C22 3.8 17.5 2 12 2Z" fill="#232176" opacity="0.1"/>
-                        <ellipse cx="12" cy="6" rx="9" ry="3.5" stroke="var(--purple)" strokeWidth="2" fill="none"/>
-                        <path d="M3 6V12C3 13.93 7.03 15.5 12 15.5C16.97 15.5 21 13.93 21 12V6" stroke="var(--purple)" strokeWidth="2" fill="none"/>
-                        <path d="M3 12V18C3 19.93 7.03 21.5 12 21.5C16.97 21.5 21 19.93 21 18V12" stroke="var(--purple)" strokeWidth="2" fill="none"/>
-                      </svg>
-                    ),
-                  },
-                ].map((tool, i) => (
-                  <div key={i} className="tool-card">
-                    <div className="tool-card-head">
-                      <div className="tool-logo-box">
-                        {tool.logo}
-                      </div>
-                      <span className="tool-badge">
-                        <span className="tool-badge-dot" />
-                        Terhubung
-                      </span>
-                    </div>
-
-                    <h3 className="tool-name">
-                      {tool.name}
-                    </h3>
-                    <p className="tool-desc">
-                      {tool.desc}
-                    </p>
-                  </div>
-                ))}
-              </div>
-
-              {/* Bottom Summary Banner */}
-              <div className="tool-integ-banner">
-                <span className="tool-integ-banner-icon" style={{ display: "grid", placeItems: "center" }}>
-                  <Icon name="zap" size={18} />
-                </span>
-                <p className="tool-integ-banner-text">
-                  Semua tools terhubung. Agent bekerja otomatis, <span className="hero-h1-accent">Anda fokus ke hal penting.</span>
-                </p>
-              </div>
-            </div>
-          </section>
-
-          {/* Section 7: Anda Pulang Membawa Karyawan AI (Redesigned with Contextual Icons) */}
-          <section className="section" style={{ background: "var(--chip)", paddingBottom: "3.5rem" }}>
-            <div className="container">
-              <div className="section-head center">
-                <span style={{ display: "inline-flex", alignItems: "center", gap: "0.4rem", background: "var(--purple-soft)", color: "var(--purple)", fontWeight: 800, fontSize: "0.75rem", letterSpacing: "0.04em", padding: "0.4rem 1rem", borderRadius: "999px", marginBottom: "1.2rem" }}>
-                  FASILITAS LENGKAP WORKSHOP
-                </span>
-                <h2 style={{ fontSize: "clamp(1.6rem, 4vw, 2.4rem)" }}>
-                  Anda Tidak Pulang Membawa Slide.<br />
-                  <span className="hero-h1-accent">Anda Pulang Membawa Karyawan AI.</span>
-                </h2>
-                <p style={{ maxWidth: "32rem", marginInline: "auto", color: "var(--ink-soft)" }}>
-                  Semua aset, tools, dan akses langsung siap pakai dan menjadi milik Anda seumur hidup.
-                </p>
-              </div>
-
-              <div
-                style={{
-                  marginTop: "2.5rem",
-                  display: "grid",
-                  gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-                  gap: "1rem",
-                  maxWidth: "68rem",
-                  marginInline: "auto",
-                }}
-              >
-                {[
-                  {
-                    title: "6 AI Agent Siap Pakai",
-                    desc: "Langsung aktif & siap bekerja untuk operasional bisnis Anda.",
-                    color: "var(--purple)",
-                    soft: "var(--purple-soft)",
-                    icon: (
-                      <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <rect x="3" y="11" width="18" height="10" rx="2"/>
-                        <circle cx="12" cy="5" r="2"/>
-                        <path d="M12 7v4"/>
-                        <line x1="8" y1="16" x2="8.01" y2="16"/>
-                        <line x1="16" y1="16" x2="16.01" y2="16"/>
-                      </svg>
-                    ),
-                  },
-                  {
-                    title: "Rekaman Workshop",
-                    desc: "Akses seumur hidup untuk dipelajari & dipraktikkan ulang kapan saja.",
-                    color: "var(--orange)",
-                    soft: "var(--orange-soft)",
-                    icon: (
-                      <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <polygon points="23 7 16 12 23 17 23 7"/>
-                        <rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
-                      </svg>
-                    ),
-                  },
-                  {
-                    title: "Buku Manual & Panduan",
-                    desc: "Dokumentasi SOP lengkap langkah demi langkah untuk setiap agent.",
-                    color: "var(--green)",
-                    soft: "rgba(23, 160, 94, 0.1)",
-                    icon: (
-                      <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
-                        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
-                        <line x1="8" y1="7" x2="16" y2="7"/>
-                        <line x1="8" y1="11" x2="14" y2="11"/>
-                      </svg>
-                    ),
-                  },
-                  {
-                    title: "Komunitas Alumni Eksklusif",
-                    desc: "Wadah diskusi, sharing update tools AI terbaru, & networking bisnis.",
-                    color: "var(--purple)",
-                    soft: "var(--purple-soft)",
-                    icon: (
-                      <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-                        <circle cx="9" cy="7" r="4"/>
-                        <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
-                        <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-                      </svg>
-                    ),
-                  },
-                  {
-                    title: "e-Sertifikat Resmi",
-                    desc: "Bukti kelulusan dan penguasaan AI Agent bersertifikasi resmi.",
-                    color: "var(--orange)",
-                    soft: "var(--orange-soft)",
-                    icon: (
-                      <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <circle cx="12" cy="8" r="6"/>
-                        <path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11"/>
-                      </svg>
-                    ),
-                  },
-                ].map((item, i) => (
-                  <div
-                    key={i}
-                    className="bento"
-                    style={{
-                      background: "var(--white)",
-                      border: "1px solid var(--border)",
-                      borderRadius: "18px",
-                      padding: "1.4rem 1.2rem",
-                      display: "flex",
-                      flexDirection: "column",
-                      boxShadow: "0 6px 20px rgba(35,33,118,0.03)",
-                      transition: "transform 0.2s ease, box-shadow 0.2s ease",
-                    }}
-                  >
-                    <div
-                      style={{
-                        width: "46px",
-                        height: "46px",
-                        borderRadius: "12px",
-                        background: item.soft,
-                        color: item.color,
-                        display: "grid",
-                        placeItems: "center",
-                        marginBottom: "1rem",
-                      }}
-                    >
-                      {item.icon}
-                    </div>
-                    <h3 style={{ fontSize: "0.98rem", fontWeight: 800, margin: "0 0 0.35rem", color: "var(--ink)" }}>
-                      {item.title}
-                    </h3>
-                    <p style={{ fontSize: "0.8rem", color: "var(--ink-soft)", lineHeight: 1.5, margin: 0 }}>
-                      {item.desc}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </section>
-
-          {/* Section 8: Berapa Nilai 6 Karyawan AI */}
-          <section className="section" style={{ paddingBottom: "3.5rem" }}>
-            <div className="container">
-              <div className="bento" style={{ padding: "clamp(1.8rem, 4vw, 2.6rem)", border: "1px solid var(--border)", borderRadius: "var(--r-md)", background: "var(--white)", marginBottom: "1.6rem" }}>
-                <div className="section-head center" style={{ marginBottom: "1.4rem" }}>
-                  <h3 style={{ fontSize: "clamp(1.25rem, 2.8vw, 1.7rem)", lineHeight: 1.35 }}>
-                    Hire 6 Karyawan? Siapkan <span style={{ color: "#e74c3c" }}>±Rp29 Juta/bulan</span>.
-                    <br />
-                    Bangun 6 AI Agent? <span style={{ color: "var(--green)" }}>Rp225.000 Sekali.</span>
-                  </h3>
-                </div>
-                <div style={{ overflowX: "auto" }}>
-                  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.88rem", minWidth: "420px" }}>
-                    <thead>
-                      <tr style={{ borderBottom: "2px solid var(--border)" }}>
-                        <th style={{ textAlign: "left", padding: "0.7rem 0.8rem", fontWeight: 700, color: "var(--ink)" }}>Posisi (kisaran UMR)</th>
-                        <th style={{ textAlign: "center", padding: "0.7rem 0.8rem", fontWeight: 700, color: "#e74c3c" }}>Gaji/bulan</th>
-                        <th style={{ textAlign: "center", padding: "0.7rem 0.8rem", fontWeight: 700, color: "var(--green)" }}>AI Agent (sekali bayar)</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {[
-                        { posisi: "Customer Service", gaji: "4jt", agent: "CS Agent" },
-                        { posisi: "Sales", gaji: "5jt", agent: "Sales Agent" },
-                        { posisi: "Marketing", gaji: "5jt", agent: "Marketing Agent" },
-                        { posisi: "Content Writer", gaji: "4jt", agent: "Content Agent" },
-                        { posisi: "Programmer", gaji: "7jt", agent: "Developer Agent" },
-                        { posisi: "Admin & Laporan", gaji: "4jt", agent: "Report Agent" },
-                      ].map((row, i) => (
-                        <tr key={i} style={{ borderBottom: "1px solid var(--border)", background: i % 2 === 0 ? "transparent" : "var(--chip)" }}>
-                          <td style={{ padding: "0.7rem 0.8rem", fontWeight: 600, color: "var(--ink)" }}>{row.posisi}</td>
-                          <td style={{ textAlign: "center", padding: "0.7rem 0.8rem", fontWeight: 700, color: "#e74c3c" }}>Rp{row.gaji}</td>
-                          <td style={{ textAlign: "center", padding: "0.7rem 0.8rem", color: "var(--green)", fontWeight: 700 }}>{row.agent}</td>
-                        </tr>
-                      ))}
-                      <tr style={{ background: "rgba(23,160,94,0.06)", borderTop: "2px solid var(--green)" }}>
-                        <td style={{ padding: "0.9rem 0.8rem", fontWeight: 800, fontSize: "1rem", color: "var(--ink)" }}>TOTAL/bulan</td>
-                        <td style={{ textAlign: "center", padding: "0.9rem 0.8rem", fontWeight: 900, fontSize: "1.15rem", color: "#e74c3c" }}>±Rp29jt</td>
-                        <td style={{ textAlign: "center", padding: "0.9rem 0.8rem", fontWeight: 800, fontSize: "1rem", color: "var(--green)" }}>
-                          Rp225rb <span style={{ fontSize: "0.72rem", fontWeight: 500, color: "var(--ink-faint)" }}>SEKALI</span>
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-                <p style={{ textAlign: "center", marginTop: "0.5rem", color: "var(--ink-faint)", fontSize: "0.72rem" }}>
-                  ← Geser tabel untuk lihat semua kolom →
-                </p>
-                <p style={{ textAlign: "center", marginTop: "1rem", fontSize: "0.78rem", color: "var(--ink-faint)" }}>
-                  *Estimasi berdasarkan kisaran UMR & standar upah posisi terkait di Indonesia — dapat berbeda tergantung wilayah dan pengalaman.
-                </p>
-              </div>
-
-              <div className="bento" style={{ padding: "clamp(1.8rem, 4vw, 2.6rem)", textAlign: "center", background: "linear-gradient(150deg, #1e1b4b 0%, #0f172a 100%)", color: "#fff", borderRadius: "var(--r-lg)", position: "relative", overflow: "hidden", maxWidth: "46rem", marginInline: "auto", border: isEarlyBirdActive ? "1px solid rgba(247, 148, 29, 0.35)" : "1px solid rgba(168, 85, 247, 0.35)", boxShadow: isEarlyBirdActive ? "0 10px 40px rgba(247, 148, 29, 0.12)" : "0 10px 40px rgba(108, 92, 231, 0.15)" }}>
-                <div style={{ position: "absolute", width: "350px", height: "350px", borderRadius: "50%", background: isEarlyBirdActive ? "radial-gradient(circle, rgba(247,148,29,0.2) 0%, transparent 70%)" : "radial-gradient(circle, rgba(168,85,247,0.2) 0%, transparent 70%)", top: "-120px", right: "-80px", pointerEvents: "none" }} />
-                
-                {/* Standout Badge */}
-                {/* Standout Badge */}
-                {isEarlyBirdActive ? (
-                  <div style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem", background: "rgba(247,148,29,0.18)", border: "1px solid rgba(247,148,29,0.5)", color: "var(--orange)", fontWeight: 800, fontSize: "0.82rem", letterSpacing: "0.04em", padding: "0.45rem 1.1rem", borderRadius: "999px", boxShadow: "0 0 20px rgba(247,148,29,0.25)" }}>
-                    <span style={{ display: "inline-block", width: "8px", height: "8px", borderRadius: "50%", background: "#f7941d", boxShadow: "0 0 10px #f7941d" }} />
-                    <span>PROMO EARLY BIRD</span>
-                  </div>
-                ) : (
-                  <div style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem", background: "rgba(239, 68, 68, 0.2)", border: "1px solid rgba(239, 68, 68, 0.55)", color: "#fca5a5", fontWeight: 800, fontSize: "0.82rem", letterSpacing: "0.04em", padding: "0.45rem 1.1rem", borderRadius: "999px" }}>
-                    <span style={{ display: "inline-block", width: "8px", height: "8px", borderRadius: "50%", background: "#ef4444" }} />
-                    <span>PROMO EARLY BIRD BERAKHIR • HARGA NORMAL</span>
-                  </div>
-                )}
-
-                {/* Price Display */}
-                <div style={{ display: "flex", justifyContent: "center", alignItems: "baseline", gap: "0.8rem", marginTop: "1.3rem", flexWrap: "wrap", position: "relative" }}>
-                  <span style={{ fontSize: "clamp(2.3rem, 6vw, 3.2rem)", fontWeight: 900, color: isEarlyBirdActive ? "var(--orange)" : "#c084fc", letterSpacing: "-0.02em" }}>{rupiah(effectivePrice)}</span>
-                  {effectivePriceOld && (
-                    <span className="prg-hero-strike" style={{ fontSize: "1.2rem", color: "rgba(255,255,255,0.45)" }}>{rupiah(effectivePriceOld)}</span>
-                  )}
-                  {isEarlyBirdActive ? (
-                    <span className="eb-save" style={{ background: "#22c55e", color: "#fff", fontWeight: 800, fontSize: "0.85rem", padding: "0.3rem 0.7rem", borderRadius: "8px" }}>Hemat 54%</span>
-                  ) : (
-                    <span style={{ background: "rgba(255,255,255,0.12)", color: "#e2e8f0", fontWeight: 700, fontSize: "0.82rem", padding: "0.3rem 0.7rem", borderRadius: "8px" }}>Harga Normal</span>
-                  )}
-                </div>
-
-                {!isEarlyBirdActive && (
-                  <p style={{ margin: "0.8rem auto 0", fontSize: "0.84rem", color: "#fca5a5", fontWeight: 600 }}>
-                    Promo Early Bird telah berakhir. Berlaku harga normal Rp 490.000.
-                  </p>
-                )}
-
-                {/* Highlight Features Box */}
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "0.6rem", margin: "1.3rem auto", maxWidth: "38rem", textAlign: "left", position: "relative" }}>
-                  {isEarlyBirdActive ? (
-                    <>
-                      <div style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "10px", padding: "0.65rem 0.9rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                        <span style={{ color: "#22c55e", fontSize: "1rem" }}>✓</span>
-                        <span style={{ fontSize: "0.82rem", color: "rgba(255,255,255,0.85)", fontWeight: 600 }}>Diskon Langsung Rp265.000</span>
-                      </div>
-                      <div style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "10px", padding: "0.65rem 0.9rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                        <span style={{ color: "#22c55e", fontSize: "1rem" }}>✓</span>
-                        <span style={{ fontSize: "0.82rem", color: "rgba(255,255,255,0.85)", fontWeight: 600 }}>Harga Promo Terbatas</span>
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      <div style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "10px", padding: "0.65rem 0.9rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                        <span style={{ color: "#22c55e", fontSize: "1rem" }}>✓</span>
-                        <span style={{ fontSize: "0.82rem", color: "rgba(255,255,255,0.85)", fontWeight: 600 }}>Akses Penuh 6 AI Agent</span>
-                      </div>
-                      <div style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "10px", padding: "0.65rem 0.9rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                        <span style={{ color: "#f87171", fontSize: "1rem" }}>✕</span>
-                        <span style={{ fontSize: "0.82rem", color: "rgba(255,255,255,0.85)", fontWeight: 600 }}>Early Bird: Selesai</span>
-                      </div>
-                    </>
-                  )}
-                  <div style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "10px", padding: "0.65rem 0.9rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                    <span style={{ color: "#22c55e", fontSize: "1rem" }}>✓</span>
-                    <span style={{ fontSize: "0.82rem", color: "rgba(255,255,255,0.85)", fontWeight: 600 }}>Sekali Bayar &amp; Akses Penuh</span>
-                  </div>
-                </div>
-
-                <p style={{ fontSize: "0.9rem", color: "rgba(255,255,255,0.75)", margin: "0 0 1.4rem", position: "relative" }}>
-                  Bangun 6 AI Agent untuk bisnis Anda • Praktik langsung • Tanpa biaya langganan bulanan
-                </p>
-
-                <a href="#daftar" className="btn btn-purple btn-lg" style={{ display: "inline-flex", maxWidth: "100%", position: "relative", background: isEarlyBirdActive ? "linear-gradient(135deg, #f7941d 0%, #e67e22 100%)" : "linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%)", whiteSpace: "normal", textAlign: "center", lineHeight: 1.25, fontWeight: 900, fontSize: "1.08rem", padding: "1rem 2rem", boxShadow: isEarlyBirdActive ? "0 8px 25px rgba(247,148,29,0.4)" : "0 8px 25px rgba(124,58,237,0.35)", border: "none" }}>
-                  {isEarlyBirdActive ? `Daftar Early Bird — ${rupiah(225000)}` : `Daftar Sekarang — ${rupiah(490000)}`}
-                </a>
-
-                <p style={{ fontSize: "0.78rem", color: "rgba(255,255,255,0.55)", marginTop: "1rem", marginBottom: 0, position: "relative" }}>
-                  {isEarlyBirdActive ? "Slot promo terbatas. Setelah promo berakhir kembali ke harga normal Rp490.000." : "Berlaku harga normal Rp490.000."}
-                </p>
-              </div>
-            </div>
-          </section>
-
-          {/* Section 9: Apakah Zero Human Company Untuk Anda (Redesigned) */}
-          <section className="section" style={{ background: "var(--chip)", paddingBottom: "3.5rem" }}>
-            <div className="container">
-              <div className="section-head center">
-                <span style={{ display: "inline-flex", alignItems: "center", gap: "0.4rem", background: "var(--purple-soft)", color: "var(--purple)", fontWeight: 800, fontSize: "0.75rem", letterSpacing: "0.04em", padding: "0.4rem 1rem", borderRadius: "999px", marginBottom: "1.2rem" }}>
-                  TARGET AUDIENCE
-                </span>
-                <h2 style={{ fontSize: "clamp(1.6rem, 4vw, 2.4rem)" }}>
-                  Apakah Zero Human Company <span className="hero-h1-accent">Cocok untuk Anda?</span>
-                </h2>
-                <p style={{ maxWidth: "34rem", marginInline: "auto", color: "var(--ink-soft)" }}>
-                  Dirancang untuk siapapun yang ingin mengotomatiskan rutinitas dan melipatgandakan hasil bisnis tanpa beban operasional tim yang besar.
-                </p>
-              </div>
-
-              <div
-                style={{
-                  marginTop: "2.5rem",
-                  display: "grid",
-                  gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
-                  gap: "1.2rem",
-                  maxWidth: "68rem",
-                  marginInline: "auto",
-                }}
-              >
-                {[
-                  {
-                    title: "Owner Bisnis & Founder",
-                    desc: "Miliki 6 karyawan digital otonom yang bekerja 24/7 tanpa menambah beban gaji bulanan, tunjangan & BPJS.",
-                    tag: "Efisiensi Biaya Operasional",
-                    color: "var(--purple)",
-                    soft: "var(--purple-soft)",
-                    icon: (
-                      <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                        <circle cx="12" cy="7" r="4"/>
-                        <polyline points="16 11 18 13 22 9"/>
-                      </svg>
-                    ),
-                  },
-                  {
-                    title: "Pelaku UMKM",
-                    desc: "Kapasitas kerja setara tim korporasi besar tanpa perlu rekrut banyak staf dan bayar sewa kantor mahal.",
-                    tag: "Skala Bisnis Instan",
-                    color: "var(--orange)",
-                    soft: "var(--orange-soft)",
-                    icon: (
-                      <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
-                        <polyline points="9 22 9 12 15 12 15 22"/>
-                      </svg>
-                    ),
-                  },
-                  {
-                    title: "Startup & Tech Business",
-                    desc: "Operasional super lean — tim inti bisa 100% fokus ke inovasi produk & pertumbuhan market, bukan urus administrasi.",
-                    tag: "Lean & Fast Execution",
-                    color: "var(--green)",
-                    soft: "rgba(23, 160, 94, 0.1)",
-                    icon: (
-                      <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/>
-                        <path d="M12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/>
-                        <path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/>
-                        <path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/>
-                      </svg>
-                    ),
-                  },
-                  {
-                    title: "Profesional & Freelancer",
-                    desc: "Kerja solo terasa ringan karena ada asisten digital yang mengurus chat klien, riset, proposal, dan follow-up.",
-                    tag: "Hemat 15+ Jam/Minggu",
-                    color: "var(--purple)",
-                    soft: "var(--purple-soft)",
-                    icon: (
-                      <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
-                        <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
-                      </svg>
-                    ),
-                  },
-                  {
-                    title: "Marketer & Tim Sales",
-                    desc: "Riset tren pasar, pembuatan copywriting promosi, hingga follow-up prospek berjalan otomatis tanpa jeda.",
-                    tag: "Otomasi Funnel & Closing",
-                    color: "var(--orange)",
-                    soft: "var(--orange-soft)",
-                    icon: (
-                      <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/>
-                        <polyline points="16 7 22 7 22 13"/>
-                      </svg>
-                    ),
-                  },
-                  {
-                    title: "Pelajar & Tech Enthusiast",
-                    desc: "Belajar langsung cara membangun arsitektur AI Agent masa depan secara hands-on dan aplikatif, bukan cuma teori.",
-                    tag: "Skill Masa Depan",
-                    color: "var(--green)",
-                    soft: "rgba(23, 160, 94, 0.1)",
-                    icon: (
-                      <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M22 10v6M2 10l10-5 10 5-10 5z"/>
-                        <path d="M6 12v5c3 3 9 3 12 0v-5"/>
-                      </svg>
-                    ),
-                  },
-                ].map((item, i) => (
-                  <div
-                    key={i}
-                    className="bento"
-                    style={{
-                      background: "var(--white)",
-                      border: "1px solid var(--border)",
-                      borderRadius: "20px",
-                      padding: "1.6rem 1.4rem",
-                      display: "flex",
-                      flexDirection: "column",
-                      boxShadow: "0 8px 24px rgba(35,33,118,0.04)",
-                      transition: "transform 0.2s ease, box-shadow 0.2s ease",
-                    }}
-                  >
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1rem" }}>
-                      <div
-                        style={{
-                          width: "46px",
-                          height: "46px",
-                          borderRadius: "14px",
-                          background: item.soft,
-                          color: item.color,
-                          display: "grid",
-                          placeItems: "center",
-                        }}
-                      >
-                        {item.icon}
-                      </div>
-                      <span
-                        style={{
-                          fontSize: "0.72rem",
-                          fontWeight: 700,
-                          color: item.color,
-                          background: item.soft,
-                          padding: "0.28rem 0.65rem",
-                          borderRadius: "999px",
-                        }}
-                      >
-                        {item.tag}
-                      </span>
-                    </div>
-
-                    <h3 style={{ fontSize: "1.08rem", fontWeight: 800, margin: "0 0 0.45rem", color: "var(--ink)" }}>
-                      {item.title}
-                    </h3>
-                    <p style={{ fontSize: "0.84rem", color: "var(--ink-soft)", lineHeight: 1.55, margin: 0 }}>
-                      {item.desc}
-                    </p>
-                  </div>
-                ))}
-              </div>
-
-              {/* Bottom Reassurance Banner */}
-              <div
-                style={{
-                  marginTop: "2.2rem",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "1rem",
-                  maxWidth: "42rem",
-                  marginInline: "auto",
-                  padding: "0.9rem 1.4rem",
-                  background: "var(--white)",
-                  border: "1px solid var(--border)",
-                  borderRadius: "999px",
-                  boxShadow: "0 12px 30px rgba(35,33,118,0.08)",
-                }}
-              >
-                <span
-                  style={{
-                    width: "40px",
-                    height: "40px",
-                    borderRadius: "50%",
-                    background: "linear-gradient(135deg, var(--orange), var(--purple))",
-                    color: "#fff",
-                    display: "grid",
-                    placeItems: "center",
-                    flexShrink: 0,
-                  }}
-                >
-                  <Icon name="check" size={18} />
-                </span>
-                <p style={{ margin: 0, fontWeight: 700, color: "var(--ink)", fontSize: "0.92rem", lineHeight: 1.45 }}>
-                  Tidak perlu latar belakang coding. <span className="hero-h1-accent">Yang penting kemauan untuk membangun dan bertumbuh.</span>
-                </p>
-              </div>
-            </div>
-          </section>
-
-
-          {/* Section 11: Philosophy Closing */}
-          <section className="section" style={{ paddingBottom: "3.5rem" }}>
-            <div className="container">
-              <div className="bento" style={{ padding: "clamp(2rem, 5vw, 3rem)", textAlign: "center", background: "linear-gradient(150deg, #1e1b4b 0%, #0f172a 100%)", color: "#fff", borderRadius: "var(--r-lg)", position: "relative", overflow: "hidden", boxShadow: "0 30px 60px rgba(15, 23, 42, 0.25)" }}>
-                <div style={{ position: "absolute", width: "500px", height: "500px", borderRadius: "50%", background: "radial-gradient(circle, rgba(99,102,241,0.18) 0%, transparent 70%)", top: "-200px", right: "-150px", pointerEvents: "none" }} />
-                {/* dot-grid decoration, pojok kiri & kanan atas */}
-                <div style={{ position: "absolute", top: "1.6rem", left: "1.6rem", width: "70px", height: "46px", backgroundImage: "radial-gradient(circle, rgba(255,255,255,0.18) 1.5px, transparent 1.5px)", backgroundSize: "12px 12px", pointerEvents: "none" }} />
-                <div style={{ position: "absolute", top: "1.6rem", right: "1.6rem", width: "70px", height: "46px", backgroundImage: "radial-gradient(circle, rgba(255,255,255,0.18) 1.5px, transparent 1.5px)", backgroundSize: "12px 12px", pointerEvents: "none" }} />
-
-                <h2 style={{ fontSize: "clamp(1.5rem, 3.5vw, 2.2rem)", lineHeight: 1.4, color: "#fff", position: "relative" }}>
-                  Bukan tentang <span style={{ color: "#f472b6" }}>menghilangkan</span> manusia.<br />
-                  Tentang <span style={{ color: "#38bdf8" }}>membebaskan manusia</span> dari pekerjaan yang tidak perlu dikerjakan manusia.
-                </h2>
-
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem", marginTop: "1.6rem", position: "relative" }}>
-                  <span style={{ width: "56px", height: "2px", background: "linear-gradient(90deg, transparent, #f472b6)" }} />
-                  <span style={{ display: "flex", gap: "5px" }}>
-                    <span style={{ width: "5px", height: "5px", borderRadius: "50%", background: "#f472b6" }} />
-                    <span style={{ width: "5px", height: "5px", borderRadius: "50%", background: "#a78bfa" }} />
-                    <span style={{ width: "5px", height: "5px", borderRadius: "50%", background: "#38bdf8" }} />
-                  </span>
-                  <span style={{ width: "56px", height: "2px", background: "linear-gradient(90deg, #38bdf8, transparent)" }} />
-                </div>
-
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "1.2rem", marginTop: "2rem", textAlign: "left", maxWidth: "38rem", marginInline: "auto", position: "relative" }}>
-                  <div style={{ background: "rgba(168,85,247,0.08)", border: "1px solid rgba(168,85,247,0.3)", borderRadius: "var(--r-md)", padding: "1.3rem" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", marginBottom: "0.9rem" }}>
-                      <span style={{ width: "32px", height: "32px", borderRadius: "50%", background: "linear-gradient(135deg, #a855f7, #7c3aed)", color: "#fff", display: "grid", placeItems: "center", flexShrink: 0 }}>
-                        <Icon name="user" size={16} />
-                      </span>
-                      <b style={{ color: "#fff", fontSize: "1rem" }}>Manusia:</b>
-                    </div>
-                    <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-                      {[
-                        "Berpikir. Memimpin.",
-                        "Memutuskan. Membangun hubungan.",
-                        "Mencipta.",
-                      ].map((text, i) => (
-                        <div key={i} style={{ display: "flex", alignItems: "center", gap: "0.6rem", background: "rgba(255,255,255,0.05)", borderRadius: "var(--r-sm)", padding: "0.6rem 0.8rem" }}>
-                          <span style={{ color: "#c084fc", fontWeight: 800 }}>•</span>
-                          <span style={{ color: "rgba(255,255,255,0.75)", fontSize: "0.86rem" }}>{text}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                  <div style={{ background: "rgba(56,189,248,0.08)", border: "1px solid rgba(56,189,248,0.3)", borderRadius: "var(--r-md)", padding: "1.3rem" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", marginBottom: "0.9rem" }}>
-                      <span style={{ width: "32px", height: "32px", borderRadius: "50%", background: "linear-gradient(135deg, #38bdf8, #2563eb)", color: "#fff", display: "grid", placeItems: "center", flexShrink: 0 }}>
-                        <Icon name="settings" size={16} />
-                      </span>
-                      <b style={{ color: "#fff", fontSize: "1rem" }}>Sistem AI:</b>
-                    </div>
-                    <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-                      {[
-                        "Mencari. Menganalisis.",
-                        "Menulis. Mengikuti workflow.",
-                        "Mengerjakan yang repetitif.",
-                      ].map((text, i) => (
-                        <div key={i} style={{ display: "flex", alignItems: "center", gap: "0.6rem", background: "rgba(255,255,255,0.05)", borderRadius: "var(--r-sm)", padding: "0.6rem 0.8rem" }}>
-                          <span style={{ color: "#38bdf8", fontWeight: 800 }}>•</span>
-                          <span style={{ color: "rgba(255,255,255,0.75)", fontSize: "0.86rem" }}>{text}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "0.8rem", marginTop: "2.2rem", position: "relative", flexWrap: "wrap" }}>
-                  <span style={{ display: "flex", gap: "6px" }}>
-                    {Array.from({ length: 5 }).map((_, i) => (
-                      <span key={i} style={{ width: "4px", height: "4px", borderRadius: "50%", background: "rgba(247,148,29,0.5)" }} />
-                    ))}
-                  </span>
-                  <span style={{ width: "36px", height: "36px", borderRadius: "50%", background: "var(--orange)", color: "#fff", display: "grid", placeItems: "center", flexShrink: 0, boxShadow: "0 0 20px rgba(247,148,29,0.5)" }}>
-                    <Icon name="zap" size={18} />
-                  </span>
-                  <p style={{ fontWeight: 900, fontSize: "1.15rem", color: "var(--orange)", margin: 0 }}>
-                    MANUSIA MEMIMPIN. AI BEKERJA.
-                  </p>
-                  <span style={{ display: "flex", gap: "6px" }}>
-                    {Array.from({ length: 5 }).map((_, i) => (
-                      <span key={i} style={{ width: "4px", height: "4px", borderRadius: "50%", background: "rgba(247,148,29,0.5)" }} />
-                    ))}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </section>
-        </>
-      )}
+      {/* ===== ZERO HUMAN COMPANY ===== */}
+      {isZeroHuman && <ZeroHumanLandingSections offer={zhcOffer} />}
 
       {/* ===== VALUE STACK + MATERI ===== */}
       {!isZeroHuman && (
@@ -2388,7 +799,7 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
                     marginBottom: "0.85rem",
                   }}
                 >
-                  Pendaftaran Batch Resmi Dibuka
+                  Langkah 2 · Isi data & bayar
                 </div>
 
                 <h2
@@ -2401,7 +812,7 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
                     marginBottom: "0.85rem",
                   }}
                 >
-                  Siap Membangun Perusahaan Anda dengan AI?
+                  Tinggal satu langkah lagi.
                 </h2>
 
                 <p
@@ -2413,7 +824,7 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
                     maxWidth: "580px",
                   }}
                 >
-                  Pilih format pelatihan (Online Zoom atau Tatap Muka di Bekasi) dan amankan kuota Anda sekarang.
+                  Tiket pilihan Anda sudah terpasang di bawah. Lengkapi data, lalu lanjut ke pembayaran.
                 </p>
               </div>
 
@@ -2429,7 +840,7 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
                   batches={mappedBatches}
                   attendanceOptions={{
                     hasOffline: true,
-                    venueOffline: activeOfflineBatch?.offlineVenue || "Coworking Space Kota Bekasi",
+                    venueOffline: zhcOfflineVenue,
                     durationOffline: "4 Jam Tatap Muka",
                     scheduleOnline: scheduleOnlineFormatted,
                     scheduleOffline: scheduleOfflineFormatted,
@@ -2487,6 +898,7 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
           </div>
         </div>
       </section>
+
 
       <footer className="footer">
         <div className="container">

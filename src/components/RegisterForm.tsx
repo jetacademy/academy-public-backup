@@ -202,6 +202,31 @@ export default function RegisterForm({
     return () => { cancelled = true; };
   }, [programId]);
 
+  function selectAttendance(type: "ONLINE" | "OFFLINE") {
+    const list = type === "ONLINE" ? onlineBatches : offlineBatches;
+    const fallbackId = type === "ONLINE" ? attendanceOptions?.onlineBatchId : attendanceOptions?.offlineBatchId;
+    if (type === "OFFLINE") {
+      const offlineBatch = offlineBatches.find((b) => b.id === batchId) ?? offlineBatches[0];
+      if (offlineBatch?.isSoldOut ?? attendanceOptions?.isOfflineSoldOut) return;
+    }
+    setAttendanceType(type);
+    if (list.length > 0) {
+      if (!list.some((b) => b.id === batchId)) setBatchId(list[0].id);
+    } else if (fallbackId) {
+      setBatchId(fallbackId);
+    }
+  }
+
+  // Kartu harga di landing (langkah 1) mengirim pilihan tiket lewat event ini.
+  useEffect(() => {
+    const onSelect = (e: Event) => {
+      const type = (e as CustomEvent<"ONLINE" | "OFFLINE">).detail;
+      if (type === "ONLINE" || type === "OFFLINE") selectAttendance(type);
+    };
+    window.addEventListener("jsa:select-ticket", onSelect);
+    return () => window.removeEventListener("jsa:select-ticket", onSelect);
+  });
+
   // Jika user sudah terdaftar di satu-satunya batch tapi ingin daftarkan orang lain, jangan blokir
   if (isAlreadyRegistered && !isRegisteringForOther && !attendanceOptions?.hasOffline && (!batches || batches.length <= 1)) {
     return (
@@ -571,44 +596,112 @@ export default function RegisterForm({
     );
   }
 
-  function renderTicketSelector() {
-    const selectedOnlineBatch = onlineBatches.find((b) => b.id === batchId) ?? onlineBatches[0];
-    const onlineCardPrice = selectedOnlineBatch?.effectivePrice ?? attendanceOptions?.priceOnline ?? price;
-    const onlineCardPriceOld = selectedOnlineBatch?.effectivePriceOld ?? attendanceOptions?.priceOnlineOld;
 
+  /* Ringkasan tiket (langkah 2) — tiket dipilih di kartu harga landing (langkah 1),
+     tapi tetap bisa diganti di sini lewat saklar Online/Offline. */
+  function renderTicketSummary() {
+    const selectedOnlineBatch = onlineBatches.find((b) => b.id === batchId) ?? onlineBatches[0];
     const selectedOfflineBatch = offlineBatches.find((b) => b.id === batchId) ?? offlineBatches[0];
-    const offlineCardPrice = selectedOfflineBatch?.effectivePrice ?? attendanceOptions?.priceOffline ?? price;
-    const offlineCardPriceOld = selectedOfflineBatch?.effectivePriceOld ?? attendanceOptions?.priceOfflineOld;
     const isOfflineSoldOut = selectedOfflineBatch?.isSoldOut ?? attendanceOptions?.isOfflineSoldOut ?? false;
+    const isOnline = attendanceType === "ONLINE";
+
+    const cardPrice = isOnline
+      ? (selectedOnlineBatch?.effectivePrice ?? attendanceOptions?.priceOnline ?? price)
+      : (selectedOfflineBatch?.effectivePrice ?? attendanceOptions?.priceOffline ?? price);
+    const cardPriceOld = isOnline
+      ? (selectedOnlineBatch?.effectivePriceOld ?? attendanceOptions?.priceOnlineOld)
+      : (selectedOfflineBatch?.effectivePriceOld ?? attendanceOptions?.priceOfflineOld);
+    const schedule = isOnline
+      ? (selectedOnlineBatch ? formatJadwal(new Date(selectedOnlineBatch.scheduleAt)) : attendanceOptions?.scheduleOnline)
+      : (selectedOfflineBatch ? formatJadwal(new Date(selectedOfflineBatch.scheduleAt)) : attendanceOptions?.scheduleOffline);
+    const daysLeft = isOnline ? attendanceOptions?.daysLeftOnline : attendanceOptions?.daysLeftOffline;
+    const venue = selectedOfflineBatch?.offlineVenue || attendanceOptions?.venueOffline;
+
+    const pill = (active: boolean, disabled = false) => ({
+      flex: 1,
+      padding: "0.6rem 0.7rem",
+      borderRadius: "10px",
+      border: "none",
+      background: active ? "#fff" : "transparent",
+      boxShadow: active ? "0 1px 4px rgba(0,0,0,0.1)" : "none",
+      color: disabled ? "var(--ink-faint)" : active ? "var(--purple)" : "var(--ink-soft)",
+      fontWeight: active ? 800 : 700,
+      fontSize: "0.84rem",
+      cursor: disabled ? "not-allowed" : "pointer",
+    } as const);
 
     return (
-      <div>
-        <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", marginBottom: "1.2rem" }}>
-          <span style={{
-            width: 28,
-            height: 28,
-            borderRadius: "50%",
-            background: "var(--purple)",
-            color: "#fff",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            fontWeight: 800,
-            fontSize: "0.85rem"
-          }}>1</span>
-          <h3 style={{ fontSize: "1.15rem", fontWeight: 800, margin: 0, color: "var(--ink)" }}>
-            Pilih Tiket &amp; Format
-          </h3>
+      <div style={{ marginBottom: "1.4rem" }}>
+        <span style={{ display: "block", fontSize: "0.72rem", fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ink-faint)", marginBottom: "0.5rem" }}>
+          Tiket Anda
+        </span>
+
+        {/* Saklar format — bisa ganti tanpa scroll balik ke kartu harga */}
+        <div style={{ display: "flex", background: "rgba(0,0,0,0.05)", borderRadius: "12px", padding: "0.25rem", gap: "0.25rem", marginBottom: "0.7rem" }}>
+          <button type="button" onClick={() => selectAttendance("ONLINE")} style={pill(isOnline)} aria-pressed={isOnline}>
+            Online via Zoom{isOnlineRegistered ? " ✓" : ""}
+          </button>
+          <button
+            type="button"
+            onClick={() => { if (!isOfflineSoldOut) selectAttendance("OFFLINE"); }}
+            disabled={isOfflineSoldOut}
+            style={pill(!isOnline, isOfflineSoldOut)}
+            aria-pressed={!isOnline}
+          >
+            Tatap Muka{isOfflineSoldOut ? " (Penuh)" : isOfflineRegistered ? " ✓" : ""}
+          </button>
         </div>
 
+        {/* Ringkasan tiket terpilih */}
+        <div style={{ background: "#fff", border: "2px solid var(--purple)", borderRadius: "14px", padding: "0.9rem 1rem", display: "flex", justifyContent: "space-between", alignItems: "center", gap: "0.8rem", flexWrap: "wrap" }}>
+          <div style={{ minWidth: 0 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.45rem", flexWrap: "wrap" }}>
+              <strong style={{ fontSize: "0.95rem", color: "var(--ink)" }}>
+                {isOnline ? "Online via Zoom" : "Tatap Muka Offline"}
+              </strong>
+              {isCurrentEbActive && (
+                <span style={{ fontSize: "0.66rem", background: "rgba(34, 197, 94, 0.12)", color: "#15803d", fontWeight: 800, padding: "0.12rem 0.45rem", borderRadius: "999px" }}>
+                  Early Bird
+                </span>
+              )}
+            </div>
+            <div style={{ fontSize: "0.78rem", color: "var(--ink-soft)", lineHeight: 1.45, marginTop: "0.2rem" }}>
+              {!isOnline && venue ? `${venue} · ` : ""}{schedule}
+              {daysLeft && <span style={{ color: "var(--purple)", fontWeight: 700, marginLeft: "0.3rem" }}>({daysLeft})</span>}
+            </div>
+          </div>
+          <div style={{ textAlign: "right" }}>
+            <strong style={{ fontSize: "1.2rem", color: "var(--purple)", fontWeight: 900, display: "block" }}>{rupiah(cardPrice)}</strong>
+            {cardPriceOld && (
+              <span style={{ fontSize: "0.76rem", textDecoration: "line-through", color: "var(--ink-faint)" }}>{rupiah(cardPriceOld)}</span>
+            )}
+          </div>
+        </div>
+
+        {/* Pilihan Jadwal Batch / Angkatan jika tersedia lebih dari 1 batch */}
+        {activeBatchesList.length > 1 && (
+          <div className="field" style={{ marginTop: "0.8rem", marginBottom: 0 }}>
+            <label htmlFor="fBatchZ">Pilih Angkatan / Batch</label>
+            <select id="fBatchZ" value={batchId ?? activeBatchesList[0]?.id} onChange={(e) => setBatchId(e.target.value)}>
+              {activeBatchesList.map((b) => {
+                const bPrice = b.effectivePrice ?? (attendanceType === "OFFLINE" ? (b.priceOffline ?? 1400000) : (b.priceOnline ?? 490000));
+                return (
+                  <option key={b.id} value={b.id} disabled={b.isSoldOut}>
+                    {b.name || formatJadwal(new Date(b.scheduleAt))} — {rupiah(bPrice)}{b.isEbActive ? " (Early Bird)" : ""}{b.isSoldOut ? " · Penuh" : ""}{registeredBatchIds.includes(b.id) ? " ✓ Terdaftar" : ""}
+                  </option>
+                );
+              })}
+            </select>
+          </div>
+        )}
+
         {/* Jumlah Peserta */}
-        <div className="field" style={{ marginBottom: "1rem" }}>
+        <div className="field" style={{ marginTop: "0.8rem", marginBottom: 0 }}>
           <label htmlFor="fJumlahPeserta">Jumlah Peserta</label>
           <select
             id="fJumlahPeserta"
             value={jumlahPeserta}
             onChange={(e) => handleJumlahPesertaChange(Number(e.target.value))}
-            style={{ background: "var(--chip)", border: "1px solid var(--border)" }}
           >
             {[1, 2, 3, 4, 5].map((n) => (
               <option key={n} value={n}>
@@ -617,282 +710,7 @@ export default function RegisterForm({
             ))}
           </select>
         </div>
-
-        {/* Banner Promo Early Bird per Batch */}
-        {isCurrentEbActive ? (
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              background: "rgba(34, 197, 94, 0.08)",
-              border: "1px solid rgba(34, 197, 94, 0.22)",
-              borderRadius: "8px",
-              padding: "0.5rem 0.8rem",
-              marginBottom: "1rem",
-              fontSize: "0.8rem",
-            }}
-          >
-            <span style={{ display: "inline-flex", alignItems: "center", gap: "0.4rem", color: "#15803d", fontWeight: 700 }}>
-              <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#22c55e", display: "inline-block" }} />
-              Promo Early Bird Aktif {currentBatch?.name ? `(${currentBatch.name})` : "Hari Ini"}
-            </span>
-            <span style={{ color: "#16a34a", fontWeight: 800, background: "rgba(34, 197, 94, 0.15)", padding: "0.15rem 0.5rem", borderRadius: "4px", fontSize: "0.72rem" }}>
-              Hemat s/d {attendanceType === "OFFLINE" ? "46%" : "54%"}
-            </span>
-          </div>
-        ) : attendanceOptions?.hasOffline ? (
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              background: "rgba(0, 0, 0, 0.03)",
-              border: "1px solid var(--line)",
-              borderRadius: "8px",
-              padding: "0.5rem 0.8rem",
-              marginBottom: "1rem",
-              fontSize: "0.8rem",
-            }}
-          >
-            <span style={{ color: "var(--ink-soft)", fontWeight: 600 }}>
-              Harga Normal {currentBatch?.name ? `(${currentBatch.name})` : ""} — Kuota Early Bird batch ini sudah penuh
-            </span>
-            {activeBatchesList.some((b) => b.isEbActive) && (
-              <span style={{ color: "#6c5ce7", fontWeight: 700, fontSize: "0.75rem" }}>
-                Tersedia di batch lain ↓
-              </span>
-            )}
-          </div>
-        ) : null}
-
-        {/* Format Selection Buttons */}
-        <div style={{ display: "flex", flexDirection: "column", gap: "0.8rem", marginBottom: "1.4rem" }}>
-          {/* Tiket Online */}
-          <button
-            type="button"
-            onClick={() => {
-              setAttendanceType("ONLINE");
-              if (onlineBatches.length > 0) {
-                if (!onlineBatches.some((b) => b.id === batchId)) {
-                  setBatchId(onlineBatches[0].id);
-                }
-              } else if (attendanceOptions?.onlineBatchId) {
-                setBatchId(attendanceOptions.onlineBatchId);
-              }
-            }}
-            style={{
-              textAlign: "left",
-              padding: "1rem 1.1rem",
-              borderRadius: "14px",
-              cursor: "pointer",
-              border: attendanceType === "ONLINE" ? "2px solid #6c5ce7" : "1px solid var(--line)",
-              background: attendanceType === "ONLINE" ? "rgba(108, 92, 231, 0.05)" : "#fff",
-              transition: "all 0.15s ease",
-              display: "flex",
-              flexDirection: "column",
-              gap: "0.35rem",
-            }}
-          >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <span style={{ fontWeight: 800, fontSize: "0.95rem", color: attendanceType === "ONLINE" ? "#6c5ce7" : "var(--ink)", display: "flex", alignItems: "center", gap: "0.45rem" }}>
-                Online via Zoom
-                {isOnlineRegistered && (
-                  <span style={{ fontSize: "0.7rem", background: "rgba(34, 197, 94, 0.12)", color: "#15803d", fontWeight: 700, padding: "0.12rem 0.45rem", borderRadius: "999px" }}>
-                    ✓ Terdaftar
-                  </span>
-                )}
-              </span>
-              {attendanceType === "ONLINE" && (
-                <span style={{ color: "#6c5ce7", fontSize: "0.85rem", fontWeight: 800 }}>✓ Terpilih</span>
-              )}
-            </div>
-
-            <div style={{ display: "flex", alignItems: "baseline", gap: "0.45rem" }}>
-              <strong style={{ fontSize: "1.25rem", color: "var(--ink)", fontWeight: 900 }}>
-                {rupiah(onlineCardPrice)}
-              </strong>
-              {onlineCardPriceOld && (
-                <span style={{ fontSize: "0.82rem", textDecoration: "line-through", color: "var(--ink-soft)" }}>
-                  {rupiah(onlineCardPriceOld)}
-                </span>
-              )}
-            </div>
-
-            <div style={{ fontSize: "0.78rem", color: "var(--ink-soft)", lineHeight: 1.4 }}>
-              <span>{selectedOnlineBatch ? formatJadwal(new Date(selectedOnlineBatch.scheduleAt)) : attendanceOptions?.scheduleOnline}</span>
-              {attendanceOptions?.daysLeftOnline && (
-                <span style={{ color: "#6c5ce7", fontWeight: 700, marginLeft: "0.3rem" }}>
-                  ({attendanceOptions.daysLeftOnline})
-                </span>
-              )}
-            </div>
-          </button>
-
-          {/* Tiket Offline */}
-          <button
-            type="button"
-            onClick={() => {
-              if (!isOfflineSoldOut) {
-                setAttendanceType("OFFLINE");
-                if (offlineBatches.length > 0) {
-                  if (!offlineBatches.some((b) => b.id === batchId)) {
-                    setBatchId(offlineBatches[0].id);
-                  }
-                } else if (attendanceOptions?.offlineBatchId) {
-                  setBatchId(attendanceOptions.offlineBatchId);
-                }
-              }
-            }}
-            disabled={isOfflineSoldOut}
-            style={{
-              textAlign: "left",
-              padding: "1rem 1.1rem",
-              borderRadius: "14px",
-              cursor: isOfflineSoldOut ? "not-allowed" : "pointer",
-              opacity: isOfflineSoldOut ? 0.6 : 1,
-              border: attendanceType === "OFFLINE" ? "2px solid #e17055" : "1px solid var(--line)",
-              background: attendanceType === "OFFLINE" ? "rgba(225, 112, 85, 0.05)" : "#fff",
-              transition: "all 0.15s ease",
-              display: "flex",
-              flexDirection: "column",
-              gap: "0.35rem",
-            }}
-          >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <span style={{ fontWeight: 800, fontSize: "0.95rem", color: attendanceType === "OFFLINE" ? "#d63031" : "var(--ink)", display: "flex", alignItems: "center", gap: "0.45rem" }}>
-                Tatap Muka Offline (Bekasi)
-                {isOfflineRegistered && (
-                  <span style={{ fontSize: "0.7rem", background: "rgba(34, 197, 94, 0.12)", color: "#15803d", fontWeight: 700, padding: "0.12rem 0.45rem", borderRadius: "999px" }}>
-                    ✓ Terdaftar
-                  </span>
-                )}
-              </span>
-              {attendanceType === "OFFLINE" && (
-                <span style={{ color: "#d63031", fontSize: "0.85rem", fontWeight: 800 }}>✓ Terpilih</span>
-              )}
-            </div>
-
-            <div style={{ display: "flex", alignItems: "baseline", gap: "0.45rem" }}>
-              <strong style={{ fontSize: "1.25rem", color: "var(--ink)", fontWeight: 900 }}>
-                {rupiah(offlineCardPrice)}
-              </strong>
-              {offlineCardPriceOld && (
-                <span style={{ fontSize: "0.82rem", textDecoration: "line-through", color: "var(--ink-soft)" }}>
-                  {rupiah(offlineCardPriceOld)}
-                </span>
-              )}
-            </div>
-
-            <div style={{ fontSize: "0.78rem", color: "var(--ink-soft)", lineHeight: 1.4 }}>
-              {isOfflineSoldOut ? (
-                <span style={{ color: "#dc2626", fontWeight: 700 }}>Kuota Penuh (20/20)</span>
-              ) : (
-                <>
-                  <span>{selectedOfflineBatch?.offlineVenue || attendanceOptions?.venueOffline || "Coworking Space Kota Bekasi"} • {selectedOfflineBatch ? formatJadwal(new Date(selectedOfflineBatch.scheduleAt)) : attendanceOptions?.scheduleOffline}</span>
-                  {attendanceOptions?.daysLeftOffline && (
-                    <span style={{ color: "#d63031", fontWeight: 700, marginLeft: "0.3rem" }}>
-                      ({attendanceOptions.daysLeftOffline})
-                    </span>
-                  )}
-                </>
-              )}
-            </div>
-          </button>
-        </div>
-
-        {/* Pilihan Jadwal Batch / Angkatan jika tersedia lebih dari 1 batch */}
-        {activeBatchesList.length > 1 && (
-          <div style={{ marginBottom: "1.3rem", background: "rgba(0,0,0,0.02)", border: "1px solid var(--line)", borderRadius: "12px", padding: "0.85rem" }}>
-            <span style={{ fontSize: "0.82rem", fontWeight: 800, color: "var(--ink)", display: "block", marginBottom: "0.55rem" }}>
-              Pilih Angkatan / Batch {attendanceType === "ONLINE" ? "Online" : "Offline"}:
-            </span>
-            <div style={{ display: "flex", flexDirection: "column", gap: "0.45rem" }}>
-              {activeBatchesList.map((b) => {
-                const isSelected = (batchId === b.id) || (!batchId && activeBatchesList[0]?.id === b.id);
-                const isEnrolled = registeredBatchIds.includes(b.id);
-                const bDate = new Date(b.scheduleAt);
-                const bPrice = b.effectivePrice ?? (attendanceType === "OFFLINE" ? (b.priceOffline ?? 1400000) : (b.priceOnline ?? 490000));
-                return (
-                  <button
-                    key={b.id}
-                    type="button"
-                    onClick={() => setBatchId(b.id)}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      padding: "0.65rem 0.85rem",
-                      borderRadius: "10px",
-                      border: isSelected ? "2px solid #6c5ce7" : "1px solid var(--line)",
-                      background: isSelected ? "rgba(108, 92, 231, 0.08)" : "#fff",
-                      cursor: "pointer",
-                      textAlign: "left",
-                      transition: "all 0.15s ease",
-                    }}
-                  >
-                    <div>
-                      <div style={{ display: "flex", alignItems: "center", gap: "0.45rem", flexWrap: "wrap" }}>
-                        <strong style={{ fontSize: "0.86rem", color: isSelected ? "#6c5ce7" : "var(--ink)" }}>
-                          {b.name || `Batch ${formatJadwal(bDate)}`}
-                        </strong>
-                        {b.isEbActive && (
-                          <span style={{ fontSize: "0.65rem", background: "rgba(34, 197, 94, 0.12)", color: "#15803d", fontWeight: 800, padding: "0.1rem 0.4rem", borderRadius: "4px" }}>
-                            Early Bird
-                          </span>
-                        )}
-                        {b.isSoldOut && (
-                          <span style={{ fontSize: "0.65rem", background: "rgba(220, 38, 38, 0.12)", color: "#dc2626", fontWeight: 800, padding: "0.1rem 0.4rem", borderRadius: "4px" }}>
-                            Penuh
-                          </span>
-                        )}
-                      </div>
-                      <span style={{ fontSize: "0.75rem", color: "var(--ink-soft)", display: "block", marginTop: "0.2rem" }}>
-                        {formatJadwal(bDate)} · <b style={{ color: b.isEbActive ? "#16a34a" : "var(--ink)" }}>{rupiah(bPrice)}</b>
-                      </span>
-                    </div>
-                    <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
-                      {isEnrolled && (
-                        <span style={{ fontSize: "0.68rem", background: "rgba(34, 197, 94, 0.12)", color: "#15803d", fontWeight: 700, padding: "0.12rem 0.45rem", borderRadius: "999px" }}>
-                          ✓ Terdaftar
-                        </span>
-                      )}
-                      {isSelected && (
-                        <span style={{ fontSize: "0.74rem", color: "#6c5ce7", fontWeight: 800 }}>
-                          ● Dipilih
-                        </span>
-                      )}
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-      {/* Fasilitas Pelatihan */}
-      <div style={{
-        background: "rgba(0,0,0,0.02)",
-        border: "1px solid var(--line)",
-        borderRadius: "12px",
-        padding: "0.85rem 1rem",
-        fontSize: "0.82rem",
-        color: "var(--ink-soft)",
-        display: "flex",
-        flexDirection: "column",
-        gap: "0.4rem",
-      }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-          <span style={{ color: "#22c55e", fontWeight: 800 }}>✓</span> Praktik langsung 6 AI Agent siap pakai
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-          <span style={{ color: "#22c55e", fontWeight: 800 }}>✓</span> Termasuk rekaman sesi &amp; materi modul LMS
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-          <span style={{ color: "#22c55e", fontWeight: 800 }}>✓</span> E-Sertifikat kelulusan resmi terverifikasi
-        </div>
       </div>
-    </div>
     );
   }
 
@@ -1467,55 +1285,17 @@ export default function RegisterForm({
         <div
           className="reg-card"
           style={{
-            maxWidth: "1000px",
+            maxWidth: "640px",
             width: "100%",
-            padding: "clamp(1.5rem, 3.5vw, 2.5rem)",
+            margin: "0 auto",
+            padding: "clamp(1.3rem, 3.5vw, 2.2rem)",
             boxShadow: "0 20px 45px -15px rgba(0,0,0,0.08)",
             border: "1px solid var(--border)",
             background: "#ffffff",
           }}
         >
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
-              gap: "2.5rem",
-              alignItems: "start",
-            }}
-          >
-            {/* KOLOM 1: TIKET & FORMAT */}
-            {renderTicketSelector()}
-
-            {/* KOLOM 2: DATA PENDAFTAR & PEMBAYARAN */}
-            <div
-              style={{
-                background: "var(--chip)",
-                borderRadius: "18px",
-                padding: "clamp(1.2rem, 2.5vw, 1.8rem)",
-                border: "1px solid var(--line)",
-              }}
-            >
-              <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", marginBottom: "1.2rem" }}>
-                <span style={{
-                  width: 28,
-                  height: 28,
-                  borderRadius: "50%",
-                  background: "var(--ink)",
-                  color: "#fff",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontWeight: 800,
-                  fontSize: "0.85rem"
-                }}>2</span>
-                <h3 style={{ fontSize: "1.15rem", fontWeight: 800, margin: 0, color: "var(--ink)" }}>
-                  Data Peserta &amp; Checkout
-                </h3>
-              </div>
-
-              {renderCheckoutForm()}
-            </div>
-          </div>
+          {renderTicketSummary()}
+          {renderCheckoutForm()}
         </div>
       ) : (
         <div className="reg-card">
