@@ -125,6 +125,24 @@ describe("WhatsApp Phone Number Normalization & Validation", () => {
       expect(res.error).toContain("Rate limit");
     });
 
+    it("uses standard Evolution environment names", async () => {
+      delete process.env.EVOLUTION_API_API_KEY;
+      delete process.env.EVOLUTION_API_INSTANCE;
+      process.env.EVOLUTION_API_KEY = "standard_key_123";
+      process.env.EVOLUTION_INSTANCE = "jetschool-standard";
+      const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({ key: { id: "msg_123" } }),
+      } as Response);
+
+      await expect(sendWaDetailed("081299998888", "Halo")).resolves.toMatchObject({ ok: true });
+      expect(fetchSpy).toHaveBeenCalledWith(
+        "https://wa.example.com/message/sendText/jetschool-standard",
+        expect.any(Object),
+      );
+    });
+
     it("succeeds when Evolution API returns 200/201", async () => {
       vi.spyOn(globalThis, "fetch").mockResolvedValueOnce({
         ok: true,

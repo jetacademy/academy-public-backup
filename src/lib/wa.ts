@@ -83,8 +83,9 @@ export async function sendWaDetailed(to: string, text: string): Promise<SendWaDe
   }
 
   const url = process.env.EVOLUTION_API_URL;
-  const apikey = process.env.EVOLUTION_API_API_KEY;
-  const instance = process.env.EVOLUTION_API_INSTANCE;
+  // Standard deployment names, with legacy aliases for existing installations.
+  const apikey = process.env.EVOLUTION_API_KEY ?? process.env.EVOLUTION_API_API_KEY;
+  const instance = process.env.EVOLUTION_INSTANCE ?? process.env.EVOLUTION_API_INSTANCE;
 
   // nilai placeholder dari .env.example dianggap belum dikonfigurasi
   const isPlaceholder = !url || !apikey || !instance || url.includes("domainkamu") || apikey.startsWith("isi_");
