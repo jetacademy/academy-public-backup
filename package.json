@@ -21,7 +21,7 @@
     "framer-motion": "^13.1.1",
     "html-to-image": "^1.11.13",
     "isomorphic-dompurify": "^3.19.0",
-    "next": "16.3.6",
+    "next": "16.4.3",
     "nodemailer": "^9.0.3",
     "pdf-lib": "^1.17.1",
     "pdf-parse": "^2.4.5",
@@ -32,7 +32,7 @@
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "react-pdf": "^10.4.1",
-    "sharp": "^0.35.3",
+    "sharp": "^0.35.5",
     "tus-js-client": "^4.3.1",
     "undici": "^7.29.0",
     "xlsx": "^0.18.5"
@@ -46,7 +46,7 @@
     "@types/react-dom": "^19",
     "babel-plugin-react-compiler": "1.0.0",
     "eslint": "^9",
-    "eslint-config-next": "16.3.6",
+    "eslint-config-next": "16.4.3",
     "prisma": "6.19.3",
     "typescript": "^5",
     "vitest": "^4.1.10"
@@ -55,6 +55,6 @@
     "minimatch": "^10.2.5",
     "brace-expansion": "^5.0.8",
     "postcss": "^8.5.22",
-    "sharp": "^0.35.3"
+    "sharp": "^0.35.5"
   }
 }
