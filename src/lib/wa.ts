@@ -82,10 +82,13 @@ export async function sendWaDetailed(to: string, text: string): Promise<SendWaDe
     };
   }
 
-  const url = process.env.EVOLUTION_API_URL;
+  const rawUrl = process.env.EVOLUTION_API_URL?.trim() ?? "";
   // Standard deployment names, with legacy aliases for existing installations.
-  const apikey = process.env.EVOLUTION_API_KEY ?? process.env.EVOLUTION_API_API_KEY;
-  const instance = process.env.EVOLUTION_INSTANCE ?? process.env.EVOLUTION_API_INSTANCE;
+  const apikey = (process.env.EVOLUTION_API_KEY ?? process.env.EVOLUTION_API_API_KEY ?? "").trim();
+  const instance = (process.env.EVOLUTION_INSTANCE ?? process.env.EVOLUTION_API_INSTANCE ?? "").trim();
+
+  // Bersihkan URL jika user tidak sengaja menyalin URL manager atau ada trailing slash
+  const url = rawUrl.replace(/\/manager(?:\/.*)?$/i, "").replace(/\/+$/, "");
 
   // nilai placeholder dari .env.example dianggap belum dikonfigurasi
   const isPlaceholder = !url || !apikey || !instance || url.includes("domainkamu") || apikey.startsWith("isi_");
@@ -112,6 +115,16 @@ export async function sendWaDetailed(to: string, text: string): Promise<SendWaDe
       resBody = (await res.json()) as Record<string, unknown>;
     } catch {
       // bukan json
+    }
+
+    if (!resBody) {
+      console.error("[wa] respon bukan JSON (kemungkinan URL salah arah ke halaman manager/HTML):", res.status);
+      return {
+        ok: false,
+        statusCode: res.status,
+        error: "Respon server WhatsApp tidak valid (bukan JSON)",
+        targetPhone: validation.normalized,
+      };
     }
 
     if (!res.ok) {
