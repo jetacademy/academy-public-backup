@@ -13,7 +13,7 @@ import { sendEmail, getPaidEmailHtml, getPaymentReminderEmailHtml } from "@/lib/
 import { createInvoice, isXenditConfigured } from "@/lib/xendit";
 import { recordAffiliateConversion, voidAffiliateConversion } from "@/lib/affiliate";
 import { linkLeadToRegistration } from "@/lib/lead-link";
-import { isCertIssuanceEnabled, issueCertificate, checkCertEligibility, isScheduleGateOpen } from "@/lib/certificates";
+import { isCertIssuanceEnabled, issueCertificate, checkCertEligibility, isScheduleGateOpen, sendCertWaNotification } from "@/lib/certificates";
 import { getBroadcastReport, getLatestBroadcastReport, saveBroadcastReport, BroadcastFailure } from "@/lib/broadcast-store";
 import { createBunnyVideo, getBunnyUploadAuth, deleteBunnyVideo } from "@/lib/bunny";
 import { sanitizeHtml } from "@/lib/sanitize";
@@ -1114,31 +1114,74 @@ export async function toggleCertPublish(formData: FormData) {
   await prisma.program.update({ where: { id }, data: { certPublished: nextPublished } });
 
   let issuedCount = 0;
+  let waSent = 0;
+  let waFailed = 0;
+  const failures: BroadcastFailure[] = [];
+
   if (nextPublished && (await isCertIssuanceEnabled())) {
     const updatedProgram = { ...program, certPublished: true };
     const candidates = await prisma.registration.findMany({
       where: { programId: id, certificate: null },
-      select: { id: true, status: true },
+      select: { id: true, status: true, name: true, whatsapp: true },
     });
-    for (const reg of candidates) {
-      // Sudah ditandai admin "PASSED" manual → lewati cek penyelesaian materi/kuis (itu sudah jadi
-      // keputusan admin sebelumnya), TAPI tetap wajib lewat gerbang jadwal batch — supaya publish
-      // tidak memblast sertifikat+WA ke peserta di batch yang belum mulai. Selain itu → cek penuh
-      // via checkCertEligibility seperti biasa (materi/kuis + jadwal).
+    for (let i = 0; i < candidates.length; i++) {
+      const reg = candidates[i];
+      // Sudah ditandai admin "PASSED" manual → lewati cek penyelesaian materi/kuis,
+      // TAPI tetap wajib lewat gerbang jadwal batch.
       const shouldIssue =
         reg.status === "PASSED"
           ? (await isScheduleGateOpen(reg.id, updatedProgram)).open
           : (await checkCertEligibility(reg.id, updatedProgram)).eligible;
       if (shouldIssue) {
-        await issueCertificate(reg.id).catch((err) => console.error("[toggleCertPublish] Gagal menerbitkan sertifikat:", err));
-        issuedCount++;
+        try {
+          const res = await issueCertificate(reg.id);
+          issuedCount++;
+          if (res.waSent) {
+            waSent++;
+          } else {
+            waFailed++;
+            failures.push({
+              id: reg.id,
+              name: reg.name,
+              whatsapp: reg.whatsapp || "",
+              reason: res.waError || "Gagal kirim WA",
+            });
+          }
+        } catch (err) {
+          console.error("[toggleCertPublish] Gagal menerbitkan sertifikat:", err);
+          waFailed++;
+          failures.push({
+            id: reg.id,
+            name: reg.name,
+            whatsapp: reg.whatsapp || "",
+            reason: err instanceof Error ? err.message : "Gagal menerbitkan sertifikat",
+          });
+        }
+
+        if (i < candidates.length - 1) {
+          await new Promise((r) => setTimeout(r, 400));
+        }
       }
     }
   }
 
+  let reportParam = "";
+  if (nextPublished && (issuedCount > 0 || failures.length > 0)) {
+    const report = saveBroadcastReport({
+      target: `Rilis Sertifikat: ${program.title}`,
+      targetId: program.id,
+      messageType: "sertifikat",
+      total: issuedCount,
+      sent: waSent,
+      failed: waFailed,
+      failures,
+    });
+    reportParam = `&reportId=${report.id}&waSent=${waSent}&waFailed=${waFailed}`;
+  }
+
   revalidatePath(`/webadmin/program/${id}/cert`);
   revalidatePath("/webadmin/sertifikat");
-  redirect(`/webadmin/program/${id}/cert?ok=${nextPublished ? "published" : "unpublished"}&issued=${issuedCount}`);
+  redirect(`/webadmin/program/${id}/cert?ok=${nextPublished ? "published" : "unpublished"}&issued=${issuedCount}${reportParam}`);
 }
 
 // ─── Video (Bunny.net Stream) ─────────────────────────────────────
@@ -1814,7 +1857,7 @@ export async function toggleBatchCertPublish(formData: FormData) {
   const programId = String(formData.get("programId"));
   const batch = await prisma.programBatch.findUnique({
     where: { id },
-    include: { program: { select: { certPublished: true } } },
+    include: { program: { select: { id: true, title: true, certPublished: true } } },
   });
   if (!batch) {
     revalidatePath(`/webadmin/program/${programId}/batch`);
@@ -1824,32 +1867,206 @@ export async function toggleBatchCertPublish(formData: FormData) {
   const next = !batch.certPublished;
   await prisma.programBatch.update({ where: { id }, data: { certPublished: next } });
 
-  // Saat publish: issue sertifikat untuk semua peserta LUNAS batch ini yang belum punya.
-  // Diproses paralel per chunk agar batch besar tidak menembus timeout server action.
+  // Pastikan program.certPublished juga aktif agar sertifikat dapat diakses
+  if (next && !batch.program.certPublished) {
+    await prisma.program.update({ where: { id: programId }, data: { certPublished: true } });
+  }
+
   let issued = 0;
-  if (next && batch.program.certPublished) {
-    const regs = await prisma.registration.findMany({
-      where: { batchId: id, status: "PAID", certificate: { is: null } },
-      select: { id: true },
+  let waSent = 0;
+  let waFailed = 0;
+  const failures: BroadcastFailure[] = [];
+
+  if (next) {
+    // 1. Peserta status PAID atau PASSED di batch ini yang BELUM punya sertifikat
+    const unissuedRegs = await prisma.registration.findMany({
+      where: {
+        batchId: id,
+        status: { in: ["PAID", "PASSED"] },
+        certificate: { is: null },
+      },
+      select: { id: true, name: true, whatsapp: true },
     });
-    const CHUNK = 10;
-    for (let i = 0; i < regs.length; i += CHUNK) {
-      const results = await Promise.all(
-        regs.slice(i, i + CHUNK).map((r) =>
-          issueCertificate(r.id)
-            .then(() => 1)
-            .catch((err) => {
-              console.error(`[toggleBatchCertPublish] Gagal issue ${r.id}:`, err);
-              return 0;
-            })
-        )
-      );
-      issued += results.reduce((a, b) => a + b, 0);
+
+    for (let i = 0; i < unissuedRegs.length; i++) {
+      const reg = unissuedRegs[i];
+      try {
+        const res = await issueCertificate(reg.id);
+        issued++;
+        if (res.waSent) {
+          waSent++;
+        } else {
+          waFailed++;
+          failures.push({
+            id: reg.id,
+            name: reg.name,
+            whatsapp: reg.whatsapp || "",
+            reason: res.waError || "Gagal kirim WA",
+          });
+        }
+      } catch (err) {
+        console.error(`[toggleBatchCertPublish] Gagal issue cert ${reg.id}:`, err);
+        waFailed++;
+        failures.push({
+          id: reg.id,
+          name: reg.name,
+          whatsapp: reg.whatsapp || "",
+          reason: err instanceof Error ? err.message : "Gagal menerbitkan sertifikat",
+        });
+      }
+
+      if (i < unissuedRegs.length - 1) {
+        await new Promise((r) => setTimeout(r, 400));
+      }
+    }
+
+    // 2. Peserta yang SUDAH punya sertifikat tetapi belum terkirim WA-nya (sentWaAt == null)
+    const pendingWaCerts = await prisma.certificate.findMany({
+      where: {
+        registration: {
+          batchId: id,
+        },
+        sentWaAt: null,
+      },
+      select: {
+        id: true,
+        registration: {
+          select: { id: true, name: true, whatsapp: true },
+        },
+      },
+    });
+
+    for (let i = 0; i < pendingWaCerts.length; i++) {
+      const item = pendingWaCerts[i];
+      const sendRes = await sendCertWaNotification(item.id);
+      if (sendRes.ok) {
+        waSent++;
+      } else {
+        waFailed++;
+        failures.push({
+          id: item.registration.id,
+          name: item.registration.name,
+          whatsapp: item.registration.whatsapp || "",
+          reason: sendRes.error || "Gagal kirim WA",
+        });
+      }
+
+      if (i < pendingWaCerts.length - 1) {
+        await new Promise((r) => setTimeout(r, 400));
+      }
     }
   }
 
+  let reportParam = "";
+  if (next && (issued > 0 || waSent > 0 || waFailed > 0)) {
+    const batchLabel = batch.name || "Batch";
+    const report = saveBroadcastReport({
+      target: `Rilis Sertifikat: ${batch.program.title} (${batchLabel})`,
+      targetId: batch.id,
+      messageType: "sertifikat",
+      total: issued + (waSent + waFailed - issued > 0 ? waSent + waFailed - issued : 0),
+      sent: waSent,
+      failed: waFailed,
+      failures,
+    });
+    reportParam = `&reportId=${report.id}&waSent=${waSent}&waFailed=${waFailed}`;
+  }
+
   revalidatePath(`/webadmin/program/${programId}/batch`);
-  redirect(`/webadmin/program/${programId}/batch?cert=${next ? "published" : "unpublished"}&issued=${issued}`);
+  redirect(`/webadmin/program/${programId}/batch?cert=${next ? "published" : "unpublished"}&issued=${issued}${reportParam}`);
+}
+
+/**
+ * Kirim / broadcast ulang WhatsApp sertifikat ke semua peserta di suatu batch yang sudah memiliki sertifikat.
+ * Mendukung filter: semua peserta, atau hanya yang belum pernah terkirim (sentWaAt == null).
+ */
+export async function sendBatchCertWaAction(formData: FormData) {
+  await requireAdmin();
+  const batchId = String(formData.get("batchId") ?? "").trim();
+  const programId = String(formData.get("programId") ?? "").trim();
+  const mode = String(formData.get("mode") ?? "all"); // "all" | "unsent_only"
+
+  const batch = await prisma.programBatch.findUnique({
+    where: { id: batchId },
+    include: { program: { select: { title: true } } },
+  });
+  if (!batch) {
+    redirect(`/webadmin/program/${programId}/batch?e=batch_not_found`);
+  }
+
+  const whereCondition: Prisma.CertificateWhereInput = {
+    registration: { batchId },
+  };
+  if (mode === "unsent_only") {
+    whereCondition.sentWaAt = null;
+  }
+
+  const certs = await prisma.certificate.findMany({
+    where: whereCondition,
+    include: {
+      registration: { select: { id: true, name: true, whatsapp: true } },
+    },
+  });
+
+  if (certs.length === 0) {
+    redirect(`/webadmin/program/${programId}/batch?e=no_certs_to_send`);
+  }
+
+  let sent = 0;
+  let failed = 0;
+  const failures: BroadcastFailure[] = [];
+
+  for (let i = 0; i < certs.length; i++) {
+    const c = certs[i];
+    const res = await sendCertWaNotification(c.id);
+    if (res.ok) {
+      sent++;
+    } else {
+      failed++;
+      failures.push({
+        id: c.registration.id,
+        name: c.registration.name,
+        whatsapp: c.registration.whatsapp || "",
+        reason: res.error || "Gagal kirim WA",
+      });
+    }
+
+    if (i < certs.length - 1) {
+      await new Promise((r) => setTimeout(r, 400));
+    }
+  }
+
+  const report = saveBroadcastReport({
+    target: `Kirim WA Sertifikat: ${batch.program.title} (${batch.name || "Batch"})`,
+    targetId: batch.id,
+    messageType: "sertifikat",
+    total: certs.length,
+    sent,
+    failed,
+    failures,
+  });
+
+  revalidatePath(`/webadmin/program/${programId}/batch`);
+  redirect(`/webadmin/program/${programId}/batch?reportId=${report.id}&waSent=${sent}&waFailed=${failed}`);
+}
+
+/**
+ * Kirim / kirim ulang WhatsApp sertifikat untuk satu sertifikat tertentu (mis. dari halaman /webadmin/sertifikat).
+ */
+export async function sendSingleCertWaAction(formData: FormData) {
+  await requireAdmin();
+  const certId = String(formData.get("certId") ?? "").trim();
+  const redirectTo = String(formData.get("redirectTo") ?? "/webadmin/sertifikat").trim();
+
+  const res = await sendCertWaNotification(certId);
+  revalidatePath("/webadmin/sertifikat");
+  revalidatePath(redirectTo);
+
+  if (res.ok) {
+    redirect(`${redirectTo}?ok=wa_sent&name=${encodeURIComponent(res.name)}`);
+  } else {
+    redirect(`${redirectTo}?e=wa_failed&msg=${encodeURIComponent(res.error || "Gagal kirim WA")}&name=${encodeURIComponent(res.name)}`);
+  }
 }
 
 export async function deleteBatch(formData: FormData) {
@@ -2036,34 +2253,77 @@ export async function retryBroadcastFailures(formData: FormData) {
     const waGroupLink = reg.batch?.waGroupLink || reg.program.waGroupLink;
     const targetTitle = reg.batch?.name ? `${reg.program.title} (${reg.batch.name})` : reg.program.title;
 
-    const baseText = customMessage || (report.messageType === "zoom"
-      ? `Halo {{name}},\n\nBerikut link Zoom untuk program "${targetTitle}":\n${zoomLink}\n\nJangan lupa catat jadwalnya ya. Sampai jumpa! 😊`
-      : report.messageType === "grup"
-      ? `Halo {{name}},\n\nBergabunglah dengan grup WhatsApp peserta program "${targetTitle}":\n${waGroupLink}\n\nDiskusikan materi di grup ya! 😊`
-      : "Halo {{name}},\n\nIni adalah pesan dari Jetschool Academy.");
-
-    const personalized = baseText.replace(/\{\{name\}\}/g, name);
-    let sendRes = await sendWaDetailed(rawWa, personalized);
-
-    if (!sendRes.ok && (sendRes.statusCode === 429 || sendRes.error?.includes("sibuk") || sendRes.error?.includes("jaringan"))) {
-      await new Promise((r) => setTimeout(r, 1500));
-      sendRes = await sendWaDetailed(rawWa, personalized);
-    }
-
-    if (sendRes.ok) {
-      sent++;
-    } else {
-      failed++;
-      newFailures.push({
-        id: reg.id,
-        name,
-        whatsapp: rawWa,
-        reason: sendRes.error || "Gagal terkirim",
+    if (report.messageType === "sertifikat") {
+      const cert = await prisma.certificate.findUnique({
+        where: { registrationId: reg.id },
       });
+      if (cert) {
+        const sendRes = await sendCertWaNotification(cert.id);
+        if (sendRes.ok) {
+          sent++;
+        } else {
+          failed++;
+          newFailures.push({
+            id: reg.id,
+            name,
+            whatsapp: rawWa,
+            reason: sendRes.error || "Gagal kirim WA",
+          });
+        }
+      } else {
+        try {
+          const res = await issueCertificate(reg.id);
+          if (res.waSent) {
+            sent++;
+          } else {
+            failed++;
+            newFailures.push({
+              id: reg.id,
+              name,
+              whatsapp: rawWa,
+              reason: res.waError || "Gagal kirim WA",
+            });
+          }
+        } catch (err) {
+          failed++;
+          newFailures.push({
+            id: reg.id,
+            name,
+            whatsapp: rawWa,
+            reason: err instanceof Error ? err.message : "Sertifikat belum terbit",
+          });
+        }
+      }
+    } else {
+      const baseText = customMessage || (report.messageType === "zoom"
+        ? `Halo {{name}},\n\nBerikut link Zoom untuk program "${targetTitle}":\n${zoomLink}\n\nJangan lupa catat jadwalnya ya. Sampai jumpa! 😊`
+        : report.messageType === "grup"
+        ? `Halo {{name}},\n\nBergabunglah dengan grup WhatsApp peserta program "${targetTitle}":\n${waGroupLink}\n\nDiskusikan materi di grup ya! 😊`
+        : "Halo {{name}},\n\nIni adalah pesan dari Jetschool Academy.");
+
+      const personalized = baseText.replace(/\{\{name\}\}/g, name);
+      let sendRes = await sendWaDetailed(rawWa, personalized);
+
+      if (!sendRes.ok && (sendRes.statusCode === 429 || sendRes.error?.includes("sibuk") || sendRes.error?.includes("jaringan"))) {
+        await new Promise((r) => setTimeout(r, 1500));
+        sendRes = await sendWaDetailed(rawWa, personalized);
+      }
+
+      if (sendRes.ok) {
+        sent++;
+      } else {
+        failed++;
+        newFailures.push({
+          id: reg.id,
+          name,
+          whatsapp: rawWa,
+          reason: sendRes.error || "Gagal terkirim",
+        });
+      }
     }
 
     if (i < registrations.length - 1) {
-      await new Promise((r) => setTimeout(r, 600));
+      await new Promise((r) => setTimeout(r, 450));
     }
   }
 
@@ -2076,6 +2336,12 @@ export async function retryBroadcastFailures(formData: FormData) {
     failed,
     failures: newFailures,
   });
+
+  const returnUrl = String(formData.get("returnUrl") ?? "").trim();
+  if (returnUrl) {
+    const sep = returnUrl.includes("?") ? "&" : "?";
+    redirect(`${returnUrl}${sep}reportId=${newReport.id}&waSent=${sent}&waFailed=${failed}`);
+  }
 
   const q = new URLSearchParams({
     ok: "1",

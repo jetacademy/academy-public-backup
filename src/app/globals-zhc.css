@@ -137,13 +137,62 @@
 .zhc-tags { margin-top: auto; display: flex; flex-wrap: wrap; gap: .35rem; padding-top: .8rem; border-top: 1px dashed var(--border); }
 .zhc-tags span { font-size: .72rem; font-weight: 700; background: var(--chip); color: var(--ink-soft); padding: .28rem .65rem; border-radius: 999px; }
 
+.zhc-agent-example {
+  background: var(--chip);
+  border-radius: var(--r-sm);
+  padding: .55rem .75rem;
+  font-size: .8rem;
+  line-height: 1.45;
+  color: var(--ink);
+  margin-bottom: .8rem;
+  border-left: 2px solid var(--purple);
+}
+.zhc-agent-example span {
+  display: block;
+  font-size: .68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  color: var(--ink-faint);
+  margin-bottom: 2px;
+}
+.zhc-more-roles-box {
+  margin-top: 1.5rem;
+  padding: 1rem 1.4rem;
+  background: var(--white);
+  border: 1px dashed var(--line);
+  border-radius: var(--r-md);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .6rem;
+}
+.zhc-more-roles-label {
+  font-size: .82rem;
+  font-weight: 800;
+  color: var(--ink);
+}
+.zhc-more-roles-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .4rem;
+}
+.zhc-more-roles-list span {
+  font-size: .74rem;
+  font-weight: 700;
+  background: var(--chip);
+  color: var(--purple);
+  padding: .25rem .65rem;
+  border-radius: 999px;
+}
+
 /* --- Video --- */
 .zhc-dark { background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%); color: #fff; border-radius: var(--r-lg); padding: clamp(1.6rem, 4.5vw, 3.2rem); position: relative; overflow: hidden; box-shadow: 0 30px 60px rgba(15, 23, 42, .25); }
 .zhc-dark::before { content: ''; position: absolute; width: 500px; height: 500px; border-radius: 50%; background: radial-gradient(circle, rgba(99, 102, 241, .15) 0%, transparent 70%); top: -220px; right: -160px; pointer-events: none; }
 .zhc-dark > * { position: relative; }
 .zhc-dark h2 { color: #fff; margin-bottom: .8rem; }
 .zhc-dark .lead { color: rgba(255, 255, 255, .7); }
-.zhc-video-grid { display: grid; grid-template-columns: 1.4fr 1fr; gap: 1.2rem; margin-top: 1.8rem; align-items: start; }
+.zhc-video-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; margin-top: 1.8rem; align-items: start; }
 .zhc-video-card { background: rgba(255, 255, 255, .05); border: 1px solid rgba(255, 255, 255, .1); border-radius: 20px; overflow: hidden; }
 .zhc-video-frame { position: relative; aspect-ratio: 16 / 9; background: #080c18; }
 .zhc-video-frame iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }

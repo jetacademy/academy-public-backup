@@ -8,6 +8,7 @@ import { useFormStatus } from "react-dom";
 export default function ConfirmButton({
   message,
   className,
+  style,
   title,
   disabled,
   onConfirm,
@@ -15,6 +16,7 @@ export default function ConfirmButton({
 }: {
   message: string;
   className?: string;
+  style?: React.CSSProperties;
   title?: string;
   disabled?: boolean;
   onConfirm?: () => Promise<void> | void;
@@ -100,6 +102,7 @@ export default function ConfirmButton({
       <button
         type="button"
         className={className}
+        style={style}
         title={title}
         onClick={openModal}
         disabled={disabled || pending}

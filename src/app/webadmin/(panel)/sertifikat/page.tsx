@@ -1,15 +1,15 @@
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { isCertIssuanceEnabled } from "@/lib/certificates";
-import { deleteCertificate, toggleCertIssuance } from "../../actions";
+import { deleteCertificate, toggleCertIssuance, sendSingleCertWaAction } from "../../actions";
 import ConfirmButton from "@/components/ConfirmButton";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminSertifikat({ searchParams }: {
-  searchParams: Promise<{ page?: string; ok?: string; e?: string }>;
+  searchParams: Promise<{ page?: string; ok?: string; e?: string; msg?: string; name?: string }>;
 }) {
-  const { page, ok, e } = await searchParams;
+  const { page, ok, e, msg, name } = await searchParams;
   const currentPage = Number(page ?? "1") || 1;
   const limit = 50;
   const skip = (currentPage - 1) * limit;
@@ -34,7 +34,9 @@ export default async function AdminSertifikat({ searchParams }: {
       </div>
 
       {ok === "dihapus" && <div className="adm-alert ok">Sertifikat berhasil dihapus. Status pendaftaran dikembalikan.</div>}
+      {ok === "wa_sent" && <div className="adm-alert ok">Pesan WhatsApp rilis sertifikat berhasil dikirim ke {name || "peserta"}.</div>}
       {e === "notfound" && <div className="adm-alert err">Sertifikat tidak ditemukan.</div>}
+      {e === "wa_failed" && <div className="adm-alert err">Gagal mengirim WhatsApp rilis sertifikat: {msg || "Terjadi kesalahan"}</div>}
 
       <div
         style={{
@@ -69,7 +71,7 @@ export default async function AdminSertifikat({ searchParams }: {
       <div className="tbl-wrap">
         <table className="tbl">
           <thead>
-            <tr><th>Nomor</th><th>Nama</th><th>Program</th><th>Terbit</th><th>Aksi</th></tr>
+            <tr><th>Nomor</th><th>Nama</th><th>Program</th><th>Terbit</th><th>Status WA</th><th>Aksi</th></tr>
           </thead>
           <tbody>
             {certs.map((c) => (
@@ -78,9 +80,34 @@ export default async function AdminSertifikat({ searchParams }: {
                 <td data-label="Nama">{c.registration.name}</td>
                 <td data-label="Program" className="muted">{c.registration.program.title}</td>
                 <td data-label="Terbit" className="muted">{new Intl.DateTimeFormat("id-ID", { day: "numeric", month: "long", year: "numeric", timeZone: "Asia/Jakarta" }).format(c.issuedAt)}</td>
+                <td data-label="Status WA">
+                  {c.sentWaAt ? (
+                    <span
+                      className="badge g"
+                      style={{ fontSize: "0.78rem" }}
+                      title={`Terkirim pada: ${new Intl.DateTimeFormat("id-ID", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Jakarta" }).format(c.sentWaAt)}`}
+                    >
+                      ✓ Terkirim
+                    </span>
+                  ) : (
+                    <span className="badge dim" style={{ fontSize: "0.78rem" }}>
+                      Belum Dikirim
+                    </span>
+                  )}
+                </td>
                 <td data-label="Aksi">
                   <div style={{ display: "flex", gap: ".4rem", flexWrap: "wrap" }}>
                     <a href={`/sertifikat/${c.number}`} target="_blank" className="btn btn-sm">Lihat ↗</a>
+                    <form action={sendSingleCertWaAction}>
+                      <input type="hidden" name="certId" value={c.id} />
+                      <input type="hidden" name="redirectTo" value={`/webadmin/sertifikat?page=${currentPage}`} />
+                      <ConfirmButton
+                        className={`btn btn-sm ${c.sentWaAt ? "btn-line" : "btn-purple"}`}
+                        message={`${c.sentWaAt ? "Kirim ulang" : "Kirim"} notifikasi WhatsApp sertifikat ke ${c.registration.name} (${c.registration.whatsapp})?`}
+                      >
+                        {c.sentWaAt ? "Kirim Ulang WA" : "Kirim WA"}
+                      </ConfirmButton>
+                    </form>
                     <form action={deleteCertificate}>
                       <input type="hidden" name="id" value={c.id} />
                       <ConfirmButton
@@ -94,7 +121,7 @@ export default async function AdminSertifikat({ searchParams }: {
                 </td>
               </tr>
             ))}
-            {certs.length === 0 && <tr><td colSpan={5} className="muted">Belum ada sertifikat terbit.</td></tr>}
+            {certs.length === 0 && <tr><td colSpan={6} className="muted">Belum ada sertifikat terbit.</td></tr>}
           </tbody>
         </table>
       </div>

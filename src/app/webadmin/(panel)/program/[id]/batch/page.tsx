@@ -1,16 +1,17 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import AdminBatchManager, { SerializedBatch } from "@/components/AdminBatchManager";
+import { getBroadcastReport } from "@/lib/broadcast-store";
 
 export default async function AdminBatch({
   params,
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ ok?: string; e?: string; deleted?: string; cert?: string; issued?: string }>;
+  searchParams: Promise<{ ok?: string; e?: string; deleted?: string; cert?: string; issued?: string; waSent?: string; waFailed?: string; reportId?: string }>;
 }) {
   const { id } = await params;
-  const { ok, e, deleted, cert, issued } = await searchParams;
+  const { ok, e, deleted, cert, issued, waSent, waFailed, reportId } = await searchParams;
 
   const program = await prisma.program.findUnique({
     where: { id },
@@ -60,11 +61,14 @@ export default async function AdminBatch({
     },
   }));
 
+  const activeReport = reportId ? getBroadcastReport(reportId) : null;
+
   return (
     <AdminBatchManager
       program={program}
       batches={serializedBatches}
-      alerts={{ ok, e, deleted, cert, issued }}
+      alerts={{ ok, e, deleted, cert, issued, waSent, waFailed, reportId }}
+      report={activeReport}
     />
   );
 }

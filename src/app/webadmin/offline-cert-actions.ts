@@ -4,9 +4,9 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/admin-auth";
-import { sendWa, msgCertificate, normalizeWa } from "@/lib/wa";
+import { normalizeWa } from "@/lib/wa";
+import { sendCertWaNotification, isCertIssuanceEnabled, issueCertificate } from "@/lib/certificates";
 import { sendEmail, getCertEmailHtml } from "@/lib/email";
-import { isCertIssuanceEnabled, issueCertificate } from "@/lib/certificates";
 import { slugify } from "@/lib/slug";
 
 /**
@@ -194,11 +194,8 @@ export async function sendOfflineCert(formData: FormData) {
   let failure: "wafail" | "sendfail" | null = null;
   try {
     if (via === "wa") {
-      const target = normalizeWa(reg.whatsapp);
-      const ok = await sendWa(target, msgCertificate(reg.name, cert.number, certUrl));
-      if (ok) {
-        await prisma.certificate.update({ where: { id }, data: { sentWaAt: new Date() } });
-      } else {
+      const waRes = await sendCertWaNotification(cert.id, certUrl);
+      if (!waRes.ok) {
         failure = "wafail";
       }
     } else {

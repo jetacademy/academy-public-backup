@@ -289,39 +289,35 @@ export default async function ProgramPage({ params }: { params: Promise<{ slug: 
         },
         {
           q: "Apakah harus bisa coding?",
-          a: "Tidak. Workshop dirancang untuk peserta nonteknis. Anda akan dipandu mengonfigurasi Hermes Agent dan mencoba tugas bisnis secara bertahap. Dasar penggunaan laptop dan mengikuti instruksi instalasi akan membantu.",
+          a: "Tidak sama sekali. Workshop dirancang untuk pemula dan pemilik bisnis. Anda dipandu step-by-step mengonfigurasi AI Agent dengan instruksi bahasa sehari-hari.",
         },
         {
-          q: "Apakah enam AI Agent langsung bisa menjalankan semua aplikasi?",
-          a: "Anda belajar membuat dan mengonfigurasi enam peran serta menjajal contoh workflow. Koneksi ke Instagram, Meta Ads, WhatsApp, Google Workspace, atau aplikasi lain memerlukan akses akun, autentikasi, tools atau API, dan mungkin konfigurasi lanjutan. Tidak semua integrasi otomatis aktif seusai workshop.",
+          q: "Apakah enam AI Agent langsung bisa menjalankan tugas bisnis?",
+          a: "Ya. Anda mempraktikkan konfigurasi 6 peran dan alur kerjanya langsung. Integrasi ke aplikasi seperti Instagram, Meta Ads, WhatsApp, dan Google Workspace diajarkan caranya menggunakan akun dan izin resmi masing-masing platform.",
         },
         {
           q: "Apakah Hermes bisa membuat gambar konten Instagram sampai mempostingnya?",
-          a: "Bisa. Hermes menyusun ide, membuat gambar feed sesuai brand, menulis caption dan hashtag, lalu memposting otomatis sesuai jadwal ke akun Instagram yang sudah dihubungkan (akun Business/Creator). Anda bisa memilih posting langsung atau lewat persetujuan dulu sebelum terbit.",
+          a: "Bisa. Hermes menyusun ide, mendesain gambar feed sesuai brand, menulis caption & hashtag, lalu memposting otomatis sesuai jadwal ke akun Instagram yang terhubung.",
         },
         {
-          q: "Apakah bisa mengelola Meta Ads dan budget iklan?",
-          a: "Dapat membantu membaca data, menganalisis performa, merancang campaign, dan menggunakan integrasi Meta yang berizin. Perubahan anggaran atau publikasi iklan sebaiknya dilakukan setelah persetujuan manusia. Akun, API, dan izin Meta tetap diperlukan.",
+          q: "Apakah bisa menganalisis Meta Ads dan budget iklan?",
+          a: "Bisa. Hermes membaca data analitik iklan, menemukan campaign yang kurang efisien, dan menyiapkan rekomendasi optimasi. Keputusan perubahan budget tetap di tangan Anda.",
         },
         {
-          q: "Apakah AI bisa mencari prospek sampai mengirim penawaran?",
-          a: "Bisa. Hermes mencari calon pelanggan yang cocok, mengirim penawaran personal, melakukan follow-up otomatis, lalu memberi tahu Anda saat ada prospek yang siap closing. Pengiriman pesan tetap mengikuti kebijakan platform (misalnya WhatsApp) agar akun Anda aman — bukan spam massal.",
+          q: "Apakah AI bisa mencari prospek dan follow-up otomatis?",
+          a: "Bisa. Hermes membantu meriset calon pelanggan yang relevan, mengirim penawaran personal, dan melakukan follow-up otomatis hingga prospek siap closing.",
         },
         {
-          q: "Apakah membutuhkan VPS atau biaya langganan?",
-          a: "Untuk setup dasar, Hermes dapat dijalankan pada laptop tanpa server berbayar. Untuk operasi terus-menerus, perangkat atau server harus aktif. Beberapa model, API, konektor, atau infrastruktur dapat dikenai biaya penyedia masing-masing; tidak ada kewajiban berlangganan platform Agent dari Jetschool.",
+          q: "Apakah membutuhkan laptop spek tinggi atau sewa VPS?",
+          a: "Tidak wajib. Untuk workshop dan operasional awal, Hermes dapat dijalankan di laptop biasa tanpa sewa server. Tidak ada kewajiban berlangganan platform AI dari Jetschool.",
         },
         {
-          q: "Apakah semua agent bisa bekerja 24 jam?",
-          a: "Agent dapat mengerjakan tugas terjadwal selama sistem, koneksi, dan akses layanan berfungsi. Bila berjalan di laptop, laptop dan proses agent harus tetap aktif. Pengoperasian berkelanjutan memerlukan monitoring dan pengamanan tambahan.",
+          q: "Apa yang saya bawa pulang setelah workshop?",
+          a: "Konfigurasi 6 AI Agent siap pakai, rekaman video sesi, modul panduan langkah demi langkah, akses komunitas alumni, serta e-sertifikat resmi.",
         },
         {
-          q: "Apa yang saya dapatkan setelah workshop?",
-          a: "Praktik konfigurasi enam AI Agent, rekaman workshop, modul panduan langkah demi langkah, akses komunitas alumni, serta e-sertifikat.",
-        },
-        {
-          q: "Bagaimana proses pendaftaran dan pembayaran?",
-          a: "Isi formulir pendaftaran di halaman ini, pilih tiket Online atau Offline, lalu selesaikan pembayaran melalui metode yang tersedia. Info akses dikirim via WhatsApp ke nomor yang Anda daftarkan.",
+          q: "Bagaimana proses pendaftaran dan pembayarannya?",
+          a: "Pilih tiket Online atau Offline di halaman ini, isi data diri, lalu selesaikan pembayaran. Link dan panduan workshop langsung dikirim ke WhatsApp Anda.",
         },
       ]
     : [

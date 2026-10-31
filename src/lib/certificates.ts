@@ -1,11 +1,76 @@
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 import { randomBytes } from "crypto";
-import { sendWa, msgCertificate } from "@/lib/wa";
+import { sendWa, sendWaDetailed, msgCertificate } from "@/lib/wa";
 import { sendEmail, getCertEmailHtml } from "@/lib/email";
 import { formatJadwal } from "@/lib/format";
 
 const CERT_CLAIM_DELAY_MS = 24 * 60 * 60 * 1000; // 1×24 jam setelah sesi berakhir
+
+export type IssueCertResult = {
+  number: string;
+  url: string;
+  certId?: string;
+  waSent?: boolean;
+  waError?: string;
+  recipientName?: string;
+  recipientPhone?: string;
+};
+
+/**
+ * Kirim pesan WhatsApp sertifikat dengan pengecekan detail & retry jika rate limit.
+ * Mengupdate `sentWaAt` di database jika pesan berhasil terkirim.
+ */
+export async function sendCertWaNotification(
+  certIdOrNumber: string,
+  providedUrl?: string
+): Promise<{ ok: boolean; error?: string; name: string; phone: string; number: string }> {
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? "http://localhost:3000";
+  const cert = await prisma.certificate.findFirst({
+    where: {
+      OR: [{ id: certIdOrNumber }, { number: certIdOrNumber }],
+    },
+    include: {
+      registration: {
+        include: { program: true },
+      },
+    },
+  });
+
+  if (!cert) {
+    return { ok: false, error: "Sertifikat tidak ditemukan", name: "", phone: "", number: "" };
+  }
+
+  const reg = cert.registration;
+  const certUrl = providedUrl || `${baseUrl}/sertifikat/${cert.number}`;
+  const phone = (reg.whatsapp || "").trim();
+  const text = msgCertificate(reg.name, cert.number, certUrl);
+
+  let sendRes = await sendWaDetailed(phone, text);
+
+  // Jika gagal karena rate limit (429) atau server sibuk/timeout, coba lagi sekali setelah delay
+  if (!sendRes.ok && (sendRes.statusCode === 429 || sendRes.error?.includes("sibuk") || sendRes.error?.includes("jaringan") || sendRes.error?.includes("timeout"))) {
+    await new Promise((r) => setTimeout(r, 1500));
+    sendRes = await sendWaDetailed(phone, text);
+  }
+
+  if (sendRes.ok) {
+    await prisma.certificate.update({
+      where: { id: cert.id },
+      data: { sentWaAt: new Date() },
+    }).catch((err) => console.error("[sendCertWaNotification] Gagal update sentWaAt:", err));
+  } else {
+    console.error(`[sendCertWaNotification] Gagal kirim WA sertifikat ${cert.number} ke ${phone}:`, sendRes.error);
+  }
+
+  return {
+    ok: sendRes.ok,
+    error: sendRes.ok ? undefined : (sendRes.error || "Gagal kirim WhatsApp"),
+    name: reg.name,
+    phone,
+    number: cert.number,
+  };
+}
 
 /**
  * Sakelar global penerbitan sertifikat (`SystemSetting.certIssuanceEnabled`) — dipakai admin
@@ -38,7 +103,7 @@ function randomSuffix(): string {
  * gagal karena unique constraint dan kita fallback membaca sertifikat yang sudah dibuat
  * request lainnya alih-alih melempar error ke peserta.
  */
-export async function issueCertificate(registrationId: string): Promise<{ number: string; url: string }> {
+export async function issueCertificate(registrationId: string): Promise<IssueCertResult> {
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? "http://localhost:3000";
 
   const reg = await prisma.registration.findUnique({
@@ -57,7 +122,7 @@ export async function issueCertificate(registrationId: string): Promise<{ number
   }
 
   if (reg.certificate) {
-    return { number: reg.certificate.number, url: `${baseUrl}/sertifikat/${reg.certificate.number}` };
+    return { number: reg.certificate.number, url: `${baseUrl}/sertifikat/${reg.certificate.number}`, certId: reg.certificate.id };
   }
 
   const program = reg.program;
@@ -95,7 +160,7 @@ export async function issueCertificate(registrationId: string): Promise<{ number
 
   // Percobaan berulang dengan tambahan acak — cegah race condition di nomor DAN di registrationId
   // (dua request paralel yang menyelesaikan materi terakhir bersamaan tidak akan saling melempar error).
-  let cert: { number: string } | null = null;
+  let cert: { id: string; number: string } | null = null;
   let lastErr: unknown = null;
   for (let attempt = 0; attempt < 10 && !cert; attempt++) {
     const number = `JS-${progCode}-${year}-B${batchNumStr}-${String(baseSequence + attempt).padStart(5, "0")}-${randomSuffix()}`;
@@ -114,7 +179,7 @@ export async function issueCertificate(registrationId: string): Promise<{ number
       // request paralel lain — cek yang mana sebelum retry.
       const already = await prisma.certificate.findUnique({ where: { registrationId: reg.id } });
       if (already) {
-        return { number: already.number, url: `${baseUrl}/sertifikat/${already.number}` };
+        return { number: already.number, url: `${baseUrl}/sertifikat/${already.number}`, certId: already.id };
       }
       // bukan konflik registrationId → konflik nomor, coba lagi dengan suffix baru
     }
@@ -123,17 +188,33 @@ export async function issueCertificate(registrationId: string): Promise<{ number
 
   const certUrl = `${baseUrl}/sertifikat/${cert.number}`;
 
-  // notifikasi — best-effort, jangan gagalkan penerbitan
-  await sendWa(reg.whatsapp, msgCertificate(reg.name, cert.number, certUrl)).catch((err) =>
-    console.error("Gagal kirim WA sertifikat:", err)
-  );
+  // Kirim notifikasi WA dengan tracking sentWaAt & retry jika rate limit
+  let waSent = false;
+  let waError: string | undefined;
+  try {
+    const waResult = await sendCertWaNotification(cert.id, certUrl);
+    waSent = waResult.ok;
+    waError = waResult.error;
+  } catch (err) {
+    console.error("Gagal kirim WA sertifikat:", err);
+    waError = err instanceof Error ? err.message : "Error kirim WA";
+  }
+
   await sendEmail({
     to: reg.email,
     subject: `Selamat! Sertifikat Resmi Anda Telah Terbit - ${reg.program.title}`,
     html: getCertEmailHtml(reg.name, reg.program.title, certUrl),
   }).catch((err) => console.error("Gagal mengirim email sertifikat:", err));
 
-  return { number: cert.number, url: certUrl };
+  return {
+    number: cert.number,
+    url: certUrl,
+    certId: cert.id,
+    waSent,
+    waError,
+    recipientName: reg.name,
+    recipientPhone: reg.whatsapp,
+  };
 }
 
 /** Filter modul sesuai batch peserta — modul tanpa tautan batch dianggap berlaku untuk semua batch.

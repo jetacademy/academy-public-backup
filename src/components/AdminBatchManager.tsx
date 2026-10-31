@@ -10,7 +10,10 @@ import {
   deleteBatch,
   updateBatchLinks,
   toggleBatchCertPublish,
+  sendBatchCertWaAction,
+  retryBroadcastFailures,
 } from "@/app/webadmin/actions";
+import type { BroadcastReport as BroadcastReportType } from "@/lib/broadcast-store";
 
 export type SerializedBatch = {
   id: string;
@@ -45,6 +48,7 @@ export default function AdminBatchManager({
   program,
   batches,
   alerts,
+  report,
 }: {
   program: {
     id: string;
@@ -59,7 +63,11 @@ export default function AdminBatchManager({
     deleted?: string;
     cert?: string;
     issued?: string;
+    waSent?: string;
+    waFailed?: string;
+    reportId?: string;
   };
+  report?: BroadcastReportType | null;
 }) {
   // State UI
   const [showAddForm, setShowAddForm] = useState(false);
@@ -68,6 +76,7 @@ export default function AdminBatchManager({
 
   // Search & Filter State
   const [searchQuery, setSearchQuery] = useState("");
+  const [copiedFailures, setCopiedFailures] = useState(false);
   const [formatFilter, setFormatFilter] = useState<string>("ALL");
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
   const [timeFilter, setTimeFilter] = useState<string>("ALL");
@@ -188,7 +197,7 @@ export default function AdminBatchManager({
       {/* Alert Messages */}
       {alerts.ok === "1" && <div className="adm-alert ok">Perubahan data batch berhasil disimpan.</div>}
       {alerts.deleted === "1" && <div className="adm-alert ok">Batch jadwal berhasil dihapus.</div>}
-      {alerts.cert === "published" && (
+      {alerts.cert === "published" && !report && (
         <div className="adm-alert ok">
           Sertifikat batch dipublikasikan.{" "}
           {alerts.issued && Number(alerts.issued) > 0
@@ -203,6 +212,158 @@ export default function AdminBatchManager({
       )}
       {alerts.e === "lengkapi" && <div className="adm-alert err">Tanggal jadwal wajib diisi.</div>}
       {alerts.e === "tanggal" && <div className="adm-alert err">Format tanggal tidak valid.</div>}
+      {alerts.e === "no_certs_to_send" && <div className="adm-alert warn">Tidak ada sertifikat yang perlu dikirim untuk batch ini.</div>}
+
+      {/* Delivery Report Box */}
+      {report && (
+        <div
+          style={{
+            background: "var(--white, #fff)",
+            border: `1px solid ${report.failed > 0 ? "#fca5a5" : "#86efac"}`,
+            borderRadius: 12,
+            padding: "1.2rem 1.4rem",
+            boxShadow: "0 2px 10px rgba(0,0,0,0.04)",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              flexWrap: "wrap",
+              gap: "0.8rem",
+              marginBottom: report.failures?.length > 0 ? "1rem" : 0,
+            }}
+          >
+            <div>
+              <h3 style={{ margin: "0 0 0.2rem", fontSize: "1.05rem", fontWeight: 800 }}>
+                📊 Laporan Rilis Sertifikat &amp; WA: {report.target}
+              </h3>
+              <p className="muted" style={{ margin: 0, fontSize: "0.82rem" }}>
+                Waktu: {new Date(report.createdAt).toLocaleString("id-ID", { dateStyle: "medium", timeStyle: "short" })} &middot; Total: {report.total} peserta
+              </p>
+            </div>
+
+            <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", alignItems: "center" }}>
+              <span
+                style={{
+                  padding: "0.35rem 0.85rem",
+                  background: "#dcfce7",
+                  color: "#166534",
+                  borderRadius: 999,
+                  fontWeight: 700,
+                  fontSize: "0.82rem",
+                }}
+              >
+                ✅ {report.sent} WA Terkirim
+              </span>
+              {report.failed > 0 ? (
+                <span
+                  style={{
+                    padding: "0.35rem 0.85rem",
+                    background: "#fee2e2",
+                    color: "#991b1b",
+                    borderRadius: 999,
+                    fontWeight: 700,
+                    fontSize: "0.82rem",
+                  }}
+                >
+                  ❌ {report.failed} WA Gagal
+                </span>
+              ) : (
+                <span
+                  style={{
+                    padding: "0.35rem 0.85rem",
+                    background: "#f0fdf4",
+                    color: "#15803d",
+                    borderRadius: 999,
+                    fontWeight: 700,
+                    fontSize: "0.82rem",
+                  }}
+                >
+                  🎉 100% Terkirim
+                </span>
+              )}
+            </div>
+          </div>
+
+          {report.failures && report.failures.length > 0 && (
+            <div
+              style={{
+                background: "#fff1f2",
+                border: "1px solid #fecdd3",
+                borderRadius: 8,
+                padding: "1rem",
+                marginTop: "0.8rem",
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  flexWrap: "wrap",
+                  gap: "0.5rem",
+                  marginBottom: "0.8rem",
+                }}
+              >
+                <strong style={{ fontSize: "0.88rem", color: "#991b1b" }}>
+                  ⚠️ Rincian {report.failures.length} Nomor Gagal Dikirim:
+                </strong>
+                <div style={{ display: "flex", gap: "0.4rem" }}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const list = report.failures
+                        .map((f) => `${f.name}: ${f.whatsapp} (${f.reason})`)
+                        .join("\n");
+                      navigator.clipboard.writeText(list);
+                      setCopiedFailures(true);
+                      setTimeout(() => setCopiedFailures(false), 2500);
+                    }}
+                    className="btn btn-sm"
+                    style={{ fontSize: "0.75rem", padding: "0.25rem 0.6rem" }}
+                  >
+                    {copiedFailures ? "✓ Tersalin!" : "📋 Salin Daftar Gagal"}
+                  </button>
+                  <form action={retryBroadcastFailures}>
+                    <input type="hidden" name="reportId" value={report.id} />
+                    <input type="hidden" name="returnUrl" value={`/webadmin/program/${program.id}/batch`} />
+                    <ConfirmButton
+                      className="btn btn-sm btn-purple"
+                      style={{ fontSize: "0.75rem", padding: "0.25rem 0.6rem" }}
+                      message={`Kirim ulang pesan WhatsApp sertifikat ke ${report.failures.length} peserta yang gagal?`}
+                    >
+                      🔄 Kirim Ulang ke yang Gagal
+                    </ConfirmButton>
+                  </form>
+                </div>
+              </div>
+
+              <div style={{ maxHeight: "200px", overflowY: "auto" }}>
+                <table style={{ width: "100%", fontSize: "0.82rem", borderCollapse: "collapse" }}>
+                  <thead>
+                    <tr style={{ textAlign: "left", color: "#881337", borderBottom: "1px solid #fecdd3" }}>
+                      <th style={{ padding: "0.3rem 0.5rem" }}>Nama</th>
+                      <th style={{ padding: "0.3rem 0.5rem" }}>WhatsApp</th>
+                      <th style={{ padding: "0.3rem 0.5rem" }}>Alasan Gagal</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {report.failures.map((f, i) => (
+                      <tr key={i} style={{ borderBottom: "1px solid #ffe4e6" }}>
+                        <td style={{ padding: "0.35rem 0.5rem", fontWeight: 600 }}>{f.name}</td>
+                        <td style={{ padding: "0.35rem 0.5rem", fontFamily: "monospace" }}>{f.whatsapp || "-"}</td>
+                        <td style={{ padding: "0.35rem 0.5rem", color: "#dc2626" }}>{f.reason}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Header Info & Actions */}
       <div
@@ -983,6 +1144,20 @@ export default function AdminBatchManager({
                           {b.certPublished ? "Batalkan" : "Rilis Sertifikat"}
                         </button>
                       </form>
+                      {b.certPublished && (
+                        <form action={sendBatchCertWaAction} style={{ marginTop: "0.15rem" }}>
+                          <input type="hidden" name="batchId" value={b.id} />
+                          <input type="hidden" name="programId" value={program.id} />
+                          <input type="hidden" name="mode" value="unsent_only" />
+                          <ConfirmButton
+                            className="btn btn-sm btn-line"
+                            style={{ fontSize: "0.68rem", padding: "0.2rem 0.5rem", whiteSpace: "nowrap" }}
+                            message={`Kirim pesan WhatsApp sertifikat ke peserta batch ${b.name || ""} yang belum terkirim?`}
+                          >
+                            📲 Kirim WA Tertunda
+                          </ConfirmButton>
+                        </form>
+                      )}
                     </div>
                   </td>
 
